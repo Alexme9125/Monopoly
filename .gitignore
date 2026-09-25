@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+artifacts/
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+# Local development journals; release documentation lives in docs/.
+findings.md
+progress.md
+task_plan.md

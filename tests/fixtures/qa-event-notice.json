@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "config": {
+    "mapId": "lake",
+    "mode": "pve",
+    "seasons": 4,
+    "weatherMode": "standard",
+    "seed": 2077,
+    "players": [
+      {
+        "name": "验收玩家",
+        "color": "#D55B48",
+        "shape": "diamond",
+        "ai": false,
+        "personality": "balanced"
+      },
+      {
+        "name": "林岚",
+        "color": "#277DA8",
+        "shape": "circle",
+        "ai": true,
+        "personality": "cautious"
+      }
+    ]
+  },
+  "players": [
+    {
+      "name": "验收玩家",
+      "color": "#D55B48",
+      "shape": "diamond",
+      "ai": false,
+      "personality": "balanced",
+      "id": "p1",
+      "cash": 100000,
+      "stamina": 97,
+      "mood": 99,
+      "position": 14,
+      "previousPosition": 13,
+      "inventory": [
+        {
+          "uid": "1",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "2",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "3",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "4",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    },
+    {
+      "name": "林岚",
+      "color": "#277DA8",
+      "shape": "circle",
+      "ai": true,
+      "personality": "cautious",
+      "id": "p2",
+      "cash": 100000,
+      "stamina": 100,
+      "mood": 100,
+      "position": 0,
+      "previousPosition": null,
+      "inventory": [
+        {
+          "uid": "5",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "6",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "7",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "8",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    }
+  ],
+  "currentPlayerIndex": 0,
+  "day": 1,
+  "weatherId": "clear",
+  "properties": {},
+  "encounters": [
+    3,
+    38,
+    16,
+    80,
+    30,
+    70
+  ],
+  "stocks": [
+    {
+      "id": "aurora",
+      "name": "极光能源",
+      "code": "AUR",
+      "price": 78,
+      "history": [
+        78
+      ],
+      "change": 0,
+      "sector": "清洁能源"
+    },
+    {
+      "id": "tide",
+      "name": "双潮航运",
+      "code": "TID",
+      "price": 112,
+      "history": [
+        112
+      ],
+      "change": 0,
+      "sector": "星际物流"
+    },
+    {
+      "id": "crystal",
+      "name": "晶谷通信",
+      "code": "CRY",
+      "price": 56,
+      "history": [
+        56
+      ],
+      "change": 0,
+      "sector": "量子通信"
+    },
+    {
+      "id": "lumen",
+      "name": "流明生科",
+      "code": "LUM",
+      "price": 136,
+      "history": [
+        136
+      ],
+      "change": 0,
+      "sector": "医疗科技"
+    }
+  ],
+  "logs": [
+    {
+      "id": 9,
+      "day": 1,
+      "text": "第 1 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 11,
+      "day": 1,
+      "text": "验收玩家 掷出 1 点，来到 星汀·翠岚奇遇角14号。",
+      "tone": "info"
+    }
+  ],
+  "notices": [
+    {
+      "id": 12,
+      "day": 1,
+      "kind": "event",
+      "title": "旅途回忆",
+      "body": "林岚已经完成一段往日旅程。",
+      "tone": "info",
+      "playerId": "p2",
+      "nodeId": 0
+    },
+    {
+      "id": 13,
+      "day": 1,
+      "kind": "rent",
+      "title": "往日租金",
+      "body": "验收玩家曾在湖畔向林岚支付 120 PM 租金。",
+      "tone": "info",
+      "playerId": "p1",
+      "recipientId": "p2",
+      "nodeId": 0,
+      "amount": 120
+    }
+  ],
+  "phase": "decision",
+  "pending": {
+    "kind": "event",
+    "title": "星图档案馆",
+    "body": "馆员发现你归还了遗失的古星图，愿意从密藏中选一份答谢。",
+    "choices": [
+      {
+        "id": "archive_shield",
+        "label": "领取星盾卡",
+        "description": "获得一张星盾卡。",
+        "disabled": false
+      },
+      {
+        "id": "archive_cash",
+        "label": "领取酬金",
+        "description": "获得 650 星币。",
+        "disabled": false
+      }
+    ],
+    "data": {
+      "eventId": "archive"
+    }
+  },
+  "movement": null,
+  "feedback": null,
+  "seasonReport": null,
+  "rng": 275937965,
+  "sequence": 13,
+  "winnerId": null,
+  "lastMarketEvent": null,
+  "selectedDie": 6,
+  "weatherHistory": [
+    "clear"
+  ]
+}

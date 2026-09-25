@@ -1,0 +1,14 @@
+.git
+.github
+.DS_Store
+node_modules
+dist
+artifacts
+coverage
+*.log
+*.tsbuildinfo
+.env
+.env.*
+findings.md
+progress.md
+task_plan.md
