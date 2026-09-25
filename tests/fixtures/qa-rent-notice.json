@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "config": {
+    "mapId": "lake",
+    "mode": "pve",
+    "seasons": 4,
+    "weatherMode": "standard",
+    "seed": 2077,
+    "players": [
+      {
+        "name": "验收玩家",
+        "color": "#D55B48",
+        "shape": "diamond",
+        "ai": false,
+        "personality": "balanced"
+      },
+      {
+        "name": "林岚",
+        "color": "#277DA8",
+        "shape": "circle",
+        "ai": true,
+        "personality": "cautious"
+      }
+    ]
+  },
+  "players": [
+    {
+      "name": "验收玩家",
+      "color": "#D55B48",
+      "shape": "diamond",
+      "ai": false,
+      "personality": "balanced",
+      "id": "p1",
+      "cash": 100000,
+      "stamina": 100,
+      "mood": 100,
+      "position": 4,
+      "previousPosition": 3,
+      "inventory": [
+        {
+          "uid": "1",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "2",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "4",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    },
+    {
+      "name": "林岚",
+      "color": "#277DA8",
+      "shape": "circle",
+      "ai": true,
+      "personality": "cautious",
+      "id": "p2",
+      "cash": 100000,
+      "stamina": 100,
+      "mood": 100,
+      "position": 0,
+      "previousPosition": null,
+      "inventory": [
+        {
+          "uid": "5",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "6",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "7",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "8",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    }
+  ],
+  "currentPlayerIndex": 0,
+  "day": 1,
+  "weatherId": "clear",
+  "properties": {
+    "5": {
+      "ownerId": "p2",
+      "level": 1,
+      "mortgaged": false
+    }
+  },
+  "encounters": [
+    3,
+    38,
+    16,
+    80,
+    30,
+    70
+  ],
+  "stocks": [
+    {
+      "id": "aurora",
+      "name": "极光能源",
+      "code": "AUR",
+      "price": 78,
+      "history": [
+        78
+      ],
+      "change": 0,
+      "sector": "清洁能源"
+    },
+    {
+      "id": "tide",
+      "name": "双潮航运",
+      "code": "TID",
+      "price": 112,
+      "history": [
+        112
+      ],
+      "change": 0,
+      "sector": "星际物流"
+    },
+    {
+      "id": "crystal",
+      "name": "晶谷通信",
+      "code": "CRY",
+      "price": 56,
+      "history": [
+        56
+      ],
+      "change": 0,
+      "sector": "量子通信"
+    },
+    {
+      "id": "lumen",
+      "name": "流明生科",
+      "code": "LUM",
+      "price": 136,
+      "history": [
+        136
+      ],
+      "change": 0,
+      "sector": "医疗科技"
+    }
+  ],
+  "logs": [
+    {
+      "id": 9,
+      "day": 1,
+      "text": "第 1 天，天气：晴朗。",
+      "tone": "info"
+    }
+  ],
+  "notices": [
+    {
+      "id": 10,
+      "day": 1,
+      "kind": "event",
+      "title": "旅途回忆",
+      "body": "林岚已经完成一段往日旅程。",
+      "tone": "info",
+      "playerId": "p2",
+      "nodeId": 0
+    },
+    {
+      "id": 11,
+      "day": 1,
+      "kind": "rent",
+      "title": "往日租金",
+      "body": "验收玩家曾在湖畔向林岚支付 120 PM 租金。",
+      "tone": "info",
+      "playerId": "p1",
+      "recipientId": "p2",
+      "nodeId": 0,
+      "amount": 120
+    }
+  ],
+  "phase": "ready",
+  "pending": null,
+  "movement": null,
+  "feedback": null,
+  "seasonReport": null,
+  "rng": 1972,
+  "sequence": 11,
+  "winnerId": null,
+  "lastMarketEvent": null,
+  "selectedDie": 6,
+  "weatherHistory": [
+    "clear"
+  ]
+}

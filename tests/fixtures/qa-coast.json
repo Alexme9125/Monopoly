@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "config": {
+    "mapId": "coast",
+    "mode": "pve",
+    "players": [
+      {
+        "name": "验收玩家",
+        "color": "#e18469",
+        "shape": "diamond",
+        "ai": false,
+        "personality": "balanced"
+      },
+      {
+        "name": "林岚",
+        "color": "#4caac2",
+        "shape": "circle",
+        "ai": true,
+        "personality": "cautious"
+      }
+    ],
+    "seasons": 4,
+    "weatherMode": "standard",
+    "seed": 109
+  },
+  "players": [
+    {
+      "name": "验收玩家",
+      "color": "#e18469",
+      "shape": "diamond",
+      "ai": false,
+      "personality": "balanced",
+      "id": "p1",
+      "cash": 100000,
+      "stamina": 100,
+      "mood": 100,
+      "position": 0,
+      "previousPosition": null,
+      "inventory": [
+        {
+          "uid": "1",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "2",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "3",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "4",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    },
+    {
+      "name": "林岚",
+      "color": "#4caac2",
+      "shape": "circle",
+      "ai": true,
+      "personality": "cautious",
+      "id": "p2",
+      "cash": 100000,
+      "stamina": 100,
+      "mood": 100,
+      "position": 0,
+      "previousPosition": null,
+      "inventory": [
+        {
+          "uid": "5",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "6",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "7",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "8",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    }
+  ],
+  "currentPlayerIndex": 0,
+  "day": 1,
+  "weatherId": "fireflies",
+  "properties": {},
+  "encounters": [
+    27,
+    48,
+    69,
+    51,
+    34,
+    5
+  ],
+  "stocks": [
+    {
+      "id": "aurora",
+      "name": "极光能源",
+      "code": "AUR",
+      "price": 78,
+      "history": [
+        78
+      ],
+      "change": 0,
+      "sector": "清洁能源"
+    },
+    {
+      "id": "tide",
+      "name": "双潮航运",
+      "code": "TID",
+      "price": 112,
+      "history": [
+        112
+      ],
+      "change": 0,
+      "sector": "星际物流"
+    },
+    {
+      "id": "crystal",
+      "name": "晶谷通信",
+      "code": "CRY",
+      "price": 56,
+      "history": [
+        56
+      ],
+      "change": 0,
+      "sector": "量子通信"
+    },
+    {
+      "id": "lumen",
+      "name": "流明生科",
+      "code": "LUM",
+      "price": 136,
+      "history": [
+        136
+      ],
+      "change": 0,
+      "sector": "医疗科技"
+    }
+  ],
+  "logs": [
+    {
+      "id": 9,
+      "day": 1,
+      "text": "第 1 天，天气：星萤。",
+      "tone": "info"
+    }
+  ],
+  "phase": "ready",
+  "pending": null,
+  "movement": null,
+  "feedback": null,
+  "seasonReport": null,
+  "rng": 1403434030,
+  "sequence": 9,
+  "winnerId": null,
+  "lastMarketEvent": null,
+  "selectedDie": 6,
+  "weatherHistory": [
+    "fireflies"
+  ]
+}

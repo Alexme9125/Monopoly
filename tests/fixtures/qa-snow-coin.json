@@ -1,0 +1,1263 @@
+{
+  "version": 1,
+  "config": {
+    "mapId": "lake",
+    "mode": "pve",
+    "players": [
+      {
+        "name": "验收玩家",
+        "color": "#e18469",
+        "shape": "diamond",
+        "ai": false,
+        "personality": "balanced"
+      },
+      {
+        "name": "林岚",
+        "color": "#4caac2",
+        "shape": "circle",
+        "ai": true,
+        "personality": "cautious"
+      }
+    ],
+    "seasons": 4,
+    "weatherMode": "standard",
+    "seed": 53
+  },
+  "players": [
+    {
+      "name": "验收玩家",
+      "color": "#e18469",
+      "shape": "diamond",
+      "ai": false,
+      "personality": "balanced",
+      "id": "p1",
+      "cash": 67835,
+      "stamina": 80,
+      "mood": 80,
+      "position": 30,
+      "previousPosition": 29,
+      "inventory": [
+        {
+          "uid": "1",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "2",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "3",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "4",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "329",
+          "itemId": "dice100",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "339",
+          "itemId": "dice100",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    },
+    {
+      "name": "林岚",
+      "color": "#4caac2",
+      "shape": "circle",
+      "ai": true,
+      "personality": "cautious",
+      "id": "p2",
+      "cash": 386,
+      "stamina": 0,
+      "mood": 92,
+      "position": 29,
+      "previousPosition": 50,
+      "inventory": [
+        {
+          "uid": "32",
+          "itemId": "arrest",
+          "quantity": 113,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [
+        {
+          "slot": {
+            "uid": "310",
+            "itemId": "snack",
+            "quantity": 1,
+            "wet": false
+          },
+          "principal": 90
+        },
+        {
+          "slot": {
+            "uid": "313",
+            "itemId": "snack",
+            "quantity": 1,
+            "wet": false
+          },
+          "principal": 90
+        },
+        {
+          "slot": {
+            "uid": "321",
+            "itemId": "rent",
+            "quantity": 1,
+            "wet": false
+          },
+          "principal": 490
+        },
+        {
+          "slot": {
+            "uid": "384",
+            "itemId": "dice8",
+            "quantity": 1,
+            "wet": false
+          },
+          "principal": 190
+        },
+        {
+          "slot": {
+            "uid": "401",
+            "itemId": "arrest",
+            "quantity": 1,
+            "wet": false
+          },
+          "principal": 440
+        }
+      ],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": {
+        "kind": "hospital",
+        "remaining": 2
+      },
+      "statuses": [],
+      "bankrupt": false
+    }
+  ],
+  "currentPlayerIndex": 0,
+  "day": 23,
+  "weatherId": "snow",
+  "properties": {
+    "27": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "40": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "42": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "44": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "46": {
+      "ownerId": "p1",
+      "level": 1,
+      "mortgaged": false
+    },
+    "49": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "66": {
+      "ownerId": "p1",
+      "level": 1,
+      "mortgaged": false
+    },
+    "85": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    }
+  },
+  "encounters": [
+    16,
+    70,
+    3,
+    80,
+    38
+  ],
+  "stocks": [
+    {
+      "id": "aurora",
+      "name": "极光能源",
+      "code": "AUR",
+      "price": 73,
+      "history": [
+        78,
+        80,
+        78,
+        80,
+        82,
+        80,
+        78,
+        80,
+        84,
+        79,
+        75,
+        77,
+        79,
+        75,
+        71,
+        73,
+        69,
+        69,
+        69,
+        72,
+        71,
+        72,
+        73
+      ],
+      "change": 1.4,
+      "sector": "清洁能源"
+    },
+    {
+      "id": "tide",
+      "name": "双潮航运",
+      "code": "TID",
+      "price": 75,
+      "history": [
+        112,
+        106,
+        100,
+        100,
+        95,
+        96,
+        100,
+        98,
+        103,
+        106,
+        109,
+        107,
+        101,
+        95,
+        96,
+        90,
+        88,
+        86,
+        82,
+        81,
+        82,
+        79,
+        75
+      ],
+      "change": -5.1,
+      "sector": "星际物流"
+    },
+    {
+      "id": "crystal",
+      "name": "晶谷通信",
+      "code": "CRY",
+      "price": 52,
+      "history": [
+        56,
+        55,
+        53,
+        53,
+        50,
+        51,
+        50,
+        51,
+        52,
+        55,
+        52,
+        53,
+        55,
+        54,
+        53,
+        54,
+        56,
+        58,
+        55,
+        56,
+        58,
+        55,
+        52
+      ],
+      "change": -5.5,
+      "sector": "量子通信"
+    },
+    {
+      "id": "lumen",
+      "name": "流明生科",
+      "code": "LUM",
+      "price": 155,
+      "history": [
+        136,
+        143,
+        139,
+        142,
+        151,
+        142,
+        151,
+        151,
+        160,
+        152,
+        147,
+        146,
+        137,
+        140,
+        139,
+        139,
+        142,
+        143,
+        144,
+        147,
+        146,
+        152,
+        155
+      ],
+      "change": 2,
+      "sector": "医疗科技"
+    }
+  ],
+  "logs": [
+    {
+      "id": 125,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 127,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 129,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 131,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 133,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 135,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 137,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 139,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 141,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 143,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 145,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 147,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 149,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 151,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 153,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 155,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 157,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 159,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 161,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 163,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 165,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 167,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 169,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 171,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 173,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 175,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 177,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 179,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 181,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 183,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 185,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 187,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 189,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 191,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 193,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 195,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 197,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 199,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 201,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 203,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 205,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 207,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 209,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 211,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 213,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 215,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 217,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 219,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 221,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 223,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 225,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 227,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 229,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 231,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 233,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 235,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 237,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 239,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 241,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 243,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 245,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 247,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 249,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 251,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 253,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 255,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 257,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 259,
+      "day": 3,
+      "text": "林岚 购买 免捕卡。",
+      "tone": "good"
+    },
+    {
+      "id": 261,
+      "day": 4,
+      "text": "第 4 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 263,
+      "day": 4,
+      "text": "验收玩家 掷出 2 点，来到 镜湖·银沙42号地。",
+      "tone": "info"
+    },
+    {
+      "id": 264,
+      "day": 4,
+      "text": "验收玩家 购买 镜湖·银沙42号地。",
+      "tone": "good"
+    },
+    {
+      "id": 267,
+      "day": 4,
+      "text": "林岚 掷出 3 点，来到 星汀·银沙12号地。",
+      "tone": "info"
+    },
+    {
+      "id": 268,
+      "day": 5,
+      "text": "第 5 天，天气：轻雨。",
+      "tone": "info"
+    },
+    {
+      "id": 270,
+      "day": 5,
+      "text": "验收玩家 掷出 6 点，来到 镜湖·星石奇遇角36号。",
+      "tone": "info"
+    },
+    {
+      "id": 271,
+      "day": 5,
+      "text": "验收玩家：建筑安全检查 — 接受检修",
+      "tone": "bad"
+    },
+    {
+      "id": 274,
+      "day": 5,
+      "text": "林岚 掷出 2 点，来到 星汀·翠岚奇遇角14号。",
+      "tone": "info"
+    },
+    {
+      "id": 275,
+      "day": 5,
+      "text": "林岚：地质回访 — 提供测量记录",
+      "tone": "good"
+    },
+    {
+      "id": 277,
+      "day": 6,
+      "text": "第 6 天，天气：微风。",
+      "tone": "info"
+    },
+    {
+      "id": 279,
+      "day": 6,
+      "text": "验收玩家 掷出 4 点，来到 银栈·银沙星币驿32号。",
+      "tone": "info"
+    },
+    {
+      "id": 280,
+      "day": 6,
+      "text": "验收玩家 捡到 63 PM。",
+      "tone": "good"
+    },
+    {
+      "id": 282,
+      "day": 6,
+      "text": "林岚 掷出 2 点，来到 星汀·晴波60号地。",
+      "tone": "info"
+    },
+    {
+      "id": 283,
+      "day": 7,
+      "text": "第 7 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 285,
+      "day": 7,
+      "text": "验收玩家 掷出 5 点，来到 银栈·能源塔27号。",
+      "tone": "info"
+    },
+    {
+      "id": 286,
+      "day": 7,
+      "text": "验收玩家 购买 银栈·能源塔27号。",
+      "tone": "good"
+    },
+    {
+      "id": 289,
+      "day": 7,
+      "text": "林岚 掷出 1 点，来到 星汀·翠岚星币驿84号。",
+      "tone": "info"
+    },
+    {
+      "id": 290,
+      "day": 7,
+      "text": "林岚 捡到 86 PM。",
+      "tone": "good"
+    },
+    {
+      "id": 291,
+      "day": 8,
+      "text": "第 8 天，天气：柔光。",
+      "tone": "info"
+    },
+    {
+      "id": 293,
+      "day": 8,
+      "text": "验收玩家 掷出 5 点，来到 银栈·星石66号地。",
+      "tone": "info"
+    },
+    {
+      "id": 294,
+      "day": 8,
+      "text": "验收玩家 购买 银栈·星石66号地。",
+      "tone": "good"
+    },
+    {
+      "id": 297,
+      "day": 8,
+      "text": "林岚 掷出 1 点，来到 星汀·琉光18号地。",
+      "tone": "info"
+    },
+    {
+      "id": 298,
+      "day": 9,
+      "text": "第 9 天，天气：狂风。",
+      "tone": "info"
+    },
+    {
+      "id": 300,
+      "day": 9,
+      "text": "验收玩家 掷出 1 点，来到 银栈·星石66号地。",
+      "tone": "info"
+    },
+    {
+      "id": 301,
+      "day": 9,
+      "text": "验收玩家 将 银栈·星石66号地 升至 1 级。",
+      "tone": "good"
+    },
+    {
+      "id": 304,
+      "day": 9,
+      "text": "林岚 掷出 5 点，来到 银栈·星筹馆22号。",
+      "tone": "info"
+    },
+    {
+      "id": 305,
+      "day": 10,
+      "text": "第 10 天，天气：星萤。",
+      "tone": "info"
+    },
+    {
+      "id": 307,
+      "day": 10,
+      "text": "验收玩家 掷出 1 点，来到 银栈·远帆85号地。",
+      "tone": "info"
+    },
+    {
+      "id": 308,
+      "day": 10,
+      "text": "验收玩家 购买 银栈·远帆85号地。",
+      "tone": "good"
+    },
+    {
+      "id": 311,
+      "day": 10,
+      "text": "林岚 抵押 能量小食，获得 90 PM。",
+      "tone": "info"
+    },
+    {
+      "id": 314,
+      "day": 10,
+      "text": "林岚 抵押 能量小食，获得 90 PM。",
+      "tone": "info"
+    },
+    {
+      "id": 317,
+      "day": 10,
+      "text": "林岚 掷出 1 点，来到 银栈·通讯台21号。",
+      "tone": "info"
+    },
+    {
+      "id": 318,
+      "day": 11,
+      "text": "第 11 天，天气：阵雷。",
+      "tone": "info"
+    },
+    {
+      "id": 320,
+      "day": 11,
+      "text": "验收玩家 掷出 3 点，来到 银栈·证券所26号。",
+      "tone": "info"
+    },
+    {
+      "id": 322,
+      "day": 11,
+      "text": "林岚 抵押 免租卡，获得 490 PM。",
+      "tone": "info"
+    },
+    {
+      "id": 325,
+      "day": 11,
+      "text": "林岚 掷出 6 点，来到 星汀·远帆15号地。",
+      "tone": "info"
+    },
+    {
+      "id": 326,
+      "day": 12,
+      "text": "第 12 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 328,
+      "day": 12,
+      "text": "验收玩家 掷出 2 点，来到 银栈·琉光奇遇角28号。",
+      "tone": "info"
+    },
+    {
+      "id": 330,
+      "day": 12,
+      "text": "验收玩家：漂流物拍卖 — 竞拍百面骰",
+      "tone": "good"
+    },
+    {
+      "id": 333,
+      "day": 12,
+      "text": "林岚 掷出 2 点，来到 星汀·星轨站13号。",
+      "tone": "info"
+    },
+    {
+      "id": 335,
+      "day": 12,
+      "text": "林岚 乘车抵达 芦湾·星轨站4号。",
+      "tone": "info"
+    },
+    {
+      "id": 336,
+      "day": 13,
+      "text": "第 13 天，天气：轻雨。",
+      "tone": "info"
+    },
+    {
+      "id": 338,
+      "day": 13,
+      "text": "验收玩家 掷出 2 点，来到 银栈·晴波空地30号。",
+      "tone": "info"
+    },
+    {
+      "id": 340,
+      "day": 13,
+      "text": "验收玩家：漂流物拍卖 — 竞拍百面骰",
+      "tone": "good"
+    },
+    {
+      "id": 342,
+      "day": 13,
+      "text": "林岚 经过起点，领取 1,200 PM。",
+      "tone": "good"
+    },
+    {
+      "id": 344,
+      "day": 13,
+      "text": "林岚 掷出 4 点，来到 芦湾·星港起点。",
+      "tone": "info"
+    },
+    {
+      "id": 345,
+      "day": 14,
+      "text": "第 14 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 347,
+      "day": 14,
+      "text": "验收玩家 掷出 6 点，来到 镜湖·星石奇遇角36号。",
+      "tone": "info"
+    },
+    {
+      "id": 348,
+      "day": 14,
+      "text": "验收玩家：公司分红 — 领取报酬",
+      "tone": "good"
+    },
+    {
+      "id": 351,
+      "day": 14,
+      "text": "林岚 掷出 2 点，来到 芦湾·晴波50号地。",
+      "tone": "info"
+    },
+    {
+      "id": 352,
+      "day": 15,
+      "text": "第 15 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 354,
+      "day": 15,
+      "text": "验收玩家 掷出 4 点，来到 镜湖·晴波40号地。",
+      "tone": "info"
+    },
+    {
+      "id": 355,
+      "day": 15,
+      "text": "验收玩家 购买 镜湖·晴波40号地。",
+      "tone": "good"
+    },
+    {
+      "id": 358,
+      "day": 15,
+      "text": "林岚 掷出 6 点，来到 镜湖·通讯台44号。",
+      "tone": "info"
+    },
+    {
+      "id": 359,
+      "day": 15,
+      "text": "林岚 向 验收玩家 支付 360 PM 租金。",
+      "tone": "bad"
+    },
+    {
+      "id": 361,
+      "day": 16,
+      "text": "第 16 天，天气：轻雪。",
+      "tone": "info"
+    },
+    {
+      "id": 363,
+      "day": 16,
+      "text": "验收玩家 掷出 5 点，来到 镜湖·星石46号地。",
+      "tone": "info"
+    },
+    {
+      "id": 364,
+      "day": 16,
+      "text": "验收玩家 将 镜湖·星石46号地 升至 1 级。",
+      "tone": "good"
+    },
+    {
+      "id": 367,
+      "day": 16,
+      "text": "林岚 掷出 4 点，来到 镜湖·云径39号地。",
+      "tone": "info"
+    },
+    {
+      "id": 368,
+      "day": 17,
+      "text": "第 17 天，天气：狂风。",
+      "tone": "info"
+    },
+    {
+      "id": 369,
+      "day": 17,
+      "text": "验收玩家 经过起点，领取 1,200 PM。",
+      "tone": "good"
+    },
+    {
+      "id": 371,
+      "day": 17,
+      "text": "验收玩家 掷出 6 点，来到 芦湾·停车场51号。",
+      "tone": "info"
+    },
+    {
+      "id": 373,
+      "day": 17,
+      "text": "林岚 掷出 6 点，来到 镜湖·能源塔74号。",
+      "tone": "info"
+    },
+    {
+      "id": 374,
+      "day": 18,
+      "text": "第 18 天，天气：柔光。",
+      "tone": "info"
+    },
+    {
+      "id": 376,
+      "day": 18,
+      "text": "验收玩家 掷出 6 点，来到 镜湖·远帆奇遇角45号。",
+      "tone": "info"
+    },
+    {
+      "id": 377,
+      "day": 18,
+      "text": "验收玩家 被送往医院，停留 3 回合。",
+      "tone": "bad"
+    },
+    {
+      "id": 379,
+      "day": 18,
+      "text": "林岚 掷出 1 点，来到 镜湖·证券所82号。",
+      "tone": "info"
+    },
+    {
+      "id": 380,
+      "day": 19,
+      "text": "第 19 天，天气：微风。",
+      "tone": "info"
+    },
+    {
+      "id": 382,
+      "day": 19,
+      "text": "林岚 掷出 4 点，来到 镜湖·云径39号地。",
+      "tone": "info"
+    },
+    {
+      "id": 383,
+      "day": 20,
+      "text": "第 20 天，天气：雨幕。",
+      "tone": "info"
+    },
+    {
+      "id": 385,
+      "day": 20,
+      "text": "林岚 抵押 八面电子骰，获得 190 PM。",
+      "tone": "info"
+    },
+    {
+      "id": 388,
+      "day": 20,
+      "text": "林岚 掷出 6 点，来到 镜湖·远帆奇遇角45号。",
+      "tone": "info"
+    },
+    {
+      "id": 389,
+      "day": 20,
+      "text": "林岚：建筑安全检查 — 接受检修",
+      "tone": "bad"
+    },
+    {
+      "id": 391,
+      "day": 21,
+      "text": "第 21 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 392,
+      "day": 21,
+      "text": "验收玩家 离开医院。",
+      "tone": "info"
+    },
+    {
+      "id": 394,
+      "day": 21,
+      "text": "林岚 掷出 5 点，来到 芦湾·晴波50号地。",
+      "tone": "info"
+    },
+    {
+      "id": 395,
+      "day": 21,
+      "text": "林岚 被送往医院，停留 3 回合。",
+      "tone": "bad"
+    },
+    {
+      "id": 396,
+      "day": 22,
+      "text": "第 22 天，天气：雨幕。",
+      "tone": "info"
+    },
+    {
+      "id": 398,
+      "day": 22,
+      "text": "验收玩家 掷出 1 点，来到 银栈·晴波空地30号。",
+      "tone": "info"
+    },
+    {
+      "id": 399,
+      "day": 22,
+      "text": "验收玩家：路肩塌陷 — 支付保养费",
+      "tone": "bad"
+    },
+    {
+      "id": 402,
+      "day": 22,
+      "text": "林岚 抵押 免捕卡，获得 440 PM。",
+      "tone": "info"
+    },
+    {
+      "id": 404,
+      "day": 23,
+      "text": "第 23 天，天气：轻雪。",
+      "tone": "info"
+    }
+  ],
+  "phase": "ready",
+  "pending": null,
+  "movement": null,
+  "feedback": null,
+  "seasonReport": null,
+  "rng": 876446216,
+  "sequence": 404,
+  "winnerId": null,
+  "lastMarketEvent": null,
+  "selectedDie": 6,
+  "weatherHistory": [
+    "rain",
+    "snow"
+  ]
+}

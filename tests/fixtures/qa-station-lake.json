@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "config": {
+    "mapId": "lake",
+    "mode": "pve",
+    "seasons": 4,
+    "weatherMode": "standard",
+    "seed": 20260925,
+    "players": [
+      {
+        "name": "验收玩家",
+        "color": "#D55B48",
+        "shape": "diamond",
+        "ai": false,
+        "personality": "balanced"
+      },
+      {
+        "name": "林岚",
+        "color": "#277DA8",
+        "shape": "circle",
+        "ai": true,
+        "personality": "cautious"
+      }
+    ]
+  },
+  "players": [
+    {
+      "name": "验收玩家",
+      "color": "#D55B48",
+      "shape": "diamond",
+      "ai": false,
+      "personality": "balanced",
+      "id": "p1",
+      "cash": 100000,
+      "stamina": 97,
+      "mood": 99,
+      "position": 4,
+      "previousPosition": 3,
+      "routeNextPosition": null,
+      "travelProgress": 1,
+      "inventory": [
+        {
+          "uid": "1",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "2",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "3",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "4",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    },
+    {
+      "name": "林岚",
+      "color": "#277DA8",
+      "shape": "circle",
+      "ai": true,
+      "personality": "cautious",
+      "id": "p2",
+      "cash": 100000,
+      "stamina": 100,
+      "mood": 100,
+      "position": 0,
+      "previousPosition": null,
+      "routeNextPosition": null,
+      "travelProgress": 0,
+      "inventory": [
+        {
+          "uid": "5",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "6",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "7",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "8",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    }
+  ],
+  "currentPlayerIndex": 0,
+  "day": 1,
+  "weatherId": "clear",
+  "properties": {},
+  "encounters": [],
+  "stocks": [
+    {
+      "id": "aurora",
+      "name": "极光能源",
+      "code": "AUR",
+      "price": 78,
+      "history": [
+        78
+      ],
+      "change": 0,
+      "sector": "清洁能源"
+    },
+    {
+      "id": "tide",
+      "name": "双潮航运",
+      "code": "TID",
+      "price": 112,
+      "history": [
+        112
+      ],
+      "change": 0,
+      "sector": "星际物流"
+    },
+    {
+      "id": "crystal",
+      "name": "晶谷通信",
+      "code": "CRY",
+      "price": 56,
+      "history": [
+        56
+      ],
+      "change": 0,
+      "sector": "量子通信"
+    },
+    {
+      "id": "lumen",
+      "name": "流明生科",
+      "code": "LUM",
+      "price": 136,
+      "history": [
+        136
+      ],
+      "change": 0,
+      "sector": "医疗科技"
+    }
+  ],
+  "logs": [
+    {
+      "id": 9,
+      "day": 1,
+      "text": "第 1 天，天气：轻雨。",
+      "tone": "info"
+    },
+    {
+      "id": 11,
+      "day": 1,
+      "text": "验收玩家 掷出 1 点，来到 芦湾·星轨站4号。",
+      "tone": "info"
+    }
+  ],
+  "notices": [],
+  "phase": "decision",
+  "pending": {
+    "kind": "station",
+    "title": "芦湾·星轨站4号",
+    "body": "乘车前往另一站，票价 100 PM。",
+    "choices": [
+      {
+        "id": "station:13",
+        "label": "星汀·星轨站13号",
+        "disabled": false
+      },
+      {
+        "id": "station:33",
+        "label": "银栈·星轨站33号",
+        "disabled": false
+      },
+      {
+        "id": "station:57",
+        "label": "星汀·星轨站57号",
+        "disabled": false
+      },
+      {
+        "id": "leave",
+        "label": "离开"
+      }
+    ],
+    "data": {
+      "nodeId": 4
+    }
+  },
+  "movement": null,
+  "feedback": null,
+  "seasonReport": null,
+  "rng": 628748038,
+  "sequence": 11,
+  "winnerId": null,
+  "lastMarketEvent": null,
+  "selectedDie": 6,
+  "weatherHistory": [
+    "clear"
+  ]
+}

@@ -1,0 +1,1309 @@
+{
+  "version": 1,
+  "config": {
+    "mapId": "lake",
+    "mode": "pve",
+    "players": [
+      {
+        "name": "验收玩家",
+        "color": "#e18469",
+        "shape": "diamond",
+        "ai": false,
+        "personality": "balanced"
+      },
+      {
+        "name": "林岚",
+        "color": "#4caac2",
+        "shape": "circle",
+        "ai": true,
+        "personality": "cautious"
+      }
+    ],
+    "seasons": 4,
+    "weatherMode": "standard",
+    "seed": 2
+  },
+  "players": [
+    {
+      "name": "验收玩家",
+      "color": "#e18469",
+      "shape": "diamond",
+      "ai": false,
+      "personality": "balanced",
+      "id": "p1",
+      "cash": 100000,
+      "stamina": 5,
+      "mood": 85,
+      "position": 26,
+      "previousPosition": 27,
+      "inventory": [
+        {
+          "uid": "1",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "2",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "3",
+          "itemId": "rent",
+          "quantity": 82,
+          "wet": false
+        },
+        {
+          "uid": "4",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "56",
+          "itemId": "demolish",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "59",
+          "itemId": "demolish",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "62",
+          "itemId": "demolish",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "65",
+          "itemId": "demolish",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "68",
+          "itemId": "demolish",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "71",
+          "itemId": "demolish",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {
+        "aurora": 20
+      },
+      "confinement": null,
+      "statuses": [],
+      "bankrupt": false
+    },
+    {
+      "name": "林岚",
+      "color": "#4caac2",
+      "shape": "circle",
+      "ai": true,
+      "personality": "cautious",
+      "id": "p2",
+      "cash": 70740,
+      "stamina": 0,
+      "mood": 86,
+      "position": 29,
+      "previousPosition": 4,
+      "inventory": [
+        {
+          "uid": "5",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "6",
+          "itemId": "snack",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "7",
+          "itemId": "rent",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "8",
+          "itemId": "dice8",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "243",
+          "itemId": "bomb",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "246",
+          "itemId": "bomb",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "249",
+          "itemId": "bomb",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "252",
+          "itemId": "bomb",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "255",
+          "itemId": "bomb",
+          "quantity": 1,
+          "wet": false
+        },
+        {
+          "uid": "258",
+          "itemId": "bomb",
+          "quantity": 1,
+          "wet": false
+        }
+      ],
+      "pawnedItems": [],
+      "capacity": 10,
+      "holdings": {},
+      "confinement": {
+        "kind": "hospital",
+        "remaining": 3
+      },
+      "statuses": [],
+      "bankrupt": false
+    }
+  ],
+  "currentPlayerIndex": 0,
+  "day": 17,
+  "weatherId": "gale",
+  "properties": {
+    "1": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "7": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "39": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "42": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "44": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "46": {
+      "ownerId": "p1",
+      "level": 1,
+      "mortgaged": true
+    },
+    "48": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "50": {
+      "ownerId": "p1",
+      "level": 0,
+      "mortgaged": false
+    },
+    "52": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "55": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "58": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "59": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    },
+    "75": {
+      "ownerId": "p2",
+      "level": 0,
+      "mortgaged": false
+    }
+  },
+  "encounters": [
+    80,
+    16,
+    70,
+    3,
+    30,
+    38
+  ],
+  "stocks": [
+    {
+      "id": "aurora",
+      "name": "极光能源",
+      "code": "AUR",
+      "price": 94,
+      "history": [
+        78,
+        80,
+        80,
+        84,
+        81,
+        82,
+        84,
+        82,
+        85,
+        88,
+        84,
+        84,
+        88,
+        91,
+        95,
+        96,
+        94
+      ],
+      "change": -2.1,
+      "sector": "清洁能源"
+    },
+    {
+      "id": "tide",
+      "name": "双潮航运",
+      "code": "TID",
+      "price": 108,
+      "history": [
+        112,
+        111,
+        117,
+        110,
+        110,
+        109,
+        116,
+        113,
+        111,
+        114,
+        112,
+        113,
+        116,
+        123,
+        121,
+        115,
+        108
+      ],
+      "change": -6.1,
+      "sector": "星际物流"
+    },
+    {
+      "id": "crystal",
+      "name": "晶谷通信",
+      "code": "CRY",
+      "price": 61,
+      "history": [
+        56,
+        54,
+        51,
+        54,
+        52,
+        54,
+        57,
+        56,
+        55,
+        53,
+        50,
+        53,
+        55,
+        57,
+        60,
+        62,
+        61
+      ],
+      "change": -1.6,
+      "sector": "量子通信"
+    },
+    {
+      "id": "lumen",
+      "name": "流明生科",
+      "code": "LUM",
+      "price": 128,
+      "history": [
+        136,
+        129,
+        121,
+        122,
+        127,
+        133,
+        136,
+        131,
+        128,
+        122,
+        127,
+        122,
+        126,
+        127,
+        128,
+        123,
+        128
+      ],
+      "change": 4.1,
+      "sector": "医疗科技"
+    }
+  ],
+  "logs": [
+    {
+      "id": 38,
+      "day": 4,
+      "text": "验收玩家 购买 芦湾·晴波50号地。",
+      "tone": "good"
+    },
+    {
+      "id": 41,
+      "day": 4,
+      "text": "林岚 掷出 6 点，来到 星汀·远帆55号地。",
+      "tone": "info"
+    },
+    {
+      "id": 42,
+      "day": 4,
+      "text": "林岚 购买 星汀·远帆55号地。",
+      "tone": "good"
+    },
+    {
+      "id": 44,
+      "day": 5,
+      "text": "第 5 天，天气：干旱。",
+      "tone": "info"
+    },
+    {
+      "id": 46,
+      "day": 5,
+      "text": "验收玩家 掷出 4 点，来到 镜湖·星石46号地。",
+      "tone": "info"
+    },
+    {
+      "id": 47,
+      "day": 5,
+      "text": "验收玩家 将 镜湖·星石46号地 升至 1 级。",
+      "tone": "good"
+    },
+    {
+      "id": 50,
+      "day": 5,
+      "text": "林岚 掷出 3 点，来到 星汀·琉光58号地。",
+      "tone": "info"
+    },
+    {
+      "id": 51,
+      "day": 5,
+      "text": "林岚 购买 星汀·琉光58号地。",
+      "tone": "good"
+    },
+    {
+      "id": 53,
+      "day": 6,
+      "text": "第 6 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 55,
+      "day": 6,
+      "text": "验收玩家 掷出 5 点，来到 镜湖·百货舱41号。",
+      "tone": "info"
+    },
+    {
+      "id": 57,
+      "day": 6,
+      "text": "验收玩家 购买 拆迁许可。",
+      "tone": "good"
+    },
+    {
+      "id": 60,
+      "day": 6,
+      "text": "验收玩家 购买 拆迁许可。",
+      "tone": "good"
+    },
+    {
+      "id": 63,
+      "day": 6,
+      "text": "验收玩家 购买 拆迁许可。",
+      "tone": "good"
+    },
+    {
+      "id": 66,
+      "day": 6,
+      "text": "验收玩家 购买 拆迁许可。",
+      "tone": "good"
+    },
+    {
+      "id": 69,
+      "day": 6,
+      "text": "验收玩家 购买 拆迁许可。",
+      "tone": "good"
+    },
+    {
+      "id": 72,
+      "day": 6,
+      "text": "验收玩家 购买 拆迁许可。",
+      "tone": "good"
+    },
+    {
+      "id": 74,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 76,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 78,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 80,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 82,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 84,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 86,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 88,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 90,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 92,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 94,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 96,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 98,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 100,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 102,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 104,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 106,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 108,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 110,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 112,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 114,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 116,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 118,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 120,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 122,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 124,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 126,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 128,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 130,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 132,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 134,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 136,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 138,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 140,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 142,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 144,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 146,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 148,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 150,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 152,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 154,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 156,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 158,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 160,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 162,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 164,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 166,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 168,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 170,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 172,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 174,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 176,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 178,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 180,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 182,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 184,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 186,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 188,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 190,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 192,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 194,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 196,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 198,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 200,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 202,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 204,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 206,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 208,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 210,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 212,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 214,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 216,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 218,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 220,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 222,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 224,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 226,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 228,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 230,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 232,
+      "day": 6,
+      "text": "验收玩家 购买 免租卡。",
+      "tone": "good"
+    },
+    {
+      "id": 235,
+      "day": 6,
+      "text": "林岚 掷出 1 点，来到 星汀·通讯台59号。",
+      "tone": "info"
+    },
+    {
+      "id": 236,
+      "day": 6,
+      "text": "林岚 购买 星汀·通讯台59号。",
+      "tone": "good"
+    },
+    {
+      "id": 238,
+      "day": 7,
+      "text": "第 7 天，天气：扬沙。",
+      "tone": "info"
+    },
+    {
+      "id": 240,
+      "day": 7,
+      "text": "验收玩家 掷出 4 点，来到 镜湖·云径39号地。",
+      "tone": "info"
+    },
+    {
+      "id": 242,
+      "day": 7,
+      "text": "林岚 掷出 6 点，来到 星汀·百货舱19号。",
+      "tone": "info"
+    },
+    {
+      "id": 244,
+      "day": 7,
+      "text": "林岚 购买 传送爆弹。",
+      "tone": "good"
+    },
+    {
+      "id": 247,
+      "day": 7,
+      "text": "林岚 购买 传送爆弹。",
+      "tone": "good"
+    },
+    {
+      "id": 250,
+      "day": 7,
+      "text": "林岚 购买 传送爆弹。",
+      "tone": "good"
+    },
+    {
+      "id": 253,
+      "day": 7,
+      "text": "林岚 购买 传送爆弹。",
+      "tone": "good"
+    },
+    {
+      "id": 256,
+      "day": 7,
+      "text": "林岚 购买 传送爆弹。",
+      "tone": "good"
+    },
+    {
+      "id": 259,
+      "day": 7,
+      "text": "林岚 购买 传送爆弹。",
+      "tone": "good"
+    },
+    {
+      "id": 261,
+      "day": 8,
+      "text": "第 8 天，天气：雨幕。",
+      "tone": "info"
+    },
+    {
+      "id": 263,
+      "day": 8,
+      "text": "验收玩家 掷出 1 点，来到 镜湖·晴波40号地。",
+      "tone": "info"
+    },
+    {
+      "id": 265,
+      "day": 8,
+      "text": "林岚 掷出 6 点，来到 星汀·星轨站13号。",
+      "tone": "info"
+    },
+    {
+      "id": 267,
+      "day": 8,
+      "text": "林岚 乘车抵达 芦湾·星轨站4号。",
+      "tone": "info"
+    },
+    {
+      "id": 268,
+      "day": 9,
+      "text": "第 9 天，天气：微风。",
+      "tone": "info"
+    },
+    {
+      "id": 269,
+      "day": 9,
+      "text": "验收玩家 抵押 镜湖·星石46号地。",
+      "tone": "info"
+    },
+    {
+      "id": 272,
+      "day": 9,
+      "text": "验收玩家 掷出 3 点，来到 镜湖·月桥星币驿43号。",
+      "tone": "info"
+    },
+    {
+      "id": 273,
+      "day": 9,
+      "text": "验收玩家 捡到 61 PM。",
+      "tone": "good"
+    },
+    {
+      "id": 275,
+      "day": 9,
+      "text": "林岚 掷出 2 点，来到 芦湾·拘留所2号。",
+      "tone": "info"
+    },
+    {
+      "id": 276,
+      "day": 10,
+      "text": "第 10 天，天气：晴朗。",
+      "tone": "info"
+    },
+    {
+      "id": 278,
+      "day": 10,
+      "text": "验收玩家 掷出 1 点，来到 镜湖·通讯台44号。",
+      "tone": "info"
+    },
+    {
+      "id": 279,
+      "day": 10,
+      "text": "验收玩家 购买 镜湖·通讯台44号。",
+      "tone": "good"
+    },
+    {
+      "id": 282,
+      "day": 10,
+      "text": "林岚 掷出 1 点，来到 芦湾·能源塔1号。",
+      "tone": "info"
+    },
+    {
+      "id": 283,
+      "day": 10,
+      "text": "林岚 购买 芦湾·能源塔1号。",
+      "tone": "good"
+    },
+    {
+      "id": 285,
+      "day": 11,
+      "text": "第 11 天，天气：轻雪。",
+      "tone": "info"
+    },
+    {
+      "id": 287,
+      "day": 11,
+      "text": "验收玩家 掷出 4 点，来到 芦湾·云径49号地。",
+      "tone": "info"
+    },
+    {
+      "id": 288,
+      "day": 11,
+      "text": "林岚 经过起点，领取 1,200 PM。",
+      "tone": "good"
+    },
+    {
+      "id": 290,
+      "day": 11,
+      "text": "林岚 掷出 5 点，来到 镜湖·疗养院47号。",
+      "tone": "info"
+    },
+    {
+      "id": 291,
+      "day": 12,
+      "text": "第 12 天，天气：干旱。",
+      "tone": "info"
+    },
+    {
+      "id": 292,
+      "day": 12,
+      "text": "验收玩家 经过起点，领取 1,200 PM。",
+      "tone": "good"
+    },
+    {
+      "id": 294,
+      "day": 12,
+      "text": "验收玩家 掷出 6 点，来到 芦湾·月桥空地3号。",
+      "tone": "info"
+    },
+    {
+      "id": 295,
+      "day": 12,
+      "text": "验收玩家：萤光温室 — 帮忙修灯",
+      "tone": "good"
+    },
+    {
+      "id": 298,
+      "day": 12,
+      "text": "林岚 掷出 5 点，来到 镜湖·银沙42号地。",
+      "tone": "info"
+    },
+    {
+      "id": 299,
+      "day": 12,
+      "text": "林岚 购买 镜湖·银沙42号地。",
+      "tone": "good"
+    },
+    {
+      "id": 301,
+      "day": 13,
+      "text": "第 13 天，天气：星萤。",
+      "tone": "info"
+    },
+    {
+      "id": 303,
+      "day": 13,
+      "text": "验收玩家 掷出 4 点，来到 芦湾·晴波空地80号。",
+      "tone": "info"
+    },
+    {
+      "id": 304,
+      "day": 13,
+      "text": "验收玩家：旧街租约 — 整理资料",
+      "tone": "good"
+    },
+    {
+      "id": 307,
+      "day": 13,
+      "text": "林岚 掷出 3 点，来到 镜湖·云径39号地。",
+      "tone": "info"
+    },
+    {
+      "id": 308,
+      "day": 13,
+      "text": "林岚 购买 镜湖·云径39号地。",
+      "tone": "good"
+    },
+    {
+      "id": 310,
+      "day": 14,
+      "text": "第 14 天，天气：高温。",
+      "tone": "info"
+    },
+    {
+      "id": 312,
+      "day": 14,
+      "text": "验收玩家 掷出 6 点，来到 镜湖·远帆75号地。",
+      "tone": "info"
+    },
+    {
+      "id": 314,
+      "day": 14,
+      "text": "林岚 掷出 6 点，来到 镜湖·远帆75号地。",
+      "tone": "info"
+    },
+    {
+      "id": 315,
+      "day": 14,
+      "text": "林岚 购买 镜湖·远帆75号地。",
+      "tone": "good"
+    },
+    {
+      "id": 317,
+      "day": 15,
+      "text": "第 15 天，天气：干旱。",
+      "tone": "info"
+    },
+    {
+      "id": 319,
+      "day": 15,
+      "text": "验收玩家 掷出 5 点，来到 银栈·晴波空地70号。",
+      "tone": "info"
+    },
+    {
+      "id": 321,
+      "day": 15,
+      "text": "林岚 掷出 5 点，来到 芦湾·银沙52号地。",
+      "tone": "info"
+    },
+    {
+      "id": 322,
+      "day": 15,
+      "text": "林岚 购买 芦湾·银沙52号地。",
+      "tone": "good"
+    },
+    {
+      "id": 324,
+      "day": 16,
+      "text": "第 16 天，天气：微风。",
+      "tone": "info"
+    },
+    {
+      "id": 326,
+      "day": 16,
+      "text": "验收玩家 掷出 4 点，来到 银栈·星石66号地。",
+      "tone": "info"
+    },
+    {
+      "id": 328,
+      "day": 16,
+      "text": "林岚 掷出 4 点，来到 芦湾·星轨站4号。",
+      "tone": "info"
+    },
+    {
+      "id": 329,
+      "day": 16,
+      "text": "林岚 被送往医院，停留 3 回合。",
+      "tone": "bad"
+    },
+    {
+      "id": 330,
+      "day": 17,
+      "text": "第 17 天，天气：狂风。",
+      "tone": "info"
+    },
+    {
+      "id": 332,
+      "day": 17,
+      "text": "验收玩家 掷出 5 点，来到 银栈·证券所26号。",
+      "tone": "info"
+    }
+  ],
+  "phase": "decision",
+  "pending": {
+    "kind": "exchange",
+    "title": "证券交易所",
+    "body": "买卖股票需支付 0.3% 手续费。",
+    "choices": [
+      {
+        "id": "leave",
+        "label": "离开"
+      }
+    ]
+  },
+  "movement": null,
+  "feedback": null,
+  "seasonReport": null,
+  "rng": 1147662018,
+  "sequence": 332,
+  "winnerId": null,
+  "lastMarketEvent": null,
+  "selectedDie": 6,
+  "weatherHistory": [
+    "breeze",
+    "gale"
+  ]
+}
