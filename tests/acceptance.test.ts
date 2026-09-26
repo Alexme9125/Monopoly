@@ -247,34 +247,43 @@ describe('road direction and station travel acceptance', () => {
 
 describe('economy modal state acceptance', () => {
   it.each([
-    ['cash', 'slots', 'cash', 854, 554, undefined],
-    ['item', 'slots', 'item', 0, -300, 'weather'],
-    ['miss', 'slots', 'miss', 0, -300, undefined],
-    ['full', 'slots', 'no_capacity', 0, -300, undefined],
-    ['roulette-win', 'red', 'win', 1000, 500, undefined],
-    ['roulette-lose', 'red', 'lose', 0, -500, undefined],
-  ] as const)('settles the %s casino scenario and keeps its result in the open prompt and save', (name, choiceId, outcome, payout, net, itemId) => {
+    ['cash', 'slots', 'item', 0, -300],
+    ['item', 'slots', 'item', 0, -300],
+    ['miss', 'slots', 'item', 0, -300],
+    ['roulette-win', 'red', 'win', 1000, 500],
+    ['roulette-lose', 'red', 'lose', 0, -500],
+  ] as const)('settles the %s casino scenario and keeps its result in the open prompt and save', (name, choiceId, outcome, payout, net) => {
     const state = parseSave(readFileSync(new URL(`./fixtures/qa-casino-${name}.json`, import.meta.url), 'utf8'));
     expect(state).toMatchObject({ phase: 'decision', weatherId: 'clear', currentPlayerIndex: 0 });
     expect(state.pending?.kind).toBe('casino');
     expect(state.pending?.casinoResult).toBeUndefined();
     const beforeCash = state.players[0].cash;
-    const beforeItems = state.players[0].inventory.map(slot => slot.itemId);
+    const beforeQuantity = state.players[0].inventory.reduce((sum, slot) => sum + slot.quantity, 0);
     const settled = act(state, { type: 'choose', choiceId });
     expect(settled).not.toBe(state);
     expect(settled.pending?.kind).toBe('casino');
     expect(settled.pending?.casinoResult).toMatchObject({ outcome, payout, net });
-    expect(settled.pending?.casinoResult?.itemId).toBe(itemId);
+    const itemId = settled.pending?.casinoResult?.itemId;
+    if (choiceId === 'slots') expect(itemId).toEqual(expect.any(String));
+    else expect(itemId).toBeUndefined();
     expect(settled.players[0].cash - beforeCash).toBe(net);
     expect(settled.pending?.choices.some(choice => choice.id === 'leave')).toBe(true);
-    expect(settled.players[0].inventory.map(slot => slot.itemId)).toEqual(itemId ? [...beforeItems, itemId] : beforeItems);
-    if (name === 'full') expect(state.players[0].inventory).toHaveLength(state.players[0].capacity);
+    expect(settled.players[0].inventory.reduce((sum, slot) => sum + slot.quantity, 0)).toBe(beforeQuantity + (itemId ? 1 : 0));
     const resumed = parseSave(JSON.stringify(settled));
     expect(resumed.pending?.casinoResult).toEqual(settled.pending?.casinoResult);
     expect(resumed.pending?.kind).toBe('casino');
     const left = act(resumed, { type: 'choose', choiceId: 'leave' });
     expect(left.pending).toBeNull();
     expect(left.phase).toBe('end');
+  });
+
+  it('rejects a full-bag slot play before spending or drawing', () => {
+    const state = parseSave(readFileSync(new URL('./fixtures/qa-casino-full.json', import.meta.url), 'utf8'));
+    expect(state.players[0].inventory).toHaveLength(state.players[0].capacity);
+    const original = JSON.stringify(state);
+    expect(act(state, { type: 'choose', choiceId: 'slots' })).toBe(state);
+    expect(JSON.stringify(state)).toBe(original);
+    expect(act(state, { type: 'choose', choiceId: 'leave' }).pending).toBeNull();
   });
 
   it('replaces the previous casino result when the player tries another game', () => {

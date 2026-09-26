@@ -145,7 +145,10 @@ describe('game content', () => {
     for (const [id, def] of Object.entries(WEATHERS)) {
       expect(def.id).toBe(id);
       expect(def.weight).toBeGreaterThan(0);
-      expect(def.seasons.length).toBeGreaterThan(0);
+      if (id === 'freezing') expect(def.seasons).toEqual([2]);
+      else expect(def.seasons.length).toBeGreaterThan(0);
+      expect(new Set(def.seasons).size).toBe(def.seasons.length);
+      expect(def.seasons.every(season => Number.isInteger(season) && season >= 0 && season <= 3)).toBe(true);
     }
   });
 

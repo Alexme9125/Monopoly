@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { act, canUseItem, createGame, getNetWorth, getRent, getTileRentPreview, marketStep, quoteStockTrade, runAI, weatherWeights } from '../src/game/engine';
 import { getMovementTimeline } from '../src/game/presentation';
+import { drawSlotItem, SLOT_POOL_TOTAL, SLOT_PRIZE_POOL, SLOTS_STAKE } from '../src/game/casino';
 import { PLAYER_COLORS } from '../src/game/colors';
 import { parseSave } from '../src/game/storage';
 import { EVENTS, ITEMS, JOURNEY_REWARD_CASH, JOURNEY_REWARD_STEPS, WEATHERS } from '../src/game/data';
@@ -547,9 +548,13 @@ describe('pure deterministic engine', () => {
   it('charges land and utility rent, suspending hospital owners', () => {
     const state = game();
     state.properties[land.id] = { ownerId: 'p1', level: 0, mortgaged: false };
-    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 0.08));
+    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 0.24));
+    for (const [level, multiplier] of [0.24, 0.54, 1.05, 1.95, 3.6].entries()) {
+      state.properties[land.id].level = level;
+      expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * multiplier));
+    }
     state.properties[land.id].level = 4;
-    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 1.2));
+    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 3.6));
     state.players[0].confinement = { kind: 'hospital', remaining: 3 };
     expect(getRent(state, land.id)).toBe(0);
     state.players[0].confinement = { kind: 'sanatorium', remaining: 3 };
@@ -576,7 +581,7 @@ describe('pure deterministic engine', () => {
   it('previews prospective rent and emits one structured notice for paid and waived rent', () => {
     const utility = MAPS.lake.nodes.find(node => node.kind === 'power')!;
     const start = game(); start.weatherId = 'clear';
-    expect(getTileRentPreview(start, land.id)).toMatchObject({ price: land.price, rent: Math.ceil(land.price! * 0.08), purchasable: true, prospective: true });
+    expect(getTileRentPreview(start, land.id)).toMatchObject({ price: land.price, rent: Math.ceil(land.price! * 0.24), purchasable: true, prospective: true });
     expect(getTileRentPreview(start, utility.id).rent).toBe(120);
     const otherUtility = MAPS.lake.nodes.find(node => node.kind === 'water')!;
     start.properties[otherUtility.id] = { ownerId: 'p1', level: 0, mortgaged: false };
@@ -788,7 +793,7 @@ describe('pure deterministic engine', () => {
     const rentResult = act(rent, { type: 'roll' });
     expect(rentResult.movement?.roll).toBe(1);
     expect(rentResult.notices).toHaveLength(3);
-    expect(rentResult.notices?.[2]).toMatchObject({ kind: 'rent', playerId: 'p1', recipientId: 'p2', amount: 333, nodeId: 5 });
+    expect(rentResult.notices?.[2]).toMatchObject({ kind: 'rent', playerId: 'p1', recipientId: 'p2', amount: getRent(rent, 5), nodeId: 5 });
 
     const event = parseSave(readFileSync(new URL('./fixtures/qa-event-notice.json', import.meta.url), 'utf8'));
     expect(event.notices).toHaveLength(2);
@@ -923,16 +928,26 @@ describe('pure deterministic engine', () => {
       state.day = 64;
       const winterWeights = weatherWeights(state);
       for (const id of ['warm', 'hot', 'heat', 'scorch']) expect(winterWeights[id], `${mode} winter ${id}`).toBe(0);
-      for (const id of ['snow', 'blizzard', 'freezing']) expect(winterWeights[id], `${mode} winter ${id}`).toBeGreaterThan(0);
+      for (const id of ['snow', 'blizzard']) expect(winterWeights[id], `${mode} winter ${id}`).toBeGreaterThan(0);
+      for (const id of ['freezing', 'drizzle', 'rain', 'acid']) expect(winterWeights[id], `${mode} winter ${id}`).toBe(0);
       const winterTotal = Object.values(winterWeights).reduce((sum, weight) => sum + weight, 0);
       const winterClear = Object.entries(WEATHERS).filter(([, weather]) => weather.family === 'clear').reduce((sum, [id]) => sum + winterWeights[id], 0) / winterTotal;
-      expect(winterClear).toBeGreaterThan(0.30);
-      for (const day of [1, 22, 43]) {
+      expect(winterClear).toBeGreaterThan(0.20);
+      for (const day of [1, 22, 43, 85]) {
         state.day = day;
         const weights = weatherWeights(state);
         expect(weights.blizzard).toBe(0);
+      }
+      for (const day of [1, 22, 64, 85]) {
+        state.day = day;
+        const weights = weatherWeights(state);
         expect(weights.freezing).toBe(0);
       }
+      state.day = 43;
+      expect(weatherWeights(state).freezing).toBe(mode === 'standard' ? 1.6 : 3.2);
+      state.weatherHistory = ['storm', 'scorch'];
+      expect(weatherWeights(state).freezing).toBe(mode === 'standard' ? 0.4 : 0.8);
+      state.weatherHistory = ['clear', 'clear'];
       for (const day of [1, 43, 64]) {
         state.day = day;
         const weights = weatherWeights(state);
@@ -949,7 +964,7 @@ describe('pure deterministic engine', () => {
       const weights = weatherWeights(state);
       const total = Object.values(weights).reduce((sum, value) => sum + value, 0);
       const extremeShare = extreme.reduce((sum, id) => sum + weights[id], 0) / total;
-      expect(extremeShare, `${mode} day ${day}`).toBeLessThan(mode === 'standard' ? 0.06 : 0.10);
+      expect(extremeShare, `${mode} day ${day}`).toBeLessThan(mode === 'standard' ? 0.08 : 0.15);
       for (const id of extreme) expect(weights[id] / total, `${mode} day ${day}: ${id}`).toBeLessThan(0.05);
     }
   });
@@ -1076,36 +1091,47 @@ describe('pure deterministic engine', () => {
     expect(liquidated.players[0].cash - due.players[0].cash).toBe(quoteStockTrade(due.stocks.find(s => s.id === stock.id)!.price, -7).total);
   });
 
-  it('keeps the actual slot cash, item, miss and full-bag outcomes in the casino prompt', () => {
-    const cash = casinoOutcome('slots', 'cash');
-    expect(cash.result).toMatchObject({ game: 'slots', outcome: 'cash', stake: 300, net: cash.result.payout - 300 });
-    expect(cash.result.payout).toBeGreaterThanOrEqual(300);
-    expect(cash.result.payout).toBeLessThanOrEqual(1800);
-    expect(cash.after.players[0].cash - cash.before.players[0].cash).toBe(cash.result.net);
-    expect(cash.result.detail).toContain(cash.result.payout.toLocaleString('zh-CN'));
-    expect(cash.after.logs.at(-1)?.text).toContain(cash.result.detail);
-
+  it('draws exactly one item from the fixed slot pool for 300 PM', () => {
+    expect(SLOTS_STAKE).toBe(300);
+    expect(SLOT_PRIZE_POOL.reduce((sum, prize) => sum + prize.weight, 0)).toBe(SLOT_POOL_TOTAL);
+    expect(SLOT_PRIZE_POOL.slice(-13).reduce((sum, prize) => sum + prize.weight, 0)).toBe(100);
+    expect(SLOT_PRIZE_POOL.every(prize => !!ITEMS[prize.itemId])).toBe(true);
+    expect(SLOT_PRIZE_POOL.map(prize => prize.itemId)).not.toContain('dice100');
+    expect(SLOT_PRIZE_POOL.map(prize => prize.itemId)).not.toContain('lottery');
+    const expectedValue = SLOT_PRIZE_POOL.reduce((sum, prize) => sum + prize.weight * ITEMS[prize.itemId].price, 0) / SLOT_POOL_TOTAL;
+    expect(expectedValue).toBeGreaterThan(300);
+    expect(expectedValue).toBeLessThan(350);
+    expect(expectedValue / 2).toBeLessThan(SLOTS_STAKE);
+    expect(drawSlotItem(0)).toBe('snack');
+    expect(drawSlotItem(SLOT_POOL_TOTAL - 1)).toBe('repair');
+    expect(() => drawSlotItem(SLOT_POOL_TOTAL)).toThrow(RangeError);
     const item = casinoOutcome('slots', 'item');
     expect(item.result.itemId).toBeDefined();
     const gained = (player: GameState['players'][number]) => player.inventory.filter(slot => slot.itemId === item.result.itemId).reduce((sum, slot) => sum + slot.quantity, 0);
     expect(gained(item.after.players[0]) - gained(item.before.players[0])).toBe(1);
     expect(item.result.detail).toContain(ITEMS[item.result.itemId!].name);
     expect(item.result).toMatchObject({ stake: 300, payout: 0, net: -300 });
+    expect(item.after.players[0].cash - item.before.players[0].cash).toBe(-300);
+    expect(item.after.logs.at(-1)?.text).toContain(item.result.detail);
+    for (let seed = 1; seed <= 200; seed++) {
+      const before = casinoState(seed);
+      const after = act(before, { type: 'choose', choiceId: 'slots' });
+      expect(after.pending?.casinoResult?.outcome).toBe('item');
+      expect(after.pending?.casinoResult?.itemId).toBeDefined();
+      expect(after.players[0].cash).toBe(before.players[0].cash - SLOTS_STAKE);
+    }
+  });
 
-    const miss = casinoOutcome('slots', 'miss');
-    expect(miss.result).toMatchObject({ game: 'slots', outcome: 'miss', payout: 0, net: -300 });
-    expect(miss.after.players[0].cash).toBe(miss.before.players[0].cash - 300);
-    expect(miss.after.players[0].inventory).toEqual(miss.before.players[0].inventory);
-
-    const full = casinoOutcome('slots', 'no_capacity', state => {
-      state.players[0].capacity = 1;
-      state.players[0].inventory = [{ uid: 'full', itemId: 'bomb', quantity: 1, wet: false }];
-    });
-    expect(full.result).toMatchObject({ payout: 0, net: -300 });
-    expect(full.result.itemId).toBeUndefined();
-    expect(full.result.detail).toContain('背包已满，未发放道具');
-    expect(full.after.players[0].inventory).toEqual(full.before.players[0].inventory);
-    expect(full.after.feedback?.effects.some(entry => entry.label.includes('获得'))).toBe(false);
+  it('rejects a full bag before drawing, even when a card could stack', () => {
+    const full = casinoState(123, 300);
+    full.players[0].inventory = [{ uid: 'stack', itemId: 'rent', quantity: 1, wet: false }];
+    full.players[0].capacity = 1;
+    expect(act(full, { type: 'choose', choiceId: 'slots' })).toBe(full);
+    expect(full.players[0].cash).toBe(300);
+    expect(full.players[0].inventory[0].quantity).toBe(1);
+    expect(full.rng).toBe(casinoState(123, 300).rng);
+    const poor = casinoState(11, 299);
+    expect(act(poor, { type: 'choose', choiceId: 'slots' })).toBe(poor);
   });
 
   it('reports roulette bets and payouts, replaces the casino result, and blocks unaffordable replays', () => {
@@ -1125,29 +1151,33 @@ describe('pure deterministic engine', () => {
     expect(act(playedAgain, { type: 'choose', choiceId: 'leave' }).pending).toBeNull();
 
     const poor = casinoState(11, 300);
-    poor.players[0].capacity = 1;
-    poor.players[0].inventory = [{ uid: 'full', itemId: 'bomb', quantity: 1, wet: false }];
-    let exhausted: GameState | undefined;
-    for (let seed = 1; seed <= 200 && !exhausted; seed++) {
-      poor.rng = Math.imul(seed, 2654435761) >>> 0;
-      const next = act(poor, { type: 'choose', choiceId: 'slots' });
-      if (next.pending?.casinoResult?.outcome === 'no_capacity') exhausted = next;
-    }
-    expect(exhausted).toBeDefined();
-    expect(exhausted!.players[0].cash).toBe(0);
-    expect(exhausted!.pending?.choices.filter(entry => entry.id !== 'leave').every(entry => entry.disabled)).toBe(true);
-    expect(act(exhausted!, { type: 'choose', choiceId: 'slots' })).toBe(exhausted);
-    expect(act(exhausted!, { type: 'choose', choiceId: 'red' })).toBe(exhausted);
+    const exhausted = act(poor, { type: 'choose', choiceId: 'slots' });
+    expect(exhausted.players[0].cash).toBe(0);
+    expect(exhausted.pending?.choices.filter(entry => entry.id !== 'leave').every(entry => entry.disabled)).toBe(true);
+    expect(act(exhausted, { type: 'choose', choiceId: 'slots' })).toBe(exhausted);
+    expect(act(exhausted, { type: 'choose', choiceId: 'red' })).toBe(exhausted);
   });
 
   it('persists casino results through saves without replaying winnings and rejects malformed result data', () => {
-    const played = casinoOutcome('slots', 'cash').after;
+    const played = casinoOutcome('slots', 'item').after;
     const restored = parseSave(JSON.stringify(played));
     expect(restored.pending?.casinoResult).toEqual(played.pending?.casinoResult);
     expect(restored.players[0].cash).toBe(played.players[0].cash);
     expect(restored.pending?.casinoResult?.id).toBe(played.pending?.casinoResult?.id);
     const legacy = casinoState(2);
     expect(parseSave(JSON.stringify(legacy)).pending?.casinoResult).toBeUndefined();
+    for (const historical of [
+      { outcome: 'cash', payout: 854, net: 554 },
+      { outcome: 'miss', payout: 0, net: -300 },
+      { outcome: 'no_capacity', payout: 0, net: -300 },
+    ] as const) {
+      const old = structuredClone(played);
+      old.pending!.casinoResult = { id: played.pending!.casinoResult!.id, game: 'slots', title: '历史结果', detail: '旧版老虎机结果', stake: 300, ...historical };
+      const imported = parseSave(JSON.stringify(old));
+      expect(imported.pending?.casinoResult).toEqual(old.pending?.casinoResult);
+      expect(imported.players[0].cash).toBe(old.players[0].cash);
+      expect(imported.players[0].inventory).toEqual(old.players[0].inventory);
+    }
     for (const patch of [
       { net: 100000 }, { itemId: 'dice100' }, { outcome: 'item', itemId: 'unknown', payout: 0, net: -300 },
       { title: '' }, { detail: { invalid: true } }, { id: played.sequence + 1 },

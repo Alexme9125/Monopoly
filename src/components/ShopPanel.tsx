@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Dices, Package, Ticket, Utensils, Zap } from 'lucide-react';
 import { ITEMS } from '../game/data';
 import type { Choice, ItemDef, Player, Prompt } from '../game/types';
@@ -17,6 +18,7 @@ export interface ShopPanelProps {
 }
 
 export default function ShopPanel({ player, prompt, onChoose, disabled = false }: ShopPanelProps) {
+  const [inventoryOpen, setInventoryOpen] = useState(() => typeof window === 'undefined' || !window.matchMedia('(max-width: 640px)').matches);
   const used = player.inventory.length;
   const remaining = Math.max(0, player.capacity - used);
   const goods = prompt.choices.filter(choice => choice.id.startsWith('buy:'));
@@ -33,6 +35,8 @@ export default function ShopPanel({ player, prompt, onChoose, disabled = false }
       <div className="shop-wallet"><small>当前可用现金</small><strong>{money(player.cash)}</strong></div>
       <div className="shop-capacity"><small>背包容量</small><strong>{used}/{player.capacity} 格</strong><small>剩余 {remaining} 格</small></div>
     </div>
+    <div className="shop-scroll-region">
+    {prompt.body && <p className="shop-intro">{prompt.body}</p>}
     <div className="shop-layout">
       <section className="shop-goods" aria-label="商店商品">
         <div className="shop-section-head"><h3>商店商品</h3><small>可多次购买</small></div>
@@ -52,7 +56,7 @@ export default function ShopPanel({ player, prompt, onChoose, disabled = false }
           </article>;
         })}</div>
       </section>
-      <details className="shop-inventory" open>
+      <details className="shop-inventory" open={inventoryOpen} onToggle={event => setInventoryOpen(event.currentTarget.open)}>
         <summary className="shop-inventory-summary"><strong>我的背包</strong><span>{used}/{player.capacity} 格 · 剩余 {remaining} 格</span></summary>
         <div className="shop-inventory-list">{owned.size ? [...owned].map(([key, slot]) => {
           const itemId = key.slice(0, key.lastIndexOf(':'));
@@ -61,6 +65,7 @@ export default function ShopPanel({ player, prompt, onChoose, disabled = false }
         }) : <p className="shop-inventory-empty">背包还是空的，剩余 {remaining} 格可以装入道具。</p>}</div>
         <p className="shop-inventory-note">购物期间只能查看背包；道具可在行动前使用。</p>
       </details>
+    </div>
     </div>
     <div className="shop-actions"><button type="button" className="secondary-button" disabled={disabled || leave?.disabled} onClick={() => onChoose('leave')}>离开商店</button></div>
   </div>;

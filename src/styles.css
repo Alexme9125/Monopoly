@@ -139,6 +139,10 @@
 .stock-quote-side{min-width:0;display:flex;flex-direction:column;gap:5px;border-top:1px solid #d4deca;padding-top:9px;margin-top:2px}
 .stock-quote-side>small{font-size:11px;line-height:1.6;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .casino-panel{margin:18px 0 20px}
+.casino-rules{margin:11px 0 0;padding:11px 13px;border:1px solid #dce5d7;border-radius:10px;background:#f7faf3;color:#607863}
+.casino-rules p{margin:0;font-size:11px;line-height:1.65}
+.casino-rules p+p{margin-top:3px}
+.casino-capacity{display:block;margin-top:5px;font-size:10px;color:#718773}
 .casino-result{margin-top:12px;padding:18px;border:1px solid #c7d9c2;border-radius:12px;background:#f2f7ec;color:#3e6346;scroll-margin:12px}
 .casino-result-heading{display:flex;flex-direction:column;gap:5px}
 .casino-result-heading>small{font-size:10px;letter-spacing:.5px;color:#6e8668}
@@ -148,6 +152,7 @@
 .casino-result-ledger>div{display:flex;flex-direction:column;gap:5px;min-width:0}
 .casino-result-ledger small{font-size:10px;color:#73856d}
 .casino-result-ledger strong{font:600 13px/1.6 ui-monospace,SFMono-Regular,monospace;font-variant-numeric:tabular-nums;white-space:nowrap;color:#3d5d43}
+.casino-item-ledger strong{white-space:normal;overflow-wrap:anywhere}
 .casino-result.casino-outcome-miss,.casino-result.casino-outcome-lose,.casino-result.casino-outcome-no_capacity{background:#fbf4e9;border-color:#e2ceb7}
 .casino-outcome-miss .casino-result-title,.casino-outcome-lose .casino-result-title,.casino-outcome-no_capacity .casino-result-title{color:#966249}
 .casino-outcome-miss .casino-result-ledger,.casino-outcome-lose .casino-result-ledger,.casino-outcome-no_capacity .casino-result-ledger{border-color:#e7d8c5}
@@ -161,6 +166,7 @@
  .stock-quote-side{padding-top:8px;gap:4px}
  .stock-quote-side strong{font-size:12px}.stock-quote-side>small{font-size:11px}
  .casino-result{padding:14px 12px}.casino-result-title{font-size:17px}
+ .casino-rules{padding:9px 10px}.casino-rules p{font-size:10px;line-height:1.55}
  .casino-result-ledger{gap:7px}.casino-result-ledger strong{font-size:11px}.casino-result-ledger small{font-size:10px}
 }
 
@@ -240,21 +246,23 @@
 }
 
 /* Shop budgeting stays visible while browsing goods and the existing backpack. */
-.modal-shop{width:min(880px,100%);height:min(760px,calc(100svh - 48px));max-height:calc(100svh - 48px);display:flex;flex-direction:column;overflow:hidden}
+.modal-shop{--shop-viewport:100svh;--shop-inset:48px;width:min(880px,100%);height:min(760px,calc(var(--shop-viewport) - var(--shop-inset) - env(safe-area-inset-top) - env(safe-area-inset-bottom)));max-height:calc(var(--shop-viewport) - var(--shop-inset) - env(safe-area-inset-top) - env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+@supports(height:100dvh){.modal-shop{--shop-viewport:100dvh}}
 .modal-shop .modal-header{flex:none;margin-bottom:14px}
 .modal-shop .modal-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-.modal-shop .modal-body>p{flex:none;margin:0 0 12px;font-size:11px;color:#738470}
 .shop-panel{display:flex;flex-direction:column;flex:1;min-height:0;color:#3c5a49}
+.shop-scroll-region{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;padding:1px 6px 4px 0;scroll-padding-block:8px}
+.shop-intro{margin:0 0 12px;font-size:11px!important;color:#738470}
 .shop-status-bar{display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:none;border:1px solid #c6d7c0;background:#edf4e7;border-radius:12px;padding:14px 18px;margin-bottom:18px}
 .shop-wallet,.shop-capacity{display:flex;flex-direction:column;gap:5px;min-width:0}
 .shop-capacity{border-left:1px solid #d2dfc9;padding-left:20px}
 .shop-status-bar small{font-size:11px;color:#667f61;line-height:1.4}
 .shop-status-bar strong{font:650 23px/1.3 ui-monospace,SFMono-Regular,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.6px;white-space:nowrap;color:#365740}
-.shop-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(230px,.85fr);gap:20px;min-height:0;flex:1}
+.shop-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(230px,.85fr);align-items:start;gap:20px}
 .shop-goods{display:flex;flex-direction:column;min-height:0;min-width:0}
 .shop-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;margin:0 0 10px}
 .shop-section-head h3{margin:0;font-size:12px;letter-spacing:.6px;color:#55705b}.shop-section-head>small{font-size:10px;color:#829278}
-.shop-item-list{overflow:auto;min-height:0;overscroll-behavior:contain;scrollbar-width:thin;display:flex;flex-direction:column;gap:10px;padding:1px 5px 2px 0}
+.shop-item-list{display:flex;flex-direction:column;gap:10px}
 .shop-item{border:1px solid #dbe4d3;border-radius:12px;background:#f8faf2;padding:15px;flex:none}
 .shop-item-main{display:flex;gap:12px;align-items:flex-start}
 .shop-item-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border:1px solid #dbe5d2;background:#eaf1e2;border-radius:9px;color:#638062}
@@ -270,10 +278,10 @@
 .shop-item-reason{grid-column:1/-1;font-size:10px;line-height:1.5;color:#a0664c;margin-top:4px}
 .shop-item button{border:1px solid #4a6b56;background:#456853;color:#fafcf4;border-radius:8px;padding:9px 14px;font-size:12px;min-height:38px;white-space:nowrap}
 .shop-item button:disabled{opacity:1;color:#84917b;background:#e9ede2;border-color:#e1e6d9}
-.shop-inventory{border:1px solid #dae3d4;background:#f0f4e9;border-radius:12px;padding:13px;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;align-self:stretch}
+.shop-inventory{border:1px solid #dae3d4;background:#f0f4e9;border-radius:12px;padding:13px;min-width:0}
 .shop-inventory>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;font-size:12px;font-weight:600;flex:none;color:#46634d}
 .shop-inventory>summary::-webkit-details-marker{display:none}
-.shop-inventory-list{overflow:auto;min-height:0;overscroll-behavior:contain;scrollbar-width:thin;margin:12px 0 0;padding:0;list-style:none}
+.shop-inventory-list{margin:12px 0 0;padding:0;list-style:none}
 .shop-inventory-summary>span{font-size:10px;font-weight:400;color:#7a8c71}
 .shop-inventory-summary:after{content:'−';font:16px/1 ui-monospace,monospace;color:#7b9171}
 .shop-inventory:not([open]) .shop-inventory-summary:after{content:'+'}
@@ -288,17 +296,121 @@
 .shop-actions{flex:none;display:flex;justify-content:flex-end;align-items:center;gap:12px;padding-top:13px;margin-top:15px;border-top:1px solid #dee6d6}
 .shop-actions button{min-height:40px;font-size:12px;padding:10px 18px}
 @media(max-width:640px){
- .modal-shop{height:calc(100svh - 28px);max-height:calc(100svh - 28px);padding:19px 16px;border-radius:16px}
- .modal-shop .modal-header{margin-bottom:9px}.modal-shop .modal-body>p{margin-bottom:9px;font-size:10px}
+ .modal-shop{--shop-inset:28px;padding:19px 16px;border-radius:16px}
+ .modal-shop .modal-header{margin-bottom:9px}.shop-intro{margin-bottom:9px;font-size:10px!important}
  .shop-status-bar{padding:12px;gap:10px;margin-bottom:12px;border-radius:9px}
- .shop-status-bar strong{font-size:20px}.shop-status-bar small{font-size:10px}.shop-capacity{padding-left:12px}
- .shop-layout{display:flex;flex-direction:column;gap:12px}
- .shop-inventory{order:-1;flex:none;max-height:165px;padding:10px 12px;border-radius:9px}
- .shop-inventory-list{max-height:86px;margin-top:7px}.shop-inventory-item{padding:6px 0}.shop-inventory-note{margin-top:6px!important;font-size:9px!important}
- .shop-goods{flex:1}.shop-section-head{margin-bottom:8px}.shop-section-head h3{font-size:11px}
+ .shop-status-bar strong{font-size:clamp(16px,4.6vw,20px)}.shop-status-bar small{font-size:10px}.shop-capacity{padding-left:12px}
+ .shop-layout{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+ .shop-inventory{order:-1;padding:10px 12px;border-radius:9px}
+ .shop-inventory>summary{min-height:24px}
+ .shop-inventory-list{margin-top:7px}.shop-inventory-item{padding:6px 0}.shop-inventory-note{margin-top:6px!important;font-size:9px!important}
+ .shop-goods{flex:none}.shop-section-head{margin-bottom:8px}.shop-section-head h3{font-size:11px}
  .shop-item{padding:12px;border-radius:9px}.shop-item-copy>strong{font-size:13px}.shop-item-list{gap:8px}
  .shop-item-icon{width:31px;height:31px;border-radius:7px}.shop-item-icon svg{width:19px;height:19px}.shop-item-main{gap:9px}
 .shop-actions{padding-top:10px;margin-top:11px}.shop-actions button{width:100%;min-height:42px}
+}
+@media(max-height:500px){
+ .modal-shop{--shop-inset:24px;padding:12px 16px}
+ .modal-shop .modal-header{margin-bottom:7px}
+ .modal-shop .modal-header h2{font-size:17px}
+ .shop-status-bar{padding:8px 12px;margin-bottom:8px;gap:12px}
+ .shop-wallet,.shop-capacity{gap:2px}
+ .shop-status-bar strong{font-size:18px}
+ .shop-status-bar small{font-size:10px}
+ .shop-capacity>small:last-child{display:none}
+ .shop-actions{margin-top:7px;padding-top:7px}
+ .shop-actions button{min-height:40px;padding:8px 18px}
+}
+
+/* Property listings share one scroll surface; cash and exit stay in view. */
+.modal-auction{--auction-viewport:100svh;--auction-inset:48px;width:min(920px,100%);height:min(800px,calc(var(--auction-viewport) - var(--auction-inset) - env(safe-area-inset-top) - env(safe-area-inset-bottom)));max-height:calc(var(--auction-viewport) - var(--auction-inset) - env(safe-area-inset-top) - env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+@supports(height:100dvh){.modal-auction{--auction-viewport:100dvh}}
+.modal-auction .modal-header{flex:none;margin-bottom:16px}
+.modal-auction .modal-body{display:flex;flex:1;min-height:0;overflow:hidden}
+.auction-house{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;color:#405c59}
+.auction-status-bar{display:flex;justify-content:space-between;align-items:center;gap:18px;flex:none;padding:14px 18px;border:1px solid #ccdce0;background:#edf3f3;border-radius:12px}
+.auction-wallet{display:flex;flex-direction:column;gap:4px;min-width:0}
+.auction-wallet small{font-size:10px;color:#648086}
+.auction-wallet strong{font:650 23px/1.3 ui-monospace,SFMono-Regular,monospace;letter-spacing:-.6px;font-variant-numeric:tabular-nums;color:#355c6b;white-space:nowrap}
+.auction-trade-note{font-size:11px;color:#648086;text-align:right;line-height:1.7}
+.auction-trade-note strong,.auction-trade-note small{display:block;text-wrap:balance}
+.auction-tabs{display:flex;gap:22px;flex:none;margin:16px 0 0;border-bottom:1px solid #d9e2dc}
+.auction-tabs button{position:relative;padding:11px 2px;border:0;border-bottom:2px solid transparent;background:transparent;font-size:12px;color:#7a8c80;min-height:42px}
+.auction-tabs button[aria-selected=true]{border-bottom-color:#426575;color:#355c6b;font-weight:650}
+.auction-tabs button:focus-visible{outline-offset:-3px}
+.auction-scroll-region{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;padding:18px 6px 6px 0;scroll-padding-block:14px}
+.auction-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.auction-my-listings>h3{margin:0 0 11px;font-size:12px;color:#637c67}
+.auction-card{position:relative;min-width:0;border:1px solid #d9e3d7;border-left:4px solid var(--seller-color,#8baba2);border-radius:12px;background:#f8faf5;padding:16px}
+.auction-card-top{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;column-gap:10px;row-gap:8px}
+.auction-level{grid-column:2;display:flex;align-items:center;gap:6px;font-size:10px;line-height:1.5;color:#70876c}
+.auction-node-tag{display:inline-flex;align-items:center;justify-content:center;border:1px solid #d4dfd4;border-radius:7px;padding:5px 8px;min-width:43px;font:600 13px/1.3 ui-monospace,SFMono-Regular,monospace;color:#587265;background:#edf2e8}
+.auction-card-main{min-width:0}
+.auction-card-main h3,.auction-card-main>strong{display:block;font-size:14px;font-weight:600;line-height:1.6;color:#345447;margin:0 0 4px}
+.auction-card-main p,.auction-card-main small{font-size:11px;line-height:1.6;color:#71866e;margin:0}
+.auction-card-main small{display:block}
+.auction-seller{display:flex;align-items:center;gap:7px;font-size:11px;color:#6e8176;line-height:1.6;margin-top:12px}
+.auction-seller>i,.auction-seller>span:first-child:empty{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--seller-color);flex:none}
+.auction-rent{display:flex;align-items:center;gap:6px;font-size:11px;color:#728477;line-height:1.7;margin-top:7px}
+.auction-price{display:block;margin-top:15px;padding-top:12px;border-top:1px solid #dfe6dc;font:650 22px/1.4 ui-monospace,SFMono-Regular,monospace;letter-spacing:-.7px;color:#3b6070;font-variant-numeric:tabular-nums}
+.auction-price small{display:block;font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-size:10px;font-weight:400;letter-spacing:0;color:#7d9085;margin-bottom:4px}
+.auction-price strong{display:block;font-weight:650}
+.auction-balance{display:block;font-size:10px;color:#7b8d7d;margin:5px 0 11px;line-height:1.7;font-variant-numeric:tabular-nums}
+.auction-buy-button,.auction-cancel-button,.auction-listing-form button{display:inline-flex;justify-content:center;align-items:center;gap:6px;min-height:42px;border:1px solid #426575;border-radius:8px;padding:10px 15px;background:#426575;color:#fbfcf6;font-size:12px}
+.auction-buy-button{width:100%}
+.auction-cancel-button{background:transparent;color:#547064;border-color:#cddbc9}
+.auction-house button:disabled{opacity:1;background:#e9eee8;color:#8a9689;border-color:#e0e7dd}
+.auction-listing-form{display:grid;gap:12px;padding:16px;border:1px solid #d2dfd8;border-radius:12px;background:#f0f5ed;margin-bottom:20px}
+.auction-form-fields{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(140px,.8fr) auto;align-items:end;gap:12px}
+.auction-listing-form h3,.auction-listing-form>p,.auction-listing-form>.auction-form-note{grid-column:1/-1;margin:0;font-size:11px;line-height:1.7}
+.auction-listing-form h3{font-size:13px;color:#436354}
+.auction-listing-form label{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:11px;color:#647c67}
+.auction-listing-form input,.auction-listing-form select{width:100%;min-height:42px;background:#fffefa;font-size:12px}
+.auction-my-listings-heading{margin:0 0 10px;font-size:12px;font-weight:600;color:#687f69}
+.auction-reason{display:block;color:#9b7859;font-size:10px;line-height:1.6;margin-top:8px}
+.auction-empty{padding:32px 20px;text-align:center;border:1px dashed #cbd9ce;border-radius:12px;background:#f5f8f0;color:#7b8d76}
+.auction-empty strong{display:block;color:#536f5a;font-size:14px;margin:0 0 8px}
+.auction-empty p{font-size:12px;line-height:1.8;margin:0 auto;max-width:350px}
+.auction-receipt{border:1px solid #c9dfce;border-left:3px solid #659a76;background:#edf6e9;color:#4c7458;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.8}
+.auction-receipt strong{display:block}.auction-receipt p{margin:3px 0 0;font-size:11px}
+.auction-actions{display:flex;justify-content:flex-end;flex:none;padding-top:13px;margin-top:12px;border-top:1px solid #dce5da}
+.auction-actions button{min-height:42px;padding:10px 22px;font-size:12px;color:#4e685b;background:#f0f5ea;border-color:#cad9c7}
+.hud-buttons .hud-auction-button{grid-column:1/-1;flex-basis:100%;border-top:1px solid #dbe4d5;border-radius:0;margin-top:4px;padding-top:9px;color:#426575;gap:6px;justify-content:center}
+.property-trading-switch{grid-column:1/-1;display:flex;align-items:center;gap:10px;cursor:pointer;min-height:44px;color:#526f5c;font-size:12px}
+.property-trading-switch input[type=checkbox]{position:relative;appearance:none;flex:none;width:36px;height:21px;min-width:0;padding:0;border:1px solid #c3d2c6;border-radius:20px;background:#dce5db;transition:background .18s}
+.property-trading-switch input[type=checkbox]:before{content:'';position:absolute;top:3px;left:3px;width:13px;height:13px;border-radius:50%;background:#fffefa;box-shadow:0 1px 3px #29483e26;transition:transform .18s}
+.property-trading-switch input[type=checkbox]:checked{background:#426575;border-color:#426575}
+.property-trading-switch input[type=checkbox]:checked:before{transform:translateX(15px)}
+.property-trading-switch small{display:block;font-size:10px;font-weight:400;color:#869780;line-height:1.6}
+@media(max-width:640px){
+ .modal-auction{--auction-inset:28px;padding:18px 15px;border-radius:16px}
+ .modal-auction .modal-header{margin-bottom:11px}
+ .auction-status-bar{padding:11px 12px;gap:10px;border-radius:9px}
+ .auction-wallet strong{font-size:clamp(17px,4.7vw,22px)}
+ .auction-trade-note{font-size:9px;max-width:110px}
+ .auction-tabs{margin-top:9px;gap:16px}
+ .auction-tabs button{font-size:11px;padding:10px 2px}
+ .auction-scroll-region{padding-top:12px}
+ .auction-list{grid-template-columns:minmax(0,1fr);gap:10px}
+ .auction-card{padding:13px;border-radius:10px}
+ .auction-price{font-size:20px}
+ .auction-listing-form{grid-template-columns:minmax(0,1fr);padding:12px;gap:11px}
+ .auction-form-fields{grid-template-columns:minmax(0,1fr);gap:11px}
+ .auction-listing-form input,.auction-listing-form select{font-size:16px}
+ .auction-listing-form button{width:100%}
+ .auction-actions{margin-top:9px;padding-top:9px}
+ .auction-actions button{width:100%}
+ .auction-empty{padding:23px 15px}
+ .hud-buttons .hud-auction-button{font-size:11px;min-height:32px;padding:6px 0 2px}
+}
+@media(max-height:500px){
+ .modal-auction{--auction-inset:24px;padding:12px 16px}
+ .modal-auction .modal-header{margin-bottom:6px}
+ .modal-auction .modal-header h2{font-size:17px}
+ .auction-status-bar{padding:7px 12px}
+ .auction-wallet{gap:1px}.auction-wallet strong{font-size:18px}
+ .auction-tabs{margin-top:3px}.auction-tabs button{min-height:36px;padding:7px 2px}
+ .auction-actions{margin-top:6px;padding-top:7px}
 }
 
 /* The calendar uses a distinct, readable palette for each season. */

@@ -55,7 +55,8 @@ export function parseSave(raw: string): GameState {
     || !Array.isArray(config.players) || config.players.length < 2 || config.players.length > 4
     || !config.players.every(validPlayerConfig) || !Number.isSafeInteger(config.seed)
     || ![0, 4, 8, 16].includes(Number(config.seasons))
-    || !['standard', 'challenge'].includes(String(config.weatherMode))) {
+    || !['standard', 'challenge'].includes(String(config.weatherMode))
+    || (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean')) {
     throw new Error('存档中的游戏设置无效。');
   }
   if (config.mode === 'pve' && config.players.filter((p: PlayerConfig) => !p.ai).length !== 1) throw new Error('PVE 存档必须有一位真人玩家。');
@@ -84,7 +85,7 @@ export function parseSave(raw: string): GameState {
   const notices = state.notices;
   if (notices !== undefined && (!Array.isArray(notices) || notices.length > 30
     || notices.some((item: unknown) => !record(item) || !Number.isSafeInteger(item.id) || Number(item.id) < 0 || Number(item.id) > Number(state.sequence)
-      || !Number.isSafeInteger(item.day) || Number(item.day) < 1 || !['rent', 'event', 'milestone'].includes(String(item.kind))
+      || !Number.isSafeInteger(item.day) || Number(item.day) < 1 || !['rent', 'event', 'milestone', 'trade'].includes(String(item.kind))
       || typeof item.title !== 'string' || item.title.length > 200 || typeof item.body !== 'string' || item.body.length > 2000
       || !['good', 'bad', 'info'].includes(String(item.tone)) || !playerIds.has(String(item.playerId))
       || !Number.isSafeInteger(item.nodeId) || Number(item.nodeId) < 0 || Number(item.nodeId) >= maxNode
@@ -127,6 +128,27 @@ export function parseSave(raw: string): GameState {
       || !playerIds.has(String(value.ownerId)) || !Number.isSafeInteger(value.level)
       || Number(value.level) < 0 || Number(value.level) > 4 || typeof value.mortgaged !== 'boolean';
   })) throw new Error('存档中的产权数据无效。');
+  const listings = state.propertyListings;
+  if (listings !== undefined && (!Array.isArray(listings) || listings.length > maxNode || config.propertyTrading === false && listings.length > 0
+    || listings.some((entry: unknown) => {
+      if (!record(entry) || Object.keys(entry).length !== 5
+        || Object.keys(entry).some(key => !['id', 'nodeId', 'sellerId', 'price', 'listedDay'].includes(key))) return true;
+      const match = typeof entry.id === 'string' ? /^listing-([1-9]\d*)$/.exec(entry.id) : null;
+      const nodeId = Number(entry.nodeId);
+      const seller = (state.players as { id: string; bankrupt: boolean }[]).find(player => player.id === entry.sellerId);
+      const property = (state.properties as Record<string, unknown>)[String(nodeId)];
+      return !match || !Number.isSafeInteger(Number(match[1])) || Number(match[1]) > Number(state.sequence)
+        || !Number.isSafeInteger(entry.nodeId) || nodeId < 0 || nodeId >= maxNode
+        || !['land', 'power', 'water', 'telecom'].includes(MAPS[config.mapId as MapId].nodes[nodeId].kind)
+        || typeof entry.sellerId !== 'string' || !seller || seller.bankrupt || !record(property)
+        || property.ownerId !== entry.sellerId || property.mortgaged !== false
+        || !Number.isSafeInteger(entry.price) || Number(entry.price) < 1 || Number(entry.price) > 1_000_000_000
+        || !Number.isSafeInteger(entry.listedDay) || Number(entry.listedDay) < 1 || Number(entry.listedDay) > Number(state.day);
+    })
+    || new Set(listings.map((entry: { id: string }) => entry.id)).size !== listings.length
+    || new Set(listings.map((entry: { nodeId: number }) => entry.nodeId)).size !== listings.length)) {
+    throw new Error('存档中的拍卖行数据无效。');
+  }
   if (!Number.isSafeInteger(state.currentPlayerIndex) || Number(state.currentPlayerIndex) < 0
     || Number(state.currentPlayerIndex) >= state.players.length || !Number.isSafeInteger(state.day)
     || Number(state.day) < 1 || !record(state.properties) || !Array.isArray(state.stocks)
@@ -149,6 +171,7 @@ export function parseSave(raw: string): GameState {
         || (choice.description !== undefined && typeof choice.description !== 'string')
         || (choice.disabled !== undefined && typeof choice.disabled !== 'boolean'))
       || (state.pending.casinoResult !== undefined && (state.pending.kind !== 'casino' || !validCasinoResult(state.pending.casinoResult, state.sequence)))))
+    || (config.propertyTrading === false && record(state.pending) && state.pending.kind === 'trade')
     || (state.seasonReport !== null && (!record(state.seasonReport) || !Array.isArray(state.seasonReport.rankings)
       || state.seasonReport.rankings.some((row: unknown) => !record(row) || typeof row.name !== 'string' || !Number.isFinite(row.assets))))
     || !Number.isSafeInteger(state.rng) || !Number.isSafeInteger(state.sequence) || Number(state.sequence) < 0
@@ -171,7 +194,8 @@ export function parseSave(raw: string): GameState {
     routeNextPosition: player.routeNextPosition ?? null,
     travelProgress: player.travelProgress ?? 0,
   }));
-  const normalizedConfig = { ...saved.config, players: saved.config.players.map((entry, index) => ({ ...entry, color: players[index].color })) };
+  const normalizedConfig = { ...saved.config, propertyTrading: saved.config.propertyTrading ?? true,
+    players: saved.config.players.map((entry, index) => ({ ...entry, color: players[index].color })) };
   const publicEncounters = [...(saved.turnEncounters ?? [])];
   let pending = saved.pending;
   if (pending?.kind === 'event') {
@@ -187,7 +211,7 @@ export function parseSave(raw: string): GameState {
       pending = { ...pending, data: { ...pending.data, turnEncounterId: id } };
     }
   }
-  return { ...saved, config: normalizedConfig, players, notices: saved.notices ?? [], turnEncounters: publicEncounters, pending,
+  return { ...saved, config: normalizedConfig, players, propertyListings: saved.propertyListings ?? [], notices: saved.notices ?? [], turnEncounters: publicEncounters, pending,
     controlledRoll: saved.controlledRoll ?? null, movement: null, feedback: null };
 }
 
