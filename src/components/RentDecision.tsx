@@ -1,4 +1,5 @@
 import { MAPS } from '../game/maps';
+import { RENT_MOOD_LOSS } from '../game/economy';
 import type { Player, Prompt, GameState } from '../game/types';
 
 const money = (value: number) => `PM$ ${Math.round(value).toLocaleString('zh-CN')}`;
@@ -17,6 +18,8 @@ export default function RentDecision({ state, player, prompt, disabled = false, 
   const rent = Number.isSafeInteger(amount) && amount >= 0 ? amount : 0;
   const dryCards = player.inventory.filter(slot => slot.itemId === 'rent' && !slot.wet).reduce((total, slot) => total + slot.quantity, 0);
   const afterPay = player.cash - rent;
+  const moodLoss = rent > 0 ? Math.min(RENT_MOOD_LOSS, Math.max(0, player.mood)) : 0;
+  const afterMood = Math.max(0, player.mood - moodLoss);
   const cardChoice = prompt.choices.find(choice => choice.id === 'use_card');
   const payChoice = prompt.choices.find(choice => choice.id === 'pay');
   const choose = (choiceId: 'use_card' | 'pay') => {
@@ -29,10 +32,10 @@ export default function RentDecision({ state, player, prompt, disabled = false, 
     <div className="rent-budget" aria-label="本次付租预算"><div><small>当前现金</small><strong>{money(player.cash)}</strong></div><div><small>可用免租卡</small><strong>{dryCards} 张</strong></div></div>
     <div className="rent-option-list">
       <button className="rent-option" type="button" disabled={disabled || !cardChoice || cardChoice.disabled} onClick={() => choose('use_card')}>
-        <strong className="rent-option-title">使用免租卡</strong><span className="rent-option-effect">本次支付 0 · 剩余现金 {money(player.cash)}</span><small className="rent-option-note">消耗 1 张干燥的免租卡；之后还剩 {Math.max(0, dryCards - 1)} 张。{cardChoice?.disabled || !cardChoice ? '当前没有可用免租卡。' : ''}</small>
+        <strong className="rent-option-title">使用免租卡</strong><span className="rent-option-effect">本次支付 0 · 剩余现金 {money(player.cash)}</span><small className="rent-option-note">免去本次付租的心情损失；消耗 1 张干燥的免租卡，之后还剩 {Math.max(0, dryCards - 1)} 张。{cardChoice?.disabled || !cardChoice ? '当前没有可用免租卡。' : ''}</small>
       </button>
       <button className="rent-option" type="button" disabled={disabled || !payChoice || payChoice.disabled} onClick={() => choose('pay')}>
-        <strong className="rent-option-title">支付租金</strong><span className="rent-option-effect">支付 {money(rent)} · 预计现金 {money(afterPay)}</span><small className="rent-option-note">保留免租卡。{afterPay < 0 ? `现金缺口 ${money(-afterPay)}，选择后可通过抵押或卖股偿还。` : '现金足够，可直接支付。'}</small>
+        <strong className="rent-option-title">支付租金</strong><span className="rent-option-effect">支付 {money(rent)} · 预计现金 {money(afterPay)} · 心情 −{moodLoss}，预计 {afterMood}</span><small className="rent-option-note">保留免租卡。{afterPay < 0 ? `现金缺口 ${money(-afterPay)}，选择后可通过抵押或卖股偿还。` : '现金足够，可直接支付。'}{rent > 0 && afterMood === 0 ? ' 心情耗尽，将前往疗养院。' : ''}</small>
       </button>
     </div>
   </div>;

@@ -240,6 +240,8 @@ const newChoiceEffects: Record<string, Record<string, ExpectedEffect>> = {
   solar_grant: { grant: { cash: 1100 }, device: { cash: -1800, item: 'weather' } },
   beacon_lab: { assist: { stamina: -8, item: 'controller' }, observe: { mood: 6 } },
   route_workshop: { buy: { cash: -900, item: 'controller' }, sort: { stamina: -4, cash: 250 }, leave: {} },
+  prism_relay: { calibrate: { cash: -1200, stamina: -8, item: 'teleportStone' }, record: { cash: 260 } },
+  twin_culture: { nurture: { cash: -380, mood: -6, item: 'twinDish' }, observe: { mood: 8 } },
 };
 
 function inventoryCount(state: GameState, itemId: string) {
@@ -247,7 +249,7 @@ function inventoryCount(state: GameState, itemId: string) {
 }
 
 describe('new event choice execution', () => {
-  it('settles all 18 new events according to their visible resource descriptions', () => {
+  it('settles all 20 new events according to their visible resource descriptions', () => {
     expect(EVENTS.slice(28).map(event => event.id)).toEqual(Object.keys(newChoiceEffects));
     for (const event of EVENTS.slice(28)) {
       expect(event.choices.map(choice => choice.id)).toEqual(Object.keys(newChoiceEffects[event.id]).map(id => `${event.id}_${id}`));

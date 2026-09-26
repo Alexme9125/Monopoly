@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, BarChart3, BookOpen, BriefcaseBusiness, ChevronDown, Download, Gavel, Home, Minus, Package, Plus, RotateCcw, Settings2, Upload, Volume2, VolumeX, X } from 'lucide-react';
 import Board from './visual/Board';
 import { CalendarBadge, WeatherButton, WeatherEffects, WeatherIcon } from './visual/EnvironmentBadge';
@@ -9,19 +9,21 @@ import TradingDesk from './components/TradingDesk';
 import CasinoPanel from './components/CasinoPanel';
 import ShopPanel from './components/ShopPanel';
 import AuctionHouse from './components/AuctionHouse';
-import DiceControlPicker from './components/DiceControlPicker';
+import InventoryPanel from './components/InventoryPanel';
+import { MapItemTargetPanel } from './components/ItemTargetPicker';
 import RentDecision from './components/RentDecision';
 import StationTravelPanel from './components/StationTravelPanel';
 import FloorKey from './components/FloorKey';
 import EventIdentity from './components/EventIdentity';
-import { act, canUseItem, createGame, getCurrentPlayer, getNetWorth, getRent, getTileRentPreview, runAI } from './game/engine';
+import { act, canTargetItem, canUseItem, createGame, getCurrentPlayer, getNetWorth, getRent, getTileRentPreview, runAI } from './game/engine';
 import { normalizePlayerColors, PLAYER_COLORS } from './game/colors';
 import { ITEMS, WEATHERS, AI_PRESETS, JOURNEY_REWARD_STEPS, JOURNEY_REWARD_CASH } from './game/data';
+import { PROPERTY_RENT_MULTIPLIERS, UTILITY_RENT_BASE, UTILITY_RENT_CAP, ROADSIDE_CASH_MIN, ROADSIDE_CASH_MAX, RENT_MOOD_LOSS, HOSTILE_ITEM_MOOD_LOSS } from './game/economy';
 import { MAPS } from './game/maps';
 import { clearSave, exportGame, loadSave, parseSave, saveGame } from './game/storage';
 import { RoomClient, savedRoomCode, type NetworkEvent, type RoomSnapshot } from './game/network';
 import { getMovementTimeline } from './game/presentation';
-import type { GameAction, GameConfig, GameState, MapData, MapId, Player, PlayerConfig, Shape } from './game/types';
+import type { GameAction, GameConfig, GameState, InventorySlot, MapData, MapId, Player, PlayerConfig, Shape } from './game/types';
 
 const MAP_ORDER: MapId[] = ['lake', 'coast', 'valley', 'sundered'];
 const MAP_WEATHER_NOTE: Partial<Record<MapId, string>> = {
@@ -100,47 +102,7 @@ function Landing({ save, onResume, onStart, onOnline, onGuide }: { save: GameSta
   </div>;
 }
 
-function Guide() { return <div className="guide-content"><p>掷骰走过四张地图之一，在湖畔、海岸、山谷或山道积累你的产业。旅程结束时，总资产最高者获胜；选择不限季数时，直到只剩一位未破产的玩家。</p><div className="guide-grid"><div><h3>一回合怎么走</h3><p>轮到你时掷骰，棋子沿道路逐格前进。每次掷骰基础消耗 2–4 点体力：普通六面骰掷出 1–2 点扣 2、3–4 点扣 3、5–6 点扣 4；大面数骰子也最多扣 4 点，天气和事件的额外影响另算。停下后处理土地、随机事件或设施。完成决定后结束回合；也可以休息来恢复状态。正常掷骰每累计行进 {JOURNEY_REWARD_STEPS} 格获 {money(JOURNEY_REWARD_CASH)}，余数保留；天气额外位移、传送和乘车不计入。</p></div><div><h3>土地与租金</h3><p>停在可购地块上才能购买。拥有的地产可升级、抵押、赎回或出售；其他玩家停在你的地块时支付租金。若持有干燥的免租卡，付租前可选择使用卡片使本次实付为零，或保留卡片直接支付；现金不足仍可支付并进入偿债。抵押地产暂不收租。</p></div><div><h3>天气与道具</h3><p>每天的天气会影响旅途。自然天气遵循季节：夏季偏热多雨、不会下雪；冬季偏冷多雪、没有雨天，同时各季都保留晴好天气。天气控制器可主动制造反季天气。背包有容量限制，道具可以使用、抵押或赎回；定向道具需要选择目标。控骰器可在行动前指定普通六面骰原始点数 1～6，天气仍会修正点数并另行结算额外位移；确认后立即消耗一件，本回合不能与多面骰并用，休息则指定点数作废。灾难天气从第 22 天起出现。</p></div><div><h3>市场与交易</h3><p>只能停在交易所时买卖股票。若开局开启自由房产交易，可随时查看拍卖行，在行动间隙将未抵押的地产挂牌，或按一口价购买其他玩家的地产；成交即时交割。关闭此规则时无法挂牌或购买。资产面板会显示你的股票与地产；现金和总资产不同。</p></div></div><p className="guide-note">标准天气适合熟悉旅途；挑战天气会出现更强烈的天气变化。设置中的随机种子可重现同一局起点。</p></div>; }
-
-function Inventory({ state, player, onAction, disabled = false }: { state: GameState; player: Player; onAction: (action: GameAction) => void; disabled?: boolean }) {
-  const [targetItem, setTargetItem] = useState<string | null>(null);
-  const [targetId, setTargetId] = useState('');
-  const [targetNode, setTargetNode] = useState('');
-  const [targetWeather, setTargetWeather] = useState('');
-  const mayManage = !disabled && getCurrentPlayer(state).id === player.id && (state.phase === 'ready' || state.phase === 'end');
-  const passive = new Set(['shield', 'arrest']);
-  const selected = player.inventory.find(slot => slot.uid === targetItem);
-  const selectedDef = selected && ITEMS[selected.itemId];
-  const usable = (uid: string) => !disabled && canUseItem(state, player.id, uid);
-  const useReason = (slot: Player['inventory'][number]) => {
-    if (slot.itemId === 'rent') return '需要支付租金时，再决定是否使用免租卡。';
-    if (passive.has(slot.itemId)) return '遇到逮捕或攻击时自动消耗。';
-    if (slot.wet) return '已受潮，暂不可用。';
-    if (slot.itemId === 'controller' && state.selectedDie !== 6) return '已启用多面骰，本回合不能使用控骰器。';
-    if (slot.itemId === 'controller' && state.controlledRoll != null) return '已指定点数，本回合不能再次使用控骰器。';
-    if (/^dice(8|12|20|100)$/.test(slot.itemId) && state.controlledRoll != null) return '已指定点数，不能再启用骰具。';
-    if (disabled) return '当前回合或连接状态下暂不可操作。';
-    if (!usable(slot.uid)) return state.phase === 'ready' ? '当前天气或状态下不可使用。' : '只能在你的行动前使用。';
-    return '';
-  };
-  const use = (uid: string) => {
-    const item = player.inventory.find(slot => slot.uid === uid);
-    if (!item || !usable(uid)) return;
-    const def = ITEMS[item.itemId];
-    if (def?.target || item.itemId === 'teleport') { setTargetId(''); setTargetNode(''); setTargetWeather(''); setTargetItem(uid); return; }
-    onAction({ type: 'useItem', itemUid: uid });
-  };
-  if (selected?.itemId === 'controller') return <DiceControlPicker weatherId={state.weatherId} disabled={!usable(selected.uid)} onCancel={() => setTargetItem(null)} onConfirm={diceValue => { if (usable(selected.uid)) onAction({ type: 'useItem', itemUid: selected.uid, diceValue }); setTargetItem(null); }} />;
-  return <div className="inventory-panel"><p>背包 {player.inventory.length}/{player.capacity} 格。道具通常在行动前使用；免租卡在付租时确认，部分道具会受天气影响。</p><div className="inventory-grid">{Array.from({ length: player.capacity }, (_, index) => { const slot = player.inventory[index]; const item = slot && ITEMS[slot.itemId]; const reason = slot ? useReason(slot) : ''; return <div className={`inventory-slot ${slot ? 'filled' : 'empty'}`} key={index}>{slot && item ? <><span className="item-icon">{slot.itemId === 'controller' ? <Settings2 size={20} aria-hidden="true" /> : item.icon}</span><strong>{item.name}{slot.quantity > 1 ? ` ×${slot.quantity}` : ''}</strong><small>{item.description}</small>{slot.wet && <em>已受潮</em>}<div className="slot-actions"><button disabled={!usable(slot.uid)} title={reason || undefined} onClick={() => use(slot.uid)}>{slot.itemId === 'rent' ? '付租时选择' : passive.has(slot.itemId) ? '被动生效' : '使用'}</button><button disabled={!mayManage} title={`抵押可得 ${money(Math.floor((item.shop ? item.price : 10000) * 0.5))}`} onClick={() => onAction({ type: 'pawnItem', itemUid: slot.uid })}>抵押</button><button disabled={!mayManage} onClick={() => onAction({ type: 'discardItem', itemUid: slot.uid })}>丢弃</button></div>{reason && <small className="item-use-reason">{reason}</small>}</> : <span className="slot-placeholder">空位 {index + 1}</span>}</div>; })}</div>
-    {selected && selectedDef && <div className="target-picker"><div className="target-picker-heading"><strong>使用 {selectedDef.name}</strong><button className="icon-button" onClick={() => setTargetItem(null)} aria-label="取消选择目标"><X size={16} /></button></div>
-      {selectedDef.target === 'player' && <Field label="选择玩家"><select value={targetId} onChange={event => setTargetId(event.target.value)}><option value="">请选择</option>{state.players.filter(p => !p.bankrupt && p.id !== player.id).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>}
-      {(selectedDef.target === 'property' || selected.itemId === 'teleport') && <Field label={selected.itemId === 'teleport' ? '选择车站' : '选择地产'}><select value={targetNode} onChange={event => setTargetNode(event.target.value)}><option value="">请选择</option>{selected.itemId === 'teleport' ? MAPS[state.config.mapId].nodes.filter(node => node.kind === 'station' && node.id !== player.position).map(node => <option key={node.id} value={node.id}>{node.name}</option>) : Object.entries(state.properties).filter(([nodeId, prop]) => { const kind = MAPS[state.config.mapId].nodes[Number(nodeId)]?.kind; if (selected.itemId === 'repair') return prop.ownerId === player.id && !prop.mortgaged && kind === 'land' && prop.level < 4; if (selected.itemId === 'demolish') return prop.ownerId !== player.id && kind === 'land' && prop.level > 0 && prop.level < 4; return prop.ownerId !== player.id && !prop.mortgaged && prop.level < 4 && ['land', 'power', 'water', 'telecom'].includes(kind); }).map(([nodeId, prop]) => <option key={nodeId} value={nodeId}>{MAPS[state.config.mapId].nodes[Number(nodeId)]?.name} · {state.players.find(p => p.id === prop.ownerId)?.name}</option>)}</select></Field>}
-      {selectedDef.target === 'weather' && <><Field label="选择天气"><select value={targetWeather} onChange={event => setTargetWeather(event.target.value)}><option value="">请选择</option>{Object.values(WEATHERS).filter(w => state.day >= 22 || w.family !== 'disaster').map(w => <option value={w.id} key={w.id}>{w.name}</option>)}</select></Field><p className="guide-note">指定的是明日天气，可跨季节；灾难天气仍从第 22 天起开放。</p></>}
-      <Button disabled={selectedDef.target === 'player' ? !targetId : selectedDef.target === 'property' || selected.itemId === 'teleport' ? !targetNode : !targetWeather} onClick={() => { onAction({ type: 'useItem', itemUid: selected.uid, targetId: targetId || undefined, nodeId: targetNode ? Number(targetNode) : undefined, weatherId: targetWeather || undefined }); setTargetItem(null); }}>确认使用</Button>
-    </div>}
-    {player.pawnedItems.length > 0 && <><h3>已抵押道具</h3><div className="panel-list">{player.pawnedItems.map(pawn => { const cost = Math.ceil(pawn.principal * 1.2); const def = ITEMS[pawn.slot.itemId]; const hasSpace = player.inventory.length < player.capacity || !!(def?.stackable && player.inventory.some(slot => slot.itemId === pawn.slot.itemId)); return <div className="panel-row" key={pawn.slot.uid}><div><strong>{def?.name || pawn.slot.itemId}</strong><small>抵押本金 {money(pawn.principal)} · 赎回需 {money(cost)}</small></div><button disabled={!mayManage || player.cash < cost || !hasSpace} title={player.cash < cost ? '资金不足' : !hasSpace ? '背包没有空位' : undefined} onClick={() => onAction({ type: 'redeemItem', itemUid: pawn.slot.uid })}>赎回 · {money(cost)}</button></div>; })}</div></>}
-  </div>;
-}
+function Guide() { return <div className="guide-content"><p>掷骰走过四张地图之一，在湖畔、海岸、山谷或山道积累你的产业。旅程结束时，总资产最高者获胜；选择不限季数时，直到只剩一位未破产的玩家。</p><div className="guide-grid"><div><h3>一回合怎么走</h3><p>轮到你时掷骰，棋子沿道路逐格前进。每次掷骰基础消耗 2–4 点体力：普通六面骰掷出 1–2 点扣 2、3–4 点扣 3、5–6 点扣 4；大面数骰子也最多扣 4 点，天气和事件的额外影响另算。停下后处理土地、随机事件或设施。完成决定后结束回合；也可以休息来恢复状态。正常掷骰每累计行进 {JOURNEY_REWARD_STEPS} 格获 {money(JOURNEY_REWARD_CASH)}，余数保留；天气额外位移、传送和乘车不计入。路边拾得零钱为 {ROADSIDE_CASH_MIN}～{ROADSIDE_CASH_MAX} PM。</p></div><div><h3>土地与租金</h3><p>停在可购地块上才能购买。拥有的地产可升级、抵押、赎回或出售；其他玩家停在你的地块时支付租金：普通地产 0～4 层分别收地价的 {PROPERTY_RENT_MULTIPLIERS.map(rate => `${Math.round(rate * 100)}%`).join(" / ")}。若持有干燥的免租卡，付租前可选择使用卡片使本次实付为零，或保留卡片直接支付；实际支付正数租金会损失至多 {RENT_MOOD_LOSS} 点心情，免租不损失。现金不足仍可支付并进入偿债，心情耗尽会前往疗养院。公共设施第 n 处同类设施的租金为 {UTILITY_RENT_BASE} × 3^(n−1) PM，最高 {money(UTILITY_RENT_CAP)}。抵押地产暂不收租。</p></div><div><h3>天气与道具</h3><p>每天的天气会影响旅途。自然天气遵循季节：夏季偏热多雨、不会下雪；冬季偏冷多雪、没有雨天，同时各季都保留晴好天气。天气控制器可主动制造反季天气。背包有容量限制，道具可以使用、抵押或赎回；定向道具需要选择目标。控骰器可在行动前指定普通六面骰原始点数 1～6；双生培养皿让下一次独立投掷两枚当前骰子并合计点数，可叠加多面骰，但不能与控骰器并用。天气只修正合计点数一次，额外位移另行结算；休息会取消已准备的骰具效果。传送石可在地图上点选任意其他地点，直接传送并结算落点，本回合不再掷骰；已准备的骰具效果随之作废。换乘券只能选择其他车站。需要地图目标的道具会进入地图选择模式，取消不会消耗，产权类道具还须再次确认。传送爆弹、霉运星签、税务审计函、拆迁许可和强制收购契约成功命中后，受害人心情损失 {HOSTILE_ITEM_MOOD_LOSS} 点；星盾卡挡下则不损失。灾难天气从第 22 天起出现。</p></div><div><h3>市场与交易</h3><p>只能停在交易所时买卖股票。若开局开启自由房产交易，可随时查看拍卖行，在行动间隙将未抵押的地产挂牌，或按一口价购买其他玩家的地产；成交即时交割。关闭此规则时无法挂牌或购买。资产面板会显示你的股票与地产；现金和总资产不同。</p></div></div><p className="guide-note">标准天气适合熟悉旅途；挑战天气会出现更强烈的天气变化。设置中的随机种子可重现同一局起点。</p></div>; }
 
 function Assets({ state, player, onAction, onOpenAuction }: { state: GameState; player: Player; onAction: (action: GameAction) => void; onOpenAuction: () => void }) {
   const map = MAPS[state.config.mapId];
@@ -240,6 +202,7 @@ function PlaySound() {
 export function GameView({ state, viewerId, isOnline, connected, busy, playingMovement, onMovementComplete, onAction, onLeave, onGuide, onImport }: { state: GameState; viewerId: string; isOnline: boolean; connected: boolean; busy: boolean; playingMovement: boolean; onMovementComplete: () => void; onAction: (action: GameAction, actorId?: string) => void; onLeave: () => void; onGuide: () => void; onImport: (file: File) => void }) {
   const [panel, setPanel] = useState<'inventory' | 'assets' | 'auction' | 'ranking' | 'settings' | 'weather' | 'guide' | 'logs' | null>(null);
   const [selectedNode, setSelectedNode] = useState<number | null>(null);
+  const [itemIntent, setItemIntent] = useState<{ itemUid: string; itemId: string; playerId: string; day: number } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [sound, setSound] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
@@ -247,12 +210,47 @@ export function GameView({ state, viewerId, isOnline, connected, busy, playingMo
   const [activeEncounter, setActiveEncounter] = useState(false);
   const [activityHeight, setActivityHeight] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
+  const gameShellRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (state.pending || state.seasonReport || state.phase === 'gameover') setPanel(null); }, [state.pending, state.seasonReport, state.phase]);
   const map = MAPS[state.config.mapId];
   const current = getCurrentPlayer(state);
   const viewer = state.players.find(p => p.id === viewerId) || current;
   const myTurn = viewer.id === current.id && !viewer.bankrupt;
   const mayAct = myTurn && !busy && !state.seasonReport && !endOfGame(state) && (!isOnline || connected);
+  const itemSlot = itemIntent && viewer.inventory.find(slot => slot.uid === itemIntent.itemUid);
+  const itemTargeting = !!(itemIntent && itemSlot && itemSlot.itemId === itemIntent.itemId && itemIntent.playerId === viewer.id
+    && itemIntent.day === state.day && mayAct && state.phase === 'ready' && !state.pending && canUseItem(state, viewer.id, itemIntent.itemUid));
+  const itemNodeIds = itemTargeting ? map.nodes.filter(node => canTargetItem(state, viewer.id, itemIntent!.itemUid, { nodeId: node.id })).map(node => node.id) : [];
+  const itemName = itemSlot && Object.hasOwn(ITEMS, itemSlot.itemId) ? ITEMS[itemSlot.itemId].name : '';
+  const chosenItemNodeId = itemTargeting && selectedNode !== null && itemNodeIds.includes(selectedNode) ? selectedNode : null;
+  useLayoutEffect(() => {
+    if (chosenItemNodeId === null || !window.matchMedia('(max-width: 850px)').matches) return;
+    const frame = requestAnimationFrame(() => {
+      const detail = gameShellRef.current?.querySelector<HTMLElement>('.item-target-detail');
+      if (!detail) return;
+      detail.querySelector<HTMLElement>('.item-target-detail-head strong')?.focus({ preventScroll: true });
+      detail.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [chosenItemNodeId]);
+  const movement = state.movement;
+  const finalSteps = movement ? Math.max(0, movement.roll + movement.modifier) : 0;
+  const rawRollText = movement?.rolls?.length === 2 ? `双骰 ${movement.rolls[0]} + ${movement.rolls[1]} = ${movement.roll} 点`
+    : movement?.controlled ? `指定点数 ${movement.roll} 点` : `骰点 ${movement?.roll ?? 0}`;
+  const diceResultText = movement?.modifier ? `${rawRollText} · 修正 ${movement.modifier > 0 ? '+' : '−'}${Math.abs(movement.modifier)} · 最终 ${finalSteps} 格`
+    : `${rawRollText} · 行进 ${finalSteps} 格`;
+  useEffect(() => { if (itemIntent && !itemTargeting) { setItemIntent(null); setSelectedNode(null); } }, [itemIntent, itemTargeting]);
+  useEffect(() => { if (!itemTargeting) setZoom(value => Math.min(value, 1.8)); }, [itemTargeting]);
+  useLayoutEffect(() => {
+    if (!itemTargeting) return;
+    const resetScroll = () => { if (gameShellRef.current) gameShellRef.current.scrollTop = 0; window.scrollTo(0, 0); };
+    resetScroll();
+    const frame = requestAnimationFrame(() => {
+      resetScroll();
+      gameShellRef.current?.querySelector<HTMLElement>('.item-target-banner')?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [itemTargeting]);
   const canMarket = state.config.propertyTrading !== false && !viewer.bankrupt && !busy && connected && (state.phase === 'ready' || state.phase === 'end') && !state.pending && !state.seasonReport;
   const tradePromptForMe = state.pending?.kind === 'trade' && state.pending.data?.buyerId === viewer.id;
   const weather = WEATHERS[state.weatherId];
@@ -260,7 +258,7 @@ export function GameView({ state, viewerId, isOnline, connected, busy, playingMo
   const ownLand = Object.values(state.properties).filter(prop => prop.ownerId === viewer.id).length;
   const doAction = (action: GameAction) => { if (!mayAct && !(tradePromptForMe && action.type === 'choose' && !busy && connected) && action.type !== 'dismissSeason') return; if (action.type === 'roll' && sound) PlaySound(); onAction(action); };
   const doMarketAction = (action: GameAction) => { if (canMarket) onAction(action, viewer.id); };
-  const readFile = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) { onImport(file); setPanel(null); setSelectedNode(null); } event.target.value = ''; };
+  const readFile = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) { onImport(file); setPanel(null); setSelectedNode(null); setItemIntent(null); } event.target.value = ''; };
   const showPrompt = !!state.pending && !busy && !state.seasonReport && (state.pending.kind === 'trade' ? tradePromptForMe : myTurn);
   const pendingStationId = Number(state.pending?.data?.nodeId);
   const stationSelecting = showPrompt && state.pending?.kind === 'station' && map.nodes[current.position]?.kind === 'station'
@@ -289,22 +287,58 @@ export function GameView({ state, viewerId, isOnline, connected, busy, playingMo
     document.addEventListener('keydown', onEscape);
     return () => document.removeEventListener('keydown', onEscape);
   }, [stationSelecting, mayAct, onAction, panel, confirmExit]);
-  const selectMapNode = (id: number) => { if (!stationSelecting || stationChoiceIds.includes(id)) setSelectedNode(id); };
-  return <div className={`app game-shell weather-${weather?.family || 'clear'} ${stationSelecting ? 'station-selecting' : ''}`}><header className="game-topbar"><div className="game-brand"><span className="brand-gem">◆</span><strong>棱镜假日</strong></div><div className="game-location"><strong>{map.name}</strong></div><CalendarBadge day={state.day} /><WeatherButton weatherId={state.weatherId} onClick={() => setPanel('weather')} /><div className="game-top-actions"><button className="icon-button" title="玩法指南" aria-label="玩法指南" onClick={() => setPanel('guide')}><BookOpen size={19} /></button><button className="icon-button" title={sound ? '关闭骰子音效' : '开启骰子音效'} aria-label={sound ? '关闭骰子音效' : '开启骰子音效'} onClick={() => setSound(value => !value)}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button><button className="icon-button" title="玩家信息" aria-label="玩家信息" onClick={() => setPanel('ranking')}><BarChart3 size={19} /></button><button className="icon-button" title="设置" aria-label="设置" onClick={() => setPanel('settings')}><Settings2 size={19} /></button></div></header><WeatherEffects weatherId={state.weatherId} mode={state.config.weatherMode} />{isOnline && !connected && <div className="connection-banner" role="status">房间连接已中断，正在重连；对局会暂停到所有真人回到房间。</div>}
-    <main className={`game-main ${activeEncounter ? 'has-active-encounter' : ''}`} data-active-encounter={activeEncounter} style={{ '--activity-height': `${activityHeight}px` } as CSSProperties}><div className="board-stage"><Board map={map} state={state} viewerId={viewer.id} playing={playingMovement} stationSelection={stationSelecting ? { originId: stationOriginId, destinationIds: stationChoiceIds, disabled: !mayAct } : undefined} selectedNode={stationSelecting ? chosenStationId : selectedNode} onSelectNode={selectMapNode} onMovementComplete={onMovementComplete} zoom={zoom} /><div className="map-controls"><button aria-label="放大地图" onClick={() => setZoom(value => Math.min(1.8, Number((value + 0.15).toFixed(2))))}><Plus size={18} /></button><button aria-label="缩小地图" onClick={() => setZoom(value => Math.max(0.65, Number((value - 0.15).toFixed(2))))}><Minus size={18} /></button><button aria-label="复位地图" onClick={() => setZoom(1)}><RotateCcw size={17} /></button><FloorKey hidden={stationSelecting} /></div><div className="map-legend"><span><i className="legend-road" />道路</span><span><i className="legend-sale" />待售</span><span><i className="legend-public" />公共</span>{state.players.map((player, index) => <span key={player.id}><i className="legend-owned" style={{ '--owner-color': player.color } as CSSProperties} />已购 · P{index + 1}</span>)}</div></div>
+  const openMapItemTarget = (slot: InventorySlot) => {
+    if (!mayAct || state.phase !== 'ready' || state.pending || !canUseItem(state, viewer.id, slot.uid)) return;
+    setSelectedNode(null);
+    setZoom(1);
+    setItemIntent({ itemUid: slot.uid, itemId: slot.itemId, playerId: viewer.id, day: state.day });
+    setPanel(null);
+  };
+  const cancelMapItemTarget = () => { setItemIntent(null); setSelectedNode(null); setPanel('inventory'); };
+  useEffect(() => {
+    if (!itemTargeting) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || panel || confirmExit) return;
+      event.preventDefault();
+      cancelMapItemTarget();
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [itemTargeting, panel, confirmExit]);
+  const selectMapNode = (id: number) => {
+    if (stationSelecting) { if (stationChoiceIds.includes(id)) setSelectedNode(id); return; }
+    if (itemTargeting) {
+      if (!itemNodeIds.includes(id) || !itemIntent || !canTargetItem(state, viewer.id, itemIntent.itemUid, { nodeId: id })) return;
+      if (itemIntent.itemId === 'teleport' || itemIntent.itemId === 'teleportStone') {
+        doAction({ type: 'useItem', itemUid: itemIntent.itemUid, nodeId: id });
+        setItemIntent(null);
+        setSelectedNode(null);
+      } else setSelectedNode(id);
+      return;
+    }
+    setSelectedNode(id);
+  };
+  return <div ref={gameShellRef} className={`app game-shell weather-${weather?.family || 'clear'} ${stationSelecting ? 'station-selecting' : ''} ${itemTargeting ? 'item-targeting' : ''}`}><header className="game-topbar"><div className="game-brand"><span className="brand-gem">◆</span><strong>棱镜假日</strong></div><div className="game-location"><strong>{map.name}</strong></div><CalendarBadge day={state.day} /><WeatherButton weatherId={state.weatherId} onClick={() => setPanel('weather')} /><div className="game-top-actions"><button className="icon-button" title="玩法指南" aria-label="玩法指南" onClick={() => setPanel('guide')}><BookOpen size={19} /></button><button className="icon-button" title={sound ? '关闭骰子音效' : '开启骰子音效'} aria-label={sound ? '关闭骰子音效' : '开启骰子音效'} onClick={() => setSound(value => !value)}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button><button className="icon-button" title="玩家信息" aria-label="玩家信息" onClick={() => setPanel('ranking')}><BarChart3 size={19} /></button><button className="icon-button" title="设置" aria-label="设置" onClick={() => setPanel('settings')}><Settings2 size={19} /></button></div></header><WeatherEffects weatherId={state.weatherId} mode={state.config.weatherMode} />{isOnline && !connected && <div className="connection-banner" role="status">房间连接已中断，正在重连；对局会暂停到所有真人回到房间。</div>}
+    <main className={`game-main ${activeEncounter ? 'has-active-encounter' : ''} ${itemTargeting ? 'item-targeting' : ''}`} data-active-encounter={activeEncounter} style={{ '--activity-height': `${activityHeight}px` } as CSSProperties}><div className="board-stage"><Board map={map} state={state} viewerId={viewer.id} playing={playingMovement} stationSelection={stationSelecting ? { originId: stationOriginId, destinationIds: stationChoiceIds, disabled: !mayAct } : undefined} itemSelection={itemTargeting ? { itemName, nodeIds: itemNodeIds, selectedNodeId: chosenItemNodeId ?? undefined, disabled: !mayAct } : undefined} selectedNode={stationSelecting ? chosenStationId : selectedNode} onSelectNode={selectMapNode} onMovementComplete={onMovementComplete} zoom={zoom} /><div className="map-controls"><button aria-label="放大地图" onClick={() => setZoom(value => Math.min(itemTargeting ? 4 : 1.8, Number((value + (itemTargeting ? 0.3 : 0.15)).toFixed(2))))}><Plus size={18} /></button><button aria-label="缩小地图" onClick={() => setZoom(value => Math.max(0.65, Number((value - 0.15).toFixed(2))))}><Minus size={18} /></button><button aria-label="复位地图" onClick={() => setZoom(1)}><RotateCcw size={17} /></button><FloorKey hidden={stationSelecting || itemTargeting} /></div><div className="map-legend"><span><i className="legend-road" />道路</span><span><i className="legend-sale" />待售</span><span><i className="legend-public" />公共</span>{state.players.map((player, index) => <span key={player.id}><i className="legend-owned" style={{ '--owner-color': player.color } as CSSProperties} />已购 · P{index + 1}</span>)}</div></div>
       <aside className="player-hud"><div className="hud-head"><Marker shape={viewer.shape} color={viewer.color} size={40} /><div><small>幕后老板</small><h2>{viewer.name}</h2></div></div><div className="hud-money"><small>旅途资金</small><strong>{money(viewer.cash)}</strong></div><div className="hud-net-worth">总资产 {money(getNetWorth(state, viewer.id))}</div><div className="hud-bars"><label>体力 <span>{viewer.stamina}/100</span><progress max={100} value={viewer.stamina} /></label><label>心情 <span>{viewer.mood}/100</span><progress max={100} value={viewer.mood} /></label></div><div className="hud-meta">拥有 {ownLand} 处地产 · 背包 {viewer.inventory.length}/{viewer.capacity}</div>{(viewer.confinement || viewer.statuses.some(status => status.remaining > 0)) && <div className="hud-statuses"><StatusLabel player={viewer} /></div>}<div className="hud-buttons"><button onClick={() => setPanel('inventory')}><Package size={17} />背包</button><button onClick={() => setPanel('assets')}><BriefcaseBusiness size={17} />资产</button>{state.config.propertyTrading !== false && <button type="button" className="hud-auction-button" onClick={() => setPanel('auction')}><Gavel size={17} />拍卖行</button>}</div></aside>
-      <ActivityNotifications state={state} busy={busy} blocked={!!(showPrompt || panel || confirmExit || state.seasonReport || endOfGame(state))} onOpenLogs={() => setPanel('logs')} onEncounterVisibilityChange={setActiveEncounter} onActivityHeightChange={setActivityHeight} />
-      <aside className="turn-panel"><div className="turn-kicker">CURRENT TURN · 第 {state.day} 天</div><div className="turn-player"><Marker shape={current.shape} color={current.color} size={28} /><strong>{current.name}</strong></div><p>{busy ? '代理人正在行动 · 请观察信标与步数' : `${map.nodes[current.position]?.name || '旅途中'} · ${state.phase === 'ready' ? '等待行动' : state.phase === 'decision' ? '等待决定' : state.phase === 'end' ? '可以结束回合' : '旅程结束'}`}</p>{state.phase === 'ready' && (state.controlledRoll != null ? <p className="current-die controlled-die-status">已控骰 · 指定 {state.controlledRoll} 点</p> : <p className="current-die">当前骰子 D{state.selectedDie} · 1–{state.selectedDie} 点</p>)}{state.movement && state.movement.dice !== false && !busy && <><div className="dice-face" aria-label={`最终行进 ${Math.max(0, state.movement.roll + state.movement.modifier)} 格`}>{Math.max(0, state.movement.roll + state.movement.modifier)}</div><p className="dice-result-detail">{state.movement.controlled ? '指定点数 · ' : ''}{state.movement.modifier ? `原始 ${state.movement.roll} 点 · 修正 ${state.movement.modifier > 0 ? '+' : '−'}${Math.abs(state.movement.modifier)} · 最终 ${Math.max(0, state.movement.roll + state.movement.modifier)} 格` : `骰点 ${state.movement.roll} · 行进 ${state.movement.roll} 格`}</p></>}<div className="turn-actions">{mayAct && state.phase === 'ready' ? <><Button onClick={() => doAction({ type: 'roll' })}>掷骰子 <ArrowRight size={18} /></Button><Button secondary onClick={() => doAction({ type: 'rest' })}>原地休息</Button></> : mayAct && state.phase === 'end' ? <Button onClick={() => doAction({ type: 'endTurn' })}>结束回合 <ArrowRight size={18} /></Button> : <p className="turn-wait">{busy ? '正在播放行动…' : !connected && isOnline ? '正在重新连接房间…' : state.pending?.kind === 'trade' && !tradePromptForMe ? `等待 ${state.players.find(p => p.id === state.pending?.data?.buyerId)?.name || '买方'} 回应报价` : myTurn && state.phase === 'decision' ? '请完成本次决定' : `${current.name} 正在行动`}</p>}</div></aside>
+      <ActivityNotifications state={state} busy={busy} blocked={!!(showPrompt || panel || confirmExit || itemTargeting || state.seasonReport || endOfGame(state))} onOpenLogs={() => setPanel('logs')} onEncounterVisibilityChange={setActiveEncounter} onActivityHeightChange={setActivityHeight} />
+      <aside className="turn-panel"><div className="turn-kicker">CURRENT TURN · 第 {state.day} 天</div><div className="turn-player"><Marker shape={current.shape} color={current.color} size={28} /><strong>{current.name}</strong></div><p>{busy ? '代理人正在行动 · 请观察信标与步数' : `${map.nodes[current.position]?.name || '旅途中'} · ${state.phase === 'ready' ? '等待行动' : state.phase === 'decision' ? '等待决定' : state.phase === 'end' ? '可以结束回合' : '旅程结束'}`}</p>{state.phase === 'ready' && (state.controlledRoll != null ? <p className="current-die controlled-die-status">已控骰 · 指定 {state.controlledRoll} 点</p> : state.twinRoll ? <p className="current-die twin-die-status">已准备双骰 · 两枚 D{state.selectedDie} · 各 1–{state.selectedDie} 点</p> : <p className="current-die">当前骰子 D{state.selectedDie} · 1–{state.selectedDie} 点</p>)}{movement && movement.dice !== false && !busy && <><div className="dice-face" aria-label={`最终行进 ${finalSteps} 格`}>{finalSteps}</div><p className="dice-result-detail">{diceResultText}</p></>}<div className="turn-actions">{mayAct && state.phase === 'ready' ? <><Button onClick={() => doAction({ type: 'roll' })}>掷骰子 <ArrowRight size={18} /></Button><Button secondary onClick={() => doAction({ type: 'rest' })}>原地休息</Button></> : mayAct && state.phase === 'end' ? <Button onClick={() => doAction({ type: 'endTurn' })}>结束回合 <ArrowRight size={18} /></Button> : <p className="turn-wait">{busy ? '正在播放行动…' : !connected && isOnline ? '正在重新连接房间…' : state.pending?.kind === 'trade' && !tradePromptForMe ? `等待 ${state.players.find(p => p.id === state.pending?.data?.buyerId)?.name || '买方'} 回应报价` : myTurn && state.phase === 'decision' ? '请完成本次决定' : `${current.name} 正在行动`}</p>}</div></aside>
       <div className="turn-order">{state.players.map((player, index) => <div className={`${player.id === current.id ? 'current' : ''} ${player.bankrupt ? 'bankrupt' : ''}`} key={player.id}><Marker shape={player.shape} color={player.color} size={19} /><span className="player-index">P{index + 1}</span><span>{player.name}</span></div>)}</div>
       {stationSelecting && <StationTravelPanel originName={map.nodes[stationOriginId]?.name || state.pending?.title || '当前车站'} destinationName={chosenStationId === null ? undefined : map.nodes[chosenStationId]?.name} cash={viewer.cash} disabled={!mayAct} onConfirm={() => { if (mayAct && chosenStationChoice && !chosenStationChoice.disabled) doAction({ type: 'choose', choiceId: chosenStationChoice.id }); }} onCancel={() => { if (mayAct) { setSelectedNode(null); doAction({ type: 'choose', choiceId: 'leave' }); } }} />}
-      {!stationSelecting && previousStationKey.current === null && selectedNode !== null && <aside className="tile-panel"><button className="icon-button" aria-label="关闭地块详情" onClick={() => setSelectedNode(null)}><X size={17} /></button><div className="section-kicker">地点 #{selectedNode}</div><h2>{map.nodes[selectedNode]?.name}</h2><TileInfo state={state} nodeId={selectedNode} viewerId={viewer.id} /></aside>}
+      {itemTargeting && itemIntent && <MapItemTargetPanel state={state} map={map} player={viewer} itemUid={itemIntent.itemUid} selectedNodeId={chosenItemNodeId} eligibleCount={itemNodeIds.length} disabled={!mayAct} onCancel={cancelMapItemTarget} onConfirm={() => {
+        if (chosenItemNodeId === null || !canTargetItem(state, viewer.id, itemIntent.itemUid, { nodeId: chosenItemNodeId })) return;
+        doAction({ type: 'useItem', itemUid: itemIntent.itemUid, nodeId: chosenItemNodeId });
+        setItemIntent(null);
+        setSelectedNode(null);
+      }} />}
+      {!stationSelecting && !itemTargeting && previousStationKey.current === null && selectedNode !== null && <aside className="tile-panel"><button className="icon-button" aria-label="关闭地块详情" onClick={() => setSelectedNode(null)}><X size={17} /></button><div className="section-kicker">地点 #{selectedNode}</div><h2>{map.nodes[selectedNode]?.name}</h2><TileInfo state={state} nodeId={selectedNode} viewerId={viewer.id} /></aside>}
     </main>
     {notice && <div className="toast" role="status" onClick={() => setNotice('')}>{notice}</div>}
     {showPrompt && !stationSelecting && state.pending && <Modal key={`${state.pending.kind}-${state.pending.data?.nodeId ?? 'none'}-${state.pending.title}`} title={state.pending.title} className={state.pending.kind === 'exchange' ? 'modal-exchange' : state.pending.kind === 'casino' ? 'modal-casino' : state.pending.kind === 'shop' ? 'modal-shop' : state.pending.kind === 'rent' ? 'modal-rent' : ''} closable={false} initialFocus={state.pending.kind === 'shop' || state.pending.kind === 'exchange' ? 'dialog' : undefined} onClose={() => {}}>{state.pending.kind === 'event' && <EventIdentity mapId={state.config.mapId} eventId={String(state.pending.data?.eventId ?? '')} />}{state.pending.kind !== 'rent' && state.pending.kind !== 'shop' && state.pending.kind !== 'casino' && <p>{state.pending.body}</p>}{state.pending.kind === 'rent' && <RentDecision state={state} player={viewer} prompt={state.pending} disabled={!mayAct} onChoose={choiceId => doAction({ type: 'choose', choiceId })} />}{state.pending.kind === 'casino' && <CasinoPanel cash={viewer.cash} result={state.pending.casinoResult} inventoryUsed={viewer.inventory.length} inventoryCapacity={viewer.capacity} />}{state.pending.kind === 'exchange' && myTurn && <TradingDesk state={state} onAction={doAction} onClose={() => doAction({ type: 'choose', choiceId: 'leave' })} />}{state.pending.kind === 'shop' && <ShopPanel player={viewer} prompt={state.pending} disabled={!mayAct} onChoose={choiceId => doAction({ type: 'choose', choiceId })} />}{state.pending.kind !== 'exchange' && state.pending.kind !== 'shop' && state.pending.kind !== 'rent' && <div className="choice-list">{state.pending.choices.map(choice => <button key={choice.id} disabled={choice.disabled || !connected && isOnline} onClick={() => doAction({ type: 'choose', choiceId: choice.id })}><strong>{choice.label}</strong>{choice.description && <small>{choice.description}</small>}</button>)}</div>}</Modal>}
     {state.seasonReport && <Modal title={`第 ${state.seasonReport.season} 季 · 旅途结算`} closable={false} onClose={() => {}}><p>又一个季节过去了。看看大家收集了怎样的风景。</p><div className="ranking-list">{state.seasonReport.rankings.map((row, index) => <div className="panel-row ranking-row" key={row.id}><span className="rank-number">{String(index + 1).padStart(2, '0')}</span><span className="ranking-name"><strong>{row.name}</strong></span><strong>{money(row.assets)}</strong></div>)}</div><div className="modal-actions"><Button disabled={isOnline && !connected} onClick={() => onAction({ type: 'dismissSeason' })}>继续旅程</Button></div></Modal>}
     {endOfGame(state) && !state.seasonReport && <Modal title="旅程抵达终点" closable={false} onClose={() => {}}><p className="gameover-winner">{state.players.find(p => p.id === state.winnerId)?.name || '大家'}，在棱镜星留下了最耀眼的印记。</p><Ranking state={state} /><div className="modal-actions"><Button secondary onClick={onLeave}>返回首页</Button><Button onClick={onLeave}>开启新一局</Button></div></Modal>}
     {panel && <Modal title={{ inventory: '旅行背包', assets: '我的资产', auction: '房产拍卖行', ranking: '玩家与资产榜', settings: '旅途设置', weather: '今日天气', guide: '玩法指南', logs: '旅途手记' }[panel]} onClose={() => setPanel(null)} className={`modal-${panel}`} initialFocus={panel === 'auction' ? 'dialog' : undefined}>
-      {panel === 'inventory' && <Inventory state={state} player={viewer} onAction={doAction} disabled={!mayAct} />}
+      {panel === 'inventory' && <InventoryPanel state={state} player={viewer} onAction={doAction} onSelectMapTarget={openMapItemTarget} disabled={!mayAct} />}
       {panel === 'assets' && <Assets state={state} player={viewer} onAction={doAction} onOpenAuction={() => setPanel('auction')} />}
       {panel === 'auction' && state.config.propertyTrading !== false && <AuctionHouse state={state} player={viewer} canTrade={canMarket} onAction={doMarketAction} onClose={() => setPanel(null)} />}
       {panel === 'ranking' && <Ranking state={state} />}

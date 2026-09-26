@@ -13,9 +13,19 @@ export type TurnMomentState = {
   stepIndex?: number;
   stepCount?: number;
   stepState?: 'travel' | 'settled';
+  transferPhase?: 'depart' | 'arrive' | 'settled';
   arrivedNodeId?: number;
   tick: number;
+  tickSecondary: number;
 };
+
+export function travelPoint(from: Point, to: Point, elapsed: number, duration: number, transfer: boolean, reduced: boolean): Point {
+  if (transfer) return elapsed < duration / 2 ? from : to;
+  if (reduced) return from;
+  const progress = Math.max(0, Math.min(1, elapsed / duration));
+  const eased = progress * progress * (3 - 2 * progress);
+  return { x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased };
+}
 
 function initialMoment(movement: Movement, map: MapData): TurnMomentState {
   const first = getMovementTimeline(movement).stages[0];
@@ -29,6 +39,7 @@ function initialMoment(movement: Movement, map: MapData): TurnMomentState {
     stepCount: first?.stepCount,
     stepState: first?.kind === 'move' ? 'travel' : undefined,
     tick: 0,
+    tickSecondary: 0,
   };
 }
 
@@ -70,20 +81,25 @@ export function useTurnPresentation(movement: Movement | null | undefined, map: 
         }
       }
       let stepState: TurnMomentState['stepState'];
+      let transferPhase: TurnMomentState['transferPhase'];
       let arrivedNodeId: number | undefined;
       if (stage.kind === 'move' && stage.path?.length) {
         const from = map.nodes[stage.path[0]] ?? point;
         const to = map.nodes[stage.path.at(-1)!] ?? from;
         const travelDuration = stage.travelDuration ?? stage.end - stage.start;
         const travelElapsed = elapsed - stage.start;
-        if (travelElapsed >= travelDuration) {
+        if (stage.segmentKind === 'transfer') {
+          // Transfers never draw a pawn across the roads between distant nodes.
+          point = travelPoint(from, to, travelElapsed, travelDuration, true, reduced);
+          stepState = travelElapsed >= travelDuration ? 'settled' : 'travel';
+          transferPhase = travelElapsed >= travelDuration ? 'settled' : travelElapsed < travelDuration / 2 ? 'depart' : 'arrive';
+          if (stepState === 'settled') arrivedNodeId = stage.path.at(-1);
+        } else if (travelElapsed >= travelDuration) {
           point = to; // Explicitly settle on the node before the next edge.
           stepState = 'settled';
           arrivedNodeId = stage.path.at(-1);
         } else {
-          const progress = Math.max(0, Math.min(1, travelElapsed / travelDuration));
-          const eased = progress * progress * (3 - 2 * progress);
-          point = reduced ? from : { x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased };
+          point = travelPoint(from, to, travelElapsed, travelDuration, false, reduced);
           stepState = 'travel';
         }
       }
@@ -94,8 +110,10 @@ export function useTurnPresentation(movement: Movement | null | undefined, map: 
         stepIndex: stage.stepIndex,
         stepCount: stage.stepCount,
         stepState,
+        transferPhase,
         arrivedNodeId,
         tick: Math.floor(elapsed / 80),
+        tickSecondary: Math.floor((elapsed + 210) / 113),
       });
       frame = requestAnimationFrame(tick);
     };
@@ -122,6 +140,8 @@ export function TurnMoment({moment,state}:{moment:TurnMomentState|null;state:Gam
   if(!moment)return null;
   const player=state.players.find(p=>p.id===moment.movement.playerId);
   const {roll,modifier}=moment.movement;
+  const rolls=moment.movement.rolls?.length===2?moment.movement.rolls:null;
+  const face=Math.max(1,Math.min(100,moment.movement.face??6));
   const controlled=!!moment.movement.controlled;
   const steps=Math.max(0,roll+modifier);
   const rolling=moment.stage==='roll';
@@ -132,9 +152,13 @@ export function TurnMoment({moment,state}:{moment:TurnMomentState|null;state:Gam
     return <div className={`turn-moment dice-moment ${rolling?'is-rolling':adjusting?'is-adjusting':adjusted?'is-adjusted':'is-result'} ${controlled?'is-controlled':''}`} data-stage={moment.stage} data-controlled={controlled} role="status" style={{'--actor-color':player?.color??'#558f9e'} as CSSProperties}>
       <div className="dice-actor"><i/>{player?.name} <span>{player?.ai?'代理人':'玩家'}</span>{controlled&&<span className="dice-control-mark">控骰 · 指定点数</span>}</div>
       <div className="animated-dice">{adjusting||adjusted
-        ? <div className="dice-adjust-cube"><span className="dice-adjust-face face-original"><DiceGlyph value={roll}/></span><span className="dice-adjust-face face-adjusted"><DiceGlyph value={steps}/></span></div>
-        : <DiceGlyph value={rolling?moment.tick%6+1:roll}/>}</div>
-      <strong>{rolling?'正在掷骰':adjusting?'点数修正':adjusted?`最终 ${steps} 格`:`${controlled?'指定原始':'原始'} ${roll} 点`}</strong>
+        ? <div className={`dice-adjust-cube ${rolls?'from-pair':''}`}><span className="dice-adjust-face face-original"><DiceGlyph value={roll}/></span><span className="dice-adjust-face face-adjusted"><DiceGlyph value={steps}/></span></div>
+        : rolls ? <div className="dice-pair" aria-label={rolling?'双骰掷出中':`双骰 ${rolls[0]} 加 ${rolls[1]}，合计 ${roll} 点`}>
+          <span className="dice-pair-die"><DiceGlyph value={rolling?moment.tick%face+1:rolls[0]}/></span>
+          <span className="dice-pair-die"><DiceGlyph value={rolling?moment.tickSecondary%face+1:rolls[1]}/></span>
+        </div> : <DiceGlyph value={rolling?moment.tick%face+1:roll}/>}</div>
+      {rolls&&moment.stage==='result'&&<div className="dice-equation">{rolls[0]} + {rolls[1]} = <strong className="dice-total">{roll}</strong> 点</div>}
+      <strong>{rolling?(rolls?'双骰掷出中':'正在掷骰'):adjusting?'点数修正':adjusted?`最终 ${steps} 格`:rolls?'双骰结果':`${controlled?'指定原始':'原始'} ${roll} 点`}</strong>
       <small>{rolling?'':modifier ? formula : `行进 ${steps} 格`}</small>
     </div>;
   }

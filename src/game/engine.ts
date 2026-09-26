@@ -5,11 +5,11 @@ import { normalizePlayerColors } from './colors';
 import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
 import { weatherWeights } from './weather';
 import { getShopOffer, SHOP_ITEM_RARITY } from './shop';
+import { HOSTILE_ITEM_MOOD_LOSS, PROPERTY_RENT_MULTIPLIERS, RENT_MOOD_LOSS, ROADSIDE_CASH_MAX, ROADSIDE_CASH_MIN, UTILITY_RENT_BASE, UTILITY_RENT_CAP } from './economy';
 export { weatherWeights } from './weather';
 import type { CasinoResult, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, PropertyListing, Stock, TurnEncounter } from './types';
 
 const START_CASH = 100_000;
-const RENT_MULTIPLIERS = [0.24, 0.54, 1.05, 1.95, 3.6];
 const UTILITY_KINDS = new Set(['power', 'water', 'telecom']);
 const PROPERTY_KINDS = new Set(['land', 'power', 'water', 'telecom']);
 const WIND = new Set(['breeze', 'gale', 'sand', 'sandstorm']);
@@ -206,6 +206,14 @@ function assetValue(state: GameState, id: number, prop: Property) {
   return price + (isUtility(node) ? 0 : Math.ceil(price * 0.75) * prop.level);
 }
 
+export function getAcquisitionPrice(state: GameState, nodeId: number): number | null {
+  const node = Number.isSafeInteger(nodeId) ? nodeAt(state, nodeId) : undefined;
+  const property = node && state.properties[node.id];
+  if (!node || !isProperty(node) || !property) return null;
+  const price = Math.ceil(assetValue(state, node.id, property) * 1.5);
+  return Number.isSafeInteger(price) && price > 0 ? price : null;
+}
+
 function itemWorth(itemId: string) { const def = ITEMS[itemId]; return def ? (def.shop ? def.price : 10_000) : 0; }
 
 export function getNetWorth(state: GameState, playerId: string): number {
@@ -229,9 +237,9 @@ export function getRent(state: GameState, nodeId: number): number {
   if (!owner || owner.bankrupt || owner.confinement?.kind === 'hospital' || owner.confinement?.kind === 'prison') return 0;
   if (isUtility(node)) {
     const count = Object.entries(state.properties).filter(([id, p]) => p.ownerId === prop.ownerId && !p.mortgaged && !!nodeAt(state, Number(id)) && isUtility(nodeAt(state, Number(id))!)).length;
-    return Math.min(30_000, 120 * 3 ** Math.max(0, count - 1));
+    return Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** Math.max(0, count - 1));
   }
-  return Math.ceil(costOf(node) * RENT_MULTIPLIERS[clamp(prop.level, 0, 4)]);
+  return Math.ceil(costOf(node) * PROPERTY_RENT_MULTIPLIERS[clamp(prop.level, 0, 4)]);
 }
 
 export function getTileRentPreview(state: GameState, nodeId: number, playerId?: string): {
@@ -258,7 +266,7 @@ export function getTileRentPreview(state: GameState, nodeId: number, playerId?: 
     const heldNode = nodeAt(state, Number(id));
     return holding.ownerId === viewer.id && !holding.mortgaged && !!heldNode && isUtility(heldNode);
   }).length : 0;
-  const rent = blocked || suspended ? 0 : isUtility(node) ? Math.min(30_000, 120 * 3 ** ownedUtilities) : Math.ceil(price * RENT_MULTIPLIERS[0]);
+  const rent = blocked || suspended ? 0 : isUtility(node) ? Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** ownedUtilities) : Math.ceil(price * PROPERTY_RENT_MULTIPLIERS[0]);
   const reason = blocked ? '奇异悖论期间不可购买或收租' : suspended ? '玩家禁锢期间无法收租' : viewer.cash < price ? '资金不足，暂不可购入' : undefined;
   return { price, rent, purchasable: !blocked && viewer.cash >= price, prospective: true, ...(reason ? { reason } : {}) };
 }
@@ -270,8 +278,38 @@ export function canUseItem(state: GameState, playerId: string, itemUid: string):
   const slot = player?.inventory.find(s => s.uid === itemUid);
   if (!player || player.bankrupt || player.id !== current(state)?.id || state.phase !== 'ready' || player.confinement || !slot || slot.wet || state.weatherId === 'paradox') return false;
   if (!Object.prototype.hasOwnProperty.call(ITEMS, slot.itemId) || ['rent', 'shield', 'arrest'].includes(slot.itemId)) return false;
-  if (slot.itemId === 'controller') return state.selectedDie === 6 && state.controlledRoll == null;
+  if (slot.itemId === 'controller') return state.selectedDie === 6 && state.controlledRoll == null && !state.twinRoll;
+  if (slot.itemId === 'twinDish') return state.controlledRoll == null && !state.twinRoll;
   if (/^dice(8|12|20|100)$/.test(slot.itemId)) return state.controlledRoll == null;
+  return true;
+}
+
+export function canTargetItem(state: GameState, playerId: string, itemUid: string,
+  target: Pick<GameAction, 'nodeId' | 'targetId' | 'weatherId' | 'diceValue'> = {}): boolean {
+  if (!canUseItem(state, playerId, itemUid)) return false;
+  const player = state.players.find(entry => entry.id === playerId)!;
+  const id = player.inventory.find(slot => slot.uid === itemUid)!.itemId;
+  const node = Number.isSafeInteger(target.nodeId) ? nodeAt(state, target.nodeId!) : undefined;
+  const property = node && state.properties[node.id];
+  if (id === 'controller') return Number.isSafeInteger(target.diceValue) && target.diceValue! >= 1 && target.diceValue! <= 6;
+  if (['bomb', 'unluck', 'tax'].includes(id)) {
+    const enemy = state.players.find(entry => entry.id === target.targetId);
+    return !!enemy && !enemy.bankrupt && enemy.id !== player.id;
+  }
+  if (id === 'teleport') return node?.kind === 'station' && node.id !== player.position;
+  if (id === 'teleportStone') return !!node && node.id !== player.position;
+  if (id === 'weather') return !!target.weatherId && Object.hasOwn(WEATHERS, target.weatherId)
+    && (WEATHERS[target.weatherId].family !== 'disaster' || state.day >= 22);
+  if (id === 'demolish') return !!node && isProperty(node) && !isUtility(node) && !!property
+    && property.ownerId !== player.id && property.level >= 1 && property.level < 4;
+  if (id === 'repair') return !!node && isProperty(node) && !isUtility(node) && !!property
+    && property.ownerId === player.id && !property.mortgaged && property.level < 4 && state.weatherId !== 'acid';
+  if (id === 'acquire') {
+    const owner = state.players.find(entry => entry.id === property?.ownerId);
+    const cost = node ? getAcquisitionPrice(state, node.id) : null;
+    return !!node && isProperty(node) && !!property && !!owner && !owner.bankrupt && owner.id !== player.id
+      && !property.mortgaged && property.level < 4 && cost !== null && player.cash >= cost;
+  }
   return true;
 }
 
@@ -364,6 +402,8 @@ function openTurn(state: GameState) {
   } else state.phase = 'ready';
   state.pending = null;
   state.selectedDie = 6;
+  state.controlledRoll = null;
+  state.twinRoll = false;
   state.movement = null;
   enforceDebt(state, state.phase === 'ready' ? 'ready' : 'end');
 }
@@ -372,6 +412,7 @@ function endTurn(state: GameState) {
   if (state.phase === 'gameover') return;
   state.turnEncounters = [];
   state.controlledRoll = null;
+  state.twinRoll = false;
   const initial = state.currentPlayerIndex;
   do {
     state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
@@ -398,7 +439,7 @@ export function createGame(config: GameConfig): GameState {
   const stocks: Stock[] = copy(INITIAL_STOCKS).map(s => ({ ...s, history: s.history?.length ? s.history : [s.price], change: s.change ?? 0 }));
   const state: GameState = { version: 1, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
     encounters: [], turnEncounters: [], stocks, logs: [], notices: [], phase: 'ready', pending: null,
-    movement: null, feedback: null, seasonReport: null, rng: seed, sequence: 0, winnerId: null, lastMarketEvent: null, selectedDie: 6, controlledRoll: null };
+    movement: null, feedback: null, seasonReport: null, rng: seed, sequence: 0, winnerId: null, lastMarketEvent: null, selectedDie: 6, controlledRoll: null, twinRoll: false };
   for (const player of state.players) { addItem(state, player, 'snack', 2); addItem(state, player, 'rent', 1); addItem(state, player, 'dice8', 1); }
   state.weatherId = chooseWeather(state);
   state.weatherHistory = [state.weatherId];
@@ -484,7 +525,7 @@ function sendTo(state: GameState, player: Player, kind: 'hospital' | 'prison' | 
       segments: [{ kind: 'transfer', path, label: `前往${destinationName}` }], effects: [] };
   }
   player.confinement = { kind, remaining: turns };
-  if (player.id === current(state).id) { state.pending = null; state.phase = 'end'; }
+  if (player.id === current(state).id) { state.pending = null; state.phase = 'end'; state.selectedDie = 6; state.controlledRoll = null; state.twinRoll = false; }
   state.movement?.effects?.push(effect('confinement', `前往${destinationName} · 停留${turns}回合`, 'bad'));
   log(state, `${player.name} 被送往${destinationName}，停留 ${turns} 回合。`, 'bad');
 }
@@ -609,16 +650,16 @@ function eventChoiceScore(state: GameState, event: EventDef | undefined, choiceI
     if (buildings.length) score -= buildings.reduce((sum, [id, property]) => {
       const node = nodeAt(state, Number(id))!;
       const price = costOf(node);
-      const rentLoss = Math.ceil(price * (RENT_MULTIPLIERS[property.level] - RENT_MULTIPLIERS[property.level - 1]));
+      const rentLoss = Math.ceil(price * (PROPERTY_RENT_MULTIPLIERS[property.level] - PROPERTY_RENT_MULTIPLIERS[property.level - 1]));
       return sum + Math.ceil(price * 0.75) + rentLoss;
     }, 0) / buildings.length;
   }
   return score;
 }
 
-function rentNotice(state: GameState, payer: Player, recipient: Player, node: MapNode, paid: number, nominal: number, reason?: string) {
+function rentNotice(state: GameState, payer: Player, recipient: Player, node: MapNode, paid: number, nominal: number, reason?: string, moodLoss = 0) {
   notice(state, { kind: 'rent', title: paid > 0 ? '租金已支付' : '租金已免除',
-    body: paid > 0 ? `${payer.name} 在${node.name}向${recipient.name}支付了 ${paid} PM 租金。`
+    body: paid > 0 ? `${payer.name} 在${node.name}向${recipient.name}支付了 ${paid} PM 租金，${moodLoss > 0 ? `心情 −${moodLoss}` : '心情没有继续下降'}。`
       : `${payer.name} 在${node.name}本应向${recipient.name}支付 ${nominal} PM 租金；${reason ?? '本次免租'}，实付 0 PM。`,
     tone: 'info', playerId: payer.id, recipientId: recipient.id, nodeId: node.id, amount: paid });
 }
@@ -633,11 +674,15 @@ function settleRent(state: GameState, payer: Player, recipient: Player, node: Ma
     rentNotice(state, payer, recipient, node, 0, amount, '免租卡抵免');
   } else {
     charge(state, payer, amount); credit(recipient, amount);
-    log(state, `${payer.name} 向 ${recipient.name} 支付 ${amount} PM 租金。`, 'bad');
+    const moodBefore = payer.mood;
+    if (amount > 0) payer.mood = clamp(payer.mood - RENT_MOOD_LOSS);
+    const moodLoss = moodBefore - payer.mood;
+    log(state, `${payer.name} 向 ${recipient.name} 支付 ${amount} PM 租金，${moodLoss > 0 ? `心情 −${moodLoss}` : '心情没有继续下降'}。`, 'bad');
     const entry = effect('cash', `支付租金 −${amount} PM`, 'bad');
-    if (state.movement?.playerId === payer.id) addLandingEffect(state, entry);
-    else setFeedback(state, payer, entry);
-    rentNotice(state, payer, recipient, node, amount, amount);
+    const entries = moodLoss > 0 ? [entry, effect('mood', `心情 −${moodLoss}`, 'bad')] : [entry];
+    if (state.movement?.playerId === payer.id) entries.forEach(item => addLandingEffect(state, item));
+    else setFeedback(state, payer, ...entries);
+    rentNotice(state, payer, recipient, node, amount, amount, undefined, moodLoss);
   }
   return true;
 }
@@ -689,7 +734,7 @@ function enterNode(state: GameState, skipStation = false, glitchBacktrack = fals
       ], { ...data, nodeId: node.id }));
     }
   } else if (node.kind === 'coin') {
-    const amount = rand(state, 60, 120); credit(player, amount); log(state, `${player.name} 捡到 ${amount} PM。`, 'good'); addLandingEffect(state, effect('cash', `拾得 +${amount} PM`, 'good'));
+    const amount = rand(state, ROADSIDE_CASH_MIN, ROADSIDE_CASH_MAX); credit(player, amount); log(state, `${player.name} 捡到 ${amount} PM。`, 'good'); addLandingEffect(state, effect('cash', `拾得 +${amount} PM`, 'good'));
   } else if ((node.kind === 'event' || state.encounters.includes(node.id)) && state.weatherId !== 'paradox') {
     if (node.kind !== 'event') state.encounters = state.encounters.filter(id => id !== node.id);
     const event = selectEvent(state);
@@ -783,13 +828,15 @@ function doRoll(state: GameState) {
   const player = current(state);
   const face = state.selectedDie;
   const controlled = state.controlledRoll != null;
-  const roll = controlled ? state.controlledRoll! : rand(state, 1, face);
+  const count = state.twinRoll ? 2 : 1;
+  const rolls = controlled ? [state.controlledRoll!] : Array.from({ length: count }, () => rand(state, 1, face));
+  const roll = rolls.reduce((sum, value) => sum + value, 0);
   let modifier = state.weatherId === 'hot' ? -1 : state.weatherId === 'heat' ? -2 : state.weatherId === 'scorch' ? -4 : 0;
   const steps = Math.max(0, roll + modifier);
   const path = walk(state, player, steps);
   const normalPath = [...path];
   const journeyReward = awardJourneyProgress(state, player, normalPath);
-  const rollStaminaCost = 2 + Math.floor((roll - 1) * 3 / face);
+  const rollStaminaCost = Math.min(4, 2 + Math.floor((roll - 1) * 3 / (face * count)));
   player.stamina = clamp(player.stamina - rollStaminaCost);
   player.mood = clamp(player.mood - 1);
   weatherActionMood(state, player);
@@ -809,10 +856,11 @@ function doRoll(state: GameState) {
   }
   const effects: GameEffect[] = [effect('stamina', `掷骰 · 基础体力 −${rollStaminaCost}`, 'bad')];
   if (journeyReward > 0) effects.push(effect('cash', `行进奖励 +${journeyReward.toLocaleString('zh-CN')} PM`, 'good'));
-  state.movement = { id: ++state.sequence, playerId: player.id, path, roll, modifier, dice: true, controlled, segments, effects };
+  state.movement = { id: ++state.sequence, playerId: player.id, path, roll, rolls, face, modifier, dice: true, controlled, segments, effects };
   state.selectedDie = 6;
   state.controlledRoll = null;
-  log(state, `${player.name} ${controlled ? '控骰得到' : '掷出'} ${roll} 点，来到 ${nodeAt(state, player.position)?.name ?? '未知地块'}。`);
+  state.twinRoll = false;
+  log(state, `${player.name} ${controlled ? '控骰得到' : count === 2 ? `双骰掷出 ${rolls.join(' + ')} =` : '掷出'} ${roll} 点，来到 ${nodeAt(state, player.position)?.name ?? '未知地块'}。`);
   if (!checkHealth(state, player, true)) enterNode(state, false, state.weatherId === 'glitch');
 }
 
@@ -903,7 +951,7 @@ function doChoice(state: GameState, choiceId?: string) {
       setFeedback(state, player, effect('cash', `卖股偿债 +${sale.total} PM`, 'good'));
     } else return false;
     enforceDebt(state);
-    if (resumeGlitch && state.pending?.kind !== 'debt' && state.phase !== 'gameover') glitchBacktrack(state, true);
+    if (resumeGlitch && state.pending?.kind !== 'debt' && state.phase !== 'gameover' && !player.confinement) glitchBacktrack(state, true);
     return true;
   }
   if (prompt.kind === 'event') {
@@ -930,6 +978,7 @@ function doChoice(state: GameState, choiceId?: string) {
     const card = choiceId === 'use_card' ? player.inventory.find(slot => slot.itemId === 'rent' && !slot.wet) : undefined;
     if (choiceId === 'use_card' && !card) return false;
     if (!settleRent(state, player, owner, rentNode, amount, card)) return false;
+    if (checkHealth(state, player, true)) return true;
     if (player.cash < 0) {
       makeChoice(state, debtPrompt(state, 'end', prompt.data?.glitchBacktrack === true));
       return true;
@@ -1027,26 +1076,10 @@ function doChoice(state: GameState, choiceId?: string) {
 function doUseItem(state: GameState, action: GameAction) {
   const player = current(state);
   const slot = player.inventory.find(s => s.uid === action.itemUid);
-  if (!slot || !canUseItem(state, player.id, slot.uid)) return false;
+  if (!slot || !canTargetItem(state, player.id, slot.uid, action)) return false;
   const id = slot.itemId;
-  if (id === 'controller' && (!Number.isSafeInteger(action.diceValue) || action.diceValue! < 1 || action.diceValue! > 6)) return false;
   const target = state.players.find(p => p.id === action.targetId);
   const node = action.nodeId == null ? undefined : nodeAt(state, action.nodeId);
-  const enemy = target && !target.bankrupt && target.id !== player.id;
-  if (['bomb', 'unluck', 'tax'].includes(id) && !enemy) return false;
-  if (['demolish', 'acquire', 'repair'].includes(id) && (!node || !isProperty(node))) return false;
-  if (['teleport'].includes(id) && node?.kind !== 'station') return false;
-  if (id === 'weather' && (!action.weatherId || !Object.prototype.hasOwnProperty.call(WEATHERS, action.weatherId) || (WEATHERS[action.weatherId].family === 'disaster' && state.day < 22))) return false;
-  if (id === 'demolish') {
-    const prop = node && state.properties[node.id];
-    if (!prop || prop.ownerId === player.id || prop.level < 1 || prop.level >= 4 || isUtility(node!)) return false;
-  }
-  if (id === 'acquire') {
-    const prop = node && state.properties[node.id];
-    const owner = prop && state.players.find(p => p.id === prop.ownerId);
-    const cost = node && prop ? Math.ceil(assetValue(state, node.id, prop) * 1.5) : 0;
-    if (!prop || !owner || owner.id === player.id || prop.mortgaged || prop.level >= 4 || cost <= 0 || player.cash < cost) return false;
-  }
   const threatened = ['demolish', 'acquire'].includes(id)
     ? state.players.find(p => p.id === (node && state.properties[node.id]?.ownerId))
     : ['bomb', 'unluck', 'tax'].includes(id) ? target : undefined;
@@ -1062,8 +1095,8 @@ function doUseItem(state: GameState, action: GameAction) {
   }
   if (id === 'acquire') {
     const prop = node && state.properties[node.id]; const owner = prop && state.players.find(p => p.id === prop.ownerId);
-    const price = node && prop ? Math.ceil(assetValue(state, node.id, prop) * 1.5) : 0;
-    if (!prop || !owner || owner.id === player.id || player.cash < price || price <= 0 || prop.level >= 4) return false;
+    const price = node ? getAcquisitionPrice(state, node.id) : null;
+    if (!prop || !owner || owner.id === player.id || price === null || player.cash < price || prop.level >= 4) return false;
     player.cash -= price; owner.cash += price; prop.ownerId = player.id; removeListing(state, node!.id);
   } else if (id === 'demolish') {
     const prop = node && state.properties[node.id];
@@ -1091,14 +1124,34 @@ function doUseItem(state: GameState, action: GameAction) {
   else if (id === 'weather') addStatus(player, `weather:${action.weatherId!}`, 1);
   else if (id === 'teleport') { const from = player.position; player.previousPosition = null; player.routeNextPosition = null; player.position = node!.id;
     state.movement = { id: ++state.sequence, playerId: player.id, path: [from, node!.id], roll: 0, modifier: 0, dice: false,
-      segments: [{ kind: 'transfer', path: [from, node!.id], label: `传送到${node!.name}` }], effects: [] }; state.phase = 'end'; }
+      segments: [{ kind: 'transfer', path: [from, node!.id], label: `传送到${node!.name}` }], effects: [] }; state.phase = 'end';
+    state.selectedDie = 6; state.controlledRoll = null; state.twinRoll = false; }
+  else if (id === 'teleportStone') { const from = player.position; player.previousPosition = null; player.routeNextPosition = null; player.position = node!.id;
+    state.selectedDie = 6; state.controlledRoll = null; state.twinRoll = false;
+    state.movement = { id: ++state.sequence, playerId: player.id, path: [from, node!.id], roll: 0, modifier: 0, dice: false,
+      segments: [{ kind: 'transfer', path: [from, node!.id], label: `传送石抵达${node!.name}` }], effects: [] };
+    consumeItem(player, slot.uid);
+    enterNode(state);
+    log(state, `${player.name} 使用 ${ITEMS[id].name}抵达 ${node!.name}。`, 'good');
+    return true; }
   else if (/^dice(8|12|20|100)$/.test(id)) state.selectedDie = Number(id.slice(4));
   else if (id === 'controller') state.controlledRoll = action.diceValue!;
+  else if (id === 'twinDish') state.twinRoll = true;
   else if (id === 'rent' || id === 'shield' || id === 'arrest') return false; // Rent is chosen on landing; defense cards react to attacks or arrest.
   else return false;
   consumeItem(player, slot.uid);
   log(state, `${player.name} 使用 ${ITEMS[id].name}${id === 'controller' ? `，指定普通骰 ${action.diceValue} 点` : ''}。`, 'good');
-  setFeedback(state, player, effect('event', id === 'controller' ? `控骰指定 ${action.diceValue} 点` : `使用${ITEMS[id].name}`, 'good'));
+  if (threatened && threatened.id !== player.id) {
+    const moodBefore = threatened.mood;
+    threatened.mood = clamp(threatened.mood - HOSTILE_ITEM_MOOD_LOSS);
+    const moodLoss = moodBefore - threatened.mood;
+    log(state, `${threatened.name} 遭受${ITEMS[id].name}，${moodLoss > 0 ? `心情 −${moodLoss}` : '心情没有继续下降'}。`, 'bad');
+    checkHealth(state, threatened);
+    const entries = [effect('event', `${ITEMS[id].name}命中${threatened.name}`, 'bad')];
+    if (moodLoss > 0) entries.push(effect('mood', `心情 −${moodLoss}`, 'bad'));
+    if (state.movement?.playerId === threatened.id) (state.movement.effects ??= []).push(...entries);
+    else setFeedback(state, threatened, ...entries);
+  } else setFeedback(state, player, effect('event', id === 'controller' ? `控骰指定 ${action.diceValue} 点` : `使用${ITEMS[id].name}`, 'good'));
   return true;
 }
 
@@ -1270,11 +1323,11 @@ export function act(state: GameState, action: GameAction, actorId?: string): Gam
   draft.movement = null;
   let valid = false;
   if (action.type === 'roll' && draft.phase === 'ready' && !current(draft).confinement
-    && (draft.controlledRoll == null || draft.selectedDie === 6 && Number.isSafeInteger(draft.controlledRoll) && draft.controlledRoll >= 1 && draft.controlledRoll <= 6)) { doRoll(draft); valid = true; }
+    && (draft.controlledRoll == null || !draft.twinRoll && draft.selectedDie === 6 && Number.isSafeInteger(draft.controlledRoll) && draft.controlledRoll >= 1 && draft.controlledRoll <= 6)) { doRoll(draft); valid = true; }
   else if (action.type === 'rest' && draft.phase === 'ready' && !current(draft).confinement) {
     const beforeStamina = current(draft).stamina, beforeMood = current(draft).mood;
     current(draft).stamina = clamp(current(draft).stamina + 6); current(draft).mood = clamp(current(draft).mood + 18);
-    draft.controlledRoll = null;
+    draft.selectedDie = 6; draft.controlledRoll = null; draft.twinRoll = false;
     weatherActionMood(draft, current(draft));
     draft.phase = 'end'; log(draft, `${current(draft).name} 原地休息。`);
     setFeedback(draft, current(draft), effect('stamina', `休息 · 体力 +${current(draft).stamina - beforeStamina}`, 'good'),
@@ -1378,6 +1431,18 @@ export function runAI(state: GameState): GameState {
     if (usable) return act(state, { type: 'useItem', itemUid: usable.uid });
     return act(state, { type: 'rest' });
   }
+  if (state.selectedDie === 6 && !state.twinRoll && state.controlledRoll == null && player.stamina >= 45) {
+    const stone = player.inventory.find(slot => slot.itemId === 'teleportStone' && canUseItem(state, player.id, slot.uid));
+    if (stone) {
+      const reserve = player.personality === 'cautious' ? 35_000 : player.personality === 'balanced' ? 20_000 : 10_000;
+      const target = MAPS[state.config.mapId].nodes.filter(node => node.kind === 'land' && !state.properties[node.id]
+        && node.id !== player.position && player.cash >= costOf(node) + reserve)
+        .sort((a, b) => costOf(b) - costOf(a))[0];
+      if (target && canTargetItem(state, player.id, stone.uid, { nodeId: target.id })) {
+        return act(state, { type: 'useItem', itemUid: stone.uid, nodeId: target.id });
+      }
+    }
+  }
   if (state.controlledRoll != null) return act(state, { type: 'roll' });
   const controller = player.inventory.find(slot => slot.itemId === 'controller' && canUseItem(state, player.id, slot.uid));
   if (controller) {
@@ -1386,5 +1451,7 @@ export function runAI(state: GameState): GameState {
   }
   const die = player.inventory.find(s => s.itemId === 'dice8' && canUseItem(state, player.id, s.uid));
   if (die && state.selectedDie === 6 && player.personality === 'aggressive') return act(state, { type: 'useItem', itemUid: die.uid });
+  const twin = player.inventory.find(slot => slot.itemId === 'twinDish' && canUseItem(state, player.id, slot.uid));
+  if (twin && player.stamina >= 45) return act(state, { type: 'useItem', itemUid: twin.uid });
   return act(state, { type: 'roll' });
 }

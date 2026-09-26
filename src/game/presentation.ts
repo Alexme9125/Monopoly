@@ -25,7 +25,7 @@ export function getMovementTimeline(movement: Movement): MovementTimeline {
   if (movement.dice !== false) {
     const adjusted = Math.max(0, movement.roll + movement.modifier);
     add('roll', 650);
-    add('result', 900, { label: `${movement.roll}` });
+    add('result', movement.rolls?.length === 2 ? 1200 : 900, { label: `${movement.roll}` });
     if (movement.modifier !== 0) {
       add('adjust', 700, { label: `${movement.roll} ${movement.modifier > 0 ? '+' : '−'} ${Math.abs(movement.modifier)} = ${adjusted}` });
       add('adjusted', 650, { label: `${adjusted}` });
