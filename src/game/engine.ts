@@ -614,7 +614,7 @@ function enterNode(state: GameState, skipStation = false, glitchBacktrack = fals
       ], { ...data, nodeId: node.id }));
     }
   } else if (node.kind === 'coin') {
-    const amount = rand(state, 30, 90); credit(player, amount); log(state, `${player.name} 捡到 ${amount} PM。`, 'good'); addLandingEffect(state, effect('cash', `拾得 +${amount} PM`, 'good'));
+    const amount = rand(state, 50, 100); credit(player, amount); log(state, `${player.name} 捡到 ${amount} PM。`, 'good'); addLandingEffect(state, effect('cash', `拾得 +${amount} PM`, 'good'));
   } else if ((node.kind === 'event' || state.encounters.includes(node.id)) && state.weatherId !== 'paradox') {
     if (node.kind !== 'event') state.encounters = state.encounters.filter(id => id !== node.id);
     const event = selectEvent(state);

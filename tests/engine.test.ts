@@ -1292,6 +1292,9 @@ describe('pure deterministic engine', () => {
     }
     expect(coinLanding).toBeDefined();
     const amount = coinLanding!.players[0].cash - 100_000;
+    expect(amount).toBeGreaterThanOrEqual(50);
+    expect(amount).toBeLessThanOrEqual(100);
+    expect(coinLanding!.logs.at(-1)?.text).toBe(`${coinLanding!.players[0].name} 捡到 ${amount} PM。`);
     expect(coinLanding!.movement?.effects).toContainEqual({ kind: 'cash', label: `拾得 +${amount} PM`, tone: 'good' });
     expect(coinLanding!.feedback).toBeNull();
 
