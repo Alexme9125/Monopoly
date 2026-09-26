@@ -1,7 +1,16 @@
 import { WEATHERS } from './data';
-import type { GameState } from './types';
+import type { GameState, MapId } from './types';
 
 const EXTREME_WEATHER = new Set(['blizzard', 'freezing', 'storm', 'scorch', 'sandstorm', 'haze', 'acid', 'glitch', 'paradox']);
+const MILD = new Set(['clear', 'soft', 'fireflies', 'breeze', 'drought']);
+const ROUGH = new Set(['chill', 'snow', 'drizzle', 'rain', 'thunder', 'gale', 'mist', 'fog']);
+const HARD = new Set(['blizzard', 'freezing', 'storm']);
+
+function regionalMultiplier(mapId: MapId, weatherId: string): number {
+  if (mapId === 'valley') return MILD.has(weatherId) ? 0.92 : ROUGH.has(weatherId) ? 1.15 : HARD.has(weatherId) ? 1.12 : 1;
+  if (mapId === 'sundered') return MILD.has(weatherId) ? 0.85 : ROUGH.has(weatherId) ? 1.30 : HARD.has(weatherId) ? 1.25 : 1;
+  return 1;
+}
 
 // These are standard-mode weights before the challenge and consecutive-extreme adjustments.
 // Each season totals 100 on a day when disasters are available and no extreme streak is active.
@@ -41,6 +50,6 @@ export function weatherWeights(state: GameState): Record<string, number> {
     }
     if (state.config.weatherMode === 'challenge' && EXTREME_WEATHER.has(weather.id)) weight *= 2;
     if (severeStreak && EXTREME_WEATHER.has(weather.id)) weight *= 0.25;
-    return [weather.id, weight];
+    return [weather.id, weight * regionalMultiplier(state.config.mapId, weather.id)];
   }));
 }

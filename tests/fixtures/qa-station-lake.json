@@ -21,7 +21,8 @@
         "ai": true,
         "personality": "cautious"
       }
-    ]
+    ],
+    "propertyTrading": true
   },
   "players": [
     {
@@ -32,10 +33,10 @@
       "personality": "balanced",
       "id": "p1",
       "cash": 100000,
-      "stamina": 97,
+      "stamina": 98,
       "mood": 99,
-      "position": 4,
-      "previousPosition": 3,
+      "position": 13,
+      "previousPosition": 12,
       "routeNextPosition": null,
       "travelProgress": 1,
       "inventory": [
@@ -67,6 +68,7 @@
       "pawnedItems": [],
       "capacity": 10,
       "holdings": {},
+      "stockCostBasis": {},
       "confinement": null,
       "statuses": [],
       "bankrupt": false
@@ -114,6 +116,7 @@
       "pawnedItems": [],
       "capacity": 10,
       "holdings": {},
+      "stockCostBasis": {},
       "confinement": null,
       "statuses": [],
       "bankrupt": false
@@ -123,7 +126,9 @@
   "day": 1,
   "weatherId": "clear",
   "properties": {},
+  "propertyListings": [],
   "encounters": [],
+  "turnEncounters": [],
   "stocks": [
     {
       "id": "aurora",
@@ -180,7 +185,7 @@
     {
       "id": 11,
       "day": 1,
-      "text": "验收玩家 掷出 1 点，来到 芦湾·星轨站4号。",
+      "text": "验收玩家 掷出 1 点，来到 星汀·星轨站13号。",
       "tone": "info"
     }
   ],
@@ -188,22 +193,22 @@
   "phase": "decision",
   "pending": {
     "kind": "station",
-    "title": "芦湾·星轨站4号",
+    "title": "星汀·星轨站13号",
     "body": "乘车前往另一站，票价 100 PM。",
     "choices": [
       {
-        "id": "station:13",
-        "label": "星汀·星轨站13号",
+        "id": "station:26",
+        "label": "银栈·星轨站26号",
         "disabled": false
       },
       {
-        "id": "station:33",
-        "label": "银栈·星轨站33号",
+        "id": "station:47",
+        "label": "镜湖·星轨站47号",
         "disabled": false
       },
       {
-        "id": "station:57",
-        "label": "星汀·星轨站57号",
+        "id": "station:77",
+        "label": "镜湖·星轨站77号",
         "disabled": false
       },
       {
@@ -212,7 +217,7 @@
       }
     ],
     "data": {
-      "nodeId": 4
+      "nodeId": 13
     }
   },
   "movement": null,
@@ -223,6 +228,7 @@
   "winnerId": null,
   "lastMarketEvent": null,
   "selectedDie": 6,
+  "controlledRoll": null,
   "weatherHistory": [
     "clear"
   ]

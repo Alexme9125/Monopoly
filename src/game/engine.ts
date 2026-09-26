@@ -1,4 +1,5 @@
-import { EVENTS, INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_CASH, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
+import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_CASH, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
+import { findEligibleEvent, getEventWeights } from './eventPool';
 import { MAPS } from './maps';
 import { normalizePlayerColors } from './colors';
 import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
@@ -554,12 +555,12 @@ function weatherLand(state: GameState, player: Player, node: MapNode) {
 function mealRecovery(node: MapNode, prop: Property | undefined) { return isUtility(node) ? 12 : [0, 12, 20, 30, 42][prop?.level ?? 0]; }
 
 function selectEvent(state: GameState): EventDef | undefined {
-  if (!EVENTS.length) return undefined;
   const player = current(state);
-  const weighted = EVENTS.map(e => ({ event: e, weight: e.tone === 'good' ? status(player, 'luck') ? 3 : status(player, 'unluck') ? 0.5 : 1 : e.tone === 'bad' ? status(player, 'unluck') ? 3 : status(player, 'luck') ? 0.5 : 1 : 1 }));
+  const weighted = getEventWeights(state.config.mapId, status(player, 'luck') ? 'luck' : status(player, 'unluck') ? 'unluck' : undefined);
+  if (!weighted.length) return undefined;
   let ticket = next(state) * weighted.reduce((sum, item) => sum + item.weight, 0);
   for (const item of weighted) { ticket -= item.weight; if (ticket < 0) return item.event; }
-  return EVENTS[0];
+  return weighted[weighted.length - 1].event;
 }
 
 function addTurnEncounter(state: GameState, event: EventDef, player: Player, nodeId: number, choices: Prompt['choices']): TurnEncounter {
@@ -585,6 +586,34 @@ function eventChoiceDisabled(state: GameState, event: EventDef, choiceId: string
   const player = current(state);
   return !!((choice.cash && choice.cash < 0 && player.cash < -choice.cash) || (choice.stamina && choice.stamina < 0 && player.stamina < -choice.stamina)
     || (choice.mood && choice.mood < 0 && player.mood < -choice.mood) || (choice.item && !canAdd(player, choice.item)));
+}
+
+function damageableBuildings(state: GameState, player: Player): [string, Property][] {
+  return Object.entries(state.properties).filter(([id, property]) => property.ownerId === player.id
+    && property.level > 0 && property.level < 4 && !!nodeAt(state, Number(id)) && !isUtility(nodeAt(state, Number(id))!));
+}
+
+function eventChoiceScore(state: GameState, event: EventDef | undefined, choiceId: string): number {
+  const option = event?.choices.find(choice => choice.id === choiceId);
+  if (!option) return 0;
+  const player = current(state);
+  let score = (option.cash ?? 0) + (option.stamina ?? 0) * 20 + (option.mood ?? 0) * 15 + (option.item ? 300 : 0);
+  if (option.confinement) {
+    const immunity = option.confinement === 'prison'
+      ? player.inventory.find(slot => !slot.wet && (slot.itemId === 'arrest' || slot.itemId === 'shield')) : undefined;
+    score -= immunity ? ITEMS[immunity.itemId].price
+      : option.confinement === 'prison' ? 3000 : option.confinement === 'parking' ? 1800 : 2200;
+  }
+  if (option.damageBuilding) {
+    const buildings = damageableBuildings(state, player);
+    if (buildings.length) score -= buildings.reduce((sum, [id, property]) => {
+      const node = nodeAt(state, Number(id))!;
+      const price = costOf(node);
+      const rentLoss = Math.ceil(price * (RENT_MULTIPLIERS[property.level] - RENT_MULTIPLIERS[property.level - 1]));
+      return sum + Math.ceil(price * 0.75) + rentLoss;
+    }, 0) / buildings.length;
+  }
+  return score;
 }
 
 function rentNotice(state: GameState, payer: Player, recipient: Player, node: MapNode, paid: number, nominal: number, reason?: string) {
@@ -793,7 +822,7 @@ function weatherActionMood(state: GameState, player: Player) {
 }
 
 function applyEvent(state: GameState, eventId: string, choiceId: string) {
-  const event = EVENTS.find(e => e.id === eventId);
+  const event = findEligibleEvent(state.config.mapId, eventId);
   const option = event?.choices.find(c => c.id === choiceId);
   if (!event || !option || eventChoiceDisabled(state, event, choiceId)) return false;
   const player = current(state);
@@ -816,7 +845,7 @@ function applyEvent(state: GameState, eventId: string, choiceId: string) {
     statusSummary = after > before ? `${label}状态持续${after}日` : `${label}状态未延长`;
   }
   if (option.damageBuilding) {
-    const owned = Object.entries(state.properties).filter(([id, p]) => p.ownerId === player.id && p.level > 0 && p.level < 4 && !!nodeAt(state, Number(id)) && !isUtility(nodeAt(state, Number(id))!));
+    const owned = damageableBuildings(state, player);
     if (owned.length) { const [id, property] = owned[rand(state, 0, owned.length - 1)]; property.level--; removeListing(state, Number(id)); damagedBuilding = `${nodeAt(state, Number(id))?.name ?? '建筑'}降至${property.level}级`; }
   }
   if (option.confinement) sendTo(state, player, option.confinement);
@@ -878,7 +907,7 @@ function doChoice(state: GameState, choiceId?: string) {
     return true;
   }
   if (prompt.kind === 'event') {
-    const event = EVENTS.find(entry => entry.id === prompt.data?.eventId);
+    const event = findEligibleEvent(state.config.mapId, String(prompt.data?.eventId ?? ''));
     if (!event) return false;
     if ((choiceId === 'skip_unavailable' || choiceId === 'skip') && !event.choices.some(entry => entry.id === choiceId)) {
       const encounter = currentTurnEncounter(state, event, player, player.position);
@@ -1295,9 +1324,8 @@ export function runAI(state: GameState): GameState {
       const action = available.find(c => c.id === 'buy' || c.id === 'upgrade');
       if (action && player.cash > reserve + (Number(nodeAt(state, Number(prompt.data?.nodeId))?.price) || 0)) choice = action.id;
     } else if (prompt.kind === 'event') choice = available.reduce((best, item) => {
-      const event = EVENTS.find(e => e.id === prompt.data?.eventId);
-      const score = (id: string) => { const e = event?.choices.find(c => c.id === id); return (e?.cash ?? 0) + (e?.stamina ?? 0) * 20 + (e?.mood ?? 0) * 15 + (e?.item ? 300 : 0); };
-      return score(item.id) > score(best.id) ? item : best;
+      const event = findEligibleEvent(state.config.mapId, String(prompt.data?.eventId ?? ''));
+      return eventChoiceScore(state, event, item.id) > eventChoiceScore(state, event, best.id) ? item : best;
     }, available[0]).id;
     else if (prompt.kind === 'trade') choice = 'reject';
     else if (prompt.kind === 'debt') choice = available.find(c => c.id.startsWith('sellstock:'))?.id

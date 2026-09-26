@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Check } from 'lucide-react';
-import type { Player, TurnEncounter } from '../game/types';
+import EventIdentity from './EventIdentity';
+import type { MapId, Player, TurnEncounter } from '../game/types';
 
-export default function TurnEncounters({ encounters, players }: { encounters: TurnEncounter[]; players: Player[] }) {
+export default function TurnEncounters({ encounters, players, mapId }: { encounters: TurnEncounter[]; players: Player[]; mapId: MapId }) {
   const listRef = useRef<HTMLDivElement>(null);
   const newestId = encounters.at(-1)?.id;
   useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [newestId]);
@@ -12,7 +13,7 @@ export default function TurnEncounters({ encounters, players }: { encounters: Tu
       const actor = players.find(player => player.id === encounter.playerId)?.name || '当前玩家';
       const selected = encounter.choices.find(choice => choice.id === encounter.selectedChoiceId);
       return <article className={`encounter-card encounter-tone-${encounter.tone}`} data-encounter-id={encounter.id} key={encounter.id}>
-        <div className="encounter-header"><small>第 {encounter.day} 天 · {actor}{encounters.length > 1 ? ` · 本回合第 ${encounters.length - index} 次偶遇` : ''}</small><strong>{encounter.title}</strong></div>
+        <div className="encounter-header"><small>第 {encounter.day} 天 · {actor}{encounters.length > 1 ? ` · 本回合第 ${encounters.length - index} 次偶遇` : ''}</small><strong>{encounter.title}</strong><EventIdentity mapId={mapId} eventId={encounter.eventId} /></div>
         <div className="encounter-outcome" role="status" aria-live="polite" aria-atomic="true">
           <div className={`encounter-status ${selected ? 'is-resolved' : 'is-pending'}`}>{selected ? `已选择 · ${selected.label}` : '正在选择'}</div>
           {encounter.result && <p className="encounter-result">{encounter.result}</p>}

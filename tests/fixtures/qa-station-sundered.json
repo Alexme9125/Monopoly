@@ -1,7 +1,7 @@
 {
   "version": 1,
   "config": {
-    "mapId": "coast",
+    "mapId": "sundered",
     "mode": "pve",
     "seasons": 4,
     "weatherMode": "standard",
@@ -35,8 +35,8 @@
       "cash": 100000,
       "stamina": 98,
       "mood": 99,
-      "position": 14,
-      "previousPosition": 13,
+      "position": 6,
+      "previousPosition": 5,
       "routeNextPosition": null,
       "travelProgress": 1,
       "inventory": [
@@ -185,7 +185,7 @@
     {
       "id": 11,
       "day": 1,
-      "text": "验收玩家 掷出 1 点，来到 晨潮·星轨站14号。",
+      "text": "验收玩家 掷出 1 点，来到 末灯林地站6号。",
       "tone": "info"
     }
   ],
@@ -193,22 +193,27 @@
   "phase": "decision",
   "pending": {
     "kind": "station",
-    "title": "晨潮·星轨站14号",
+    "title": "末灯林地站6号",
     "body": "乘车前往另一站，票价 100 PM。",
     "choices": [
       {
-        "id": "station:33",
-        "label": "海镜·星轨站33号",
+        "id": "station:16",
+        "label": "末灯林地站16号",
         "disabled": false
       },
       {
-        "id": "station:45",
-        "label": "珊瑚·星轨站45号",
+        "id": "station:31",
+        "label": "漫行高原站31号",
         "disabled": false
       },
       {
-        "id": "station:59",
-        "label": "珊瑚·星轨站59号",
+        "id": "station:60",
+        "label": "望穹高脊站60号",
+        "disabled": false
+      },
+      {
+        "id": "station:78",
+        "label": "回声裂谷站78号",
         "disabled": false
       },
       {
@@ -217,7 +222,7 @@
       }
     ],
     "data": {
-      "nodeId": 14
+      "nodeId": 6
     }
   },
   "movement": null,

@@ -1,10 +1,24 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { AI_PRESETS, EVENTS, INITIAL_STOCKS, ITEMS, WEATHERS } from '../src/game/data';
 import { MAPS } from '../src/game/maps';
-import type { MapNode, TileKind } from '../src/game/types';
+import type { MapId, MapNode, TileKind } from '../src/game/types';
 
 const allKinds: TileKind[] = ['start', 'land', 'empty', 'coin', 'event', 'hospital', 'prison', 'sanatorium', 'parking', 'power', 'water', 'telecom', 'station', 'shop', 'casino', 'exchange'];
 const facilityKinds = new Set<TileKind>(['hospital', 'prison', 'sanatorium', 'parking', 'power', 'water', 'telecom', 'station', 'shop', 'casino', 'exchange']);
+const propertyKinds = new Set<TileKind>(['land', 'power', 'water', 'telecom']);
+
+function roadDistances(nodes: MapNode[], startId: number): number[] {
+  const distances = Array<number>(nodes.length).fill(Infinity);
+  distances[startId] = 0;
+  const queue = [startId];
+  for (const nodeId of queue) for (const neighborId of nodes[nodeId].neighbors) {
+    if (distances[neighborId] !== Infinity) continue;
+    distances[neighborId] = distances[nodeId] + 1;
+    queue.push(neighborId);
+  }
+  return distances;
+}
 
 function intersects(a: MapNode, b: MapNode, c: MapNode, d: MapNode): boolean {
   const orientation = (p: MapNode, q: MapNode, r: MapNode) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
@@ -18,7 +32,66 @@ function intersects(a: MapNode, b: MapNode, c: MapNode, d: MapNode): boolean {
   return abC * abD < -1e-6 && cdA * cdB < -1e-6 || on(a, b, c) || on(a, b, d) || on(c, d, a) || on(c, d, b);
 }
 
-describe('three map road networks', () => {
+describe('map road networks', () => {
+  it.each([
+    ['lake', [13, 26, 47, 77], 12, 8],
+    ['coast', [14, 33, 45, 59], 13, 9],
+    ['valley', [12, 24, 44, 54, 88], 12, 10],
+    ['sundered', [6, 16, 31, 60, 78], 10, 10],
+  ] as const)('spreads %s stations across the road network', (mapId, expectedIds, minimumGap, maximumReach) => {
+    const nodes = MAPS[mapId].nodes;
+    const stations = nodes.filter(node => node.kind === 'station');
+    expect(stations.map(node => node.id)).toEqual(expectedIds);
+    const distances = stations.map(station => roadDistances(nodes, station.id));
+    for (let i = 0; i < stations.length; i++) for (let j = i + 1; j < stations.length; j++) {
+      expect(distances[i][stations[j].id], `${mapId} stations ${stations[i].id}/${stations[j].id} are too close`).toBeGreaterThanOrEqual(minimumGap);
+    }
+    for (const node of nodes) {
+      expect(Math.min(...distances.map(fromStation => fromStation[node.id])), `${mapId} node ${node.id} is too far from a station`).toBeLessThanOrEqual(maximumReach);
+    }
+    if (mapId === 'coast') {
+      expect(stations.filter(node => node.x <= 750 && node.y <= 490)).toHaveLength(2);
+      expect(stations.filter(node => node.x >= 750 && node.y >= 490)).toHaveLength(2);
+    }
+    if (mapId === 'valley') {
+      const outer = (node: MapNode) => node.x < 200 || node.x > 1300 || node.y < 150 || node.y > 900;
+      expect(stations.filter(outer)).toHaveLength(3);
+      expect(stations.filter(node => !outer(node) && node.x < 750)).toHaveLength(1);
+      expect(stations.filter(node => !outer(node) && node.x >= 750)).toHaveLength(1);
+    }
+    if (mapId === 'sundered') {
+      expect(stations.filter(node => node.x <= 780 && node.y >= 560)).toHaveLength(2);
+      expect(stations.filter(node => node.x <= 780 && node.y <= 440)).toHaveLength(1);
+      expect(stations.filter(node => node.x >= 1020 && node.y < 440)).toHaveLength(1);
+      expect(stations.filter(node => node.x >= 1020 && node.y >= 560)).toHaveLength(1);
+      for (const station of stations) expect(station.name).toMatch(new RegExp(`站${station.id}号$`));
+      for (const id of [47, 70]) {
+        expect(nodes[id].kind).toBe('exchange');
+        expect(nodes[id].name).toContain('证券所');
+        expect(nodes[id].name).not.toMatch(/站\d+号$/);
+      }
+    }
+  });
+
+  it.each([
+    ['lake', 39, 48, 26, 113260, '08fea40118c7d1c5cc6f00c192a864aa131a90bb3959e18567182e819dc4bfca', 'c9838cf4e0abf61c4120c93258a5d1179f22139dc62e82ab654a1728d73e01b4'],
+    ['coast', 32, 38, 21, 97000, '72883eb0ad26dd94264a61686436b7e20b6f6e546c5b39e43ea56b5d6df8e68f', '075609f55e6f959078ba46c654543d34c88ae03d16d3766e99088ac19ff66420'],
+    ['valley', 45, 54, 30, 124200, 'af12ca435b9ef4d18fc87e0bbc0dbcea70daea1b7e7f6cde3955759db41197b6', '94fc3fa566782479e228618a0669cdc771736411e06780664e9b8b5682a5d9db'],
+    ['sundered', 47, 58, 32, 131540, 'b5c3cd5f47716b4eae30a4df059b3bbc3112641ec4e30d9e1348a97d01cb60e7', '8fb6f5f61a2bf2c4fc17f5ef089f62ce57c9277d74d8784e0ab775ecc031befc'],
+  ] as const)('preserves %s roads and purchasable property while moving facilities', (mapId, landCount, propertyCount, facilityCount, totalPrice, propertyFingerprint, roadFingerprint) => {
+    const nodes = MAPS[mapId].nodes;
+    const properties = nodes.filter(node => propertyKinds.has(node.kind));
+    expect(nodes.filter(node => node.kind === 'land')).toHaveLength(landCount);
+    expect(properties).toHaveLength(propertyCount);
+    expect(nodes.filter(node => facilityKinds.has(node.kind))).toHaveLength(facilityCount);
+    expect(properties.reduce((sum, node) => sum + (node.price ?? 0), 0)).toBe(totalPrice);
+    // Compact baseline from the pre-relocation map: property id, kind, and price must not move.
+    const listing = properties.map(node => `${node.id}:${node.kind}:${node.price}`).join('|');
+    expect(createHash('sha256').update(listing).digest('hex')).toBe(propertyFingerprint);
+    const roads = JSON.stringify(nodes.map(node => [node.id, node.x, node.y, node.neighbors]));
+    expect(createHash('sha256').update(roads).digest('hex')).toBe(roadFingerprint);
+  });
+
   it('preserves the named routes and their distinguishing geometry', () => {
     expect(MAPS.lake.name).toBe('棱镜湖畔');
     expect(MAPS.coast.name).toBe('原色海岸');
@@ -39,8 +112,19 @@ describe('three map road networks', () => {
       expect(node.x > 390 && node.x < 570 && node.y > 300 && node.y < 600).toBe(false);
       expect(node.x > 930 && node.x < 1110 && node.y > 396 && node.y < 700).toBe(false);
     }
+    expect(MAPS.sundered.name).toBe('破碎山道');
+    expect(MAPS.sundered.nodes).toHaveLength(105);
+    expect(MAPS.sundered.nodes[0]).toMatchObject({ x: 180, y: 560, kind: 'start' });
+    expect(MAPS.sundered.nodes.filter(node => node.neighbors.length === 3)).toHaveLength(6);
   });
-  const expectedRanges: Record<string, [number, number]> = { lake: [70, 90], coast: [70, 90], valley: [90, 110] };
+  const expectedRanges: Record<MapId, [number, number]> = { lake: [70, 90], coast: [70, 90], valley: [90, 110], sundered: [105, 105] };
+  const maxEdgeLength: Record<MapId, number> = { lake: 82, coast: 75, valley: 100, sundered: 60 };
+  const bounds: Record<MapId, { left: number; right: number; top: number; bottom: number }> = {
+    lake: { left: 220, right: 1308, top: 150, bottom: 820 },
+    coast: { left: 160, right: 1340, top: 150, bottom: 830 },
+    valley: { left: 80, right: 1420, top: 30, bottom: 970 },
+    sundered: { left: 180, right: 1320, top: 140, bottom: 860 },
+  };
   for (const map of Object.values(MAPS)) {
     it(`${map.id} has contiguous, connected and local roads`, () => {
       const nodes = map.nodes;
@@ -59,8 +143,8 @@ describe('three map road networks', () => {
           const next = nodes[nextId];
           expect(next).toBeDefined();
           expect(next.neighbors).toContain(node.id);
-          expect(Math.hypot(next.x - node.x, next.y - node.y)).toBeLessThanOrEqual(map.id === 'valley' ? 100 : map.id === 'lake' ? 82 : 75);
-          if (map.id === 'valley') expect(node.x === next.x || node.y === next.y).toBe(true);
+          expect(Math.hypot(next.x - node.x, next.y - node.y)).toBeLessThanOrEqual(maxEdgeLength[map.id]);
+          if (map.id === 'valley' || map.id === 'sundered') expect(node.x === next.x || node.y === next.y).toBe(true);
           if (node.id < nextId) edges.push([node, next]);
           if (!seen.has(nextId)) { seen.add(nextId); stack.push(nextId); }
         }
@@ -69,10 +153,10 @@ describe('three map road networks', () => {
       for (const node of nodes) {
         expect(node.neighbors.length).toBeGreaterThanOrEqual(2);
         expect(new Set(node.neighbors).size).toBe(node.neighbors.length);
-        expect(node.x).toBeGreaterThanOrEqual(map.id === 'valley' ? 80 : map.id === 'coast' ? 160 : 220);
-        expect(node.x).toBeLessThanOrEqual(map.id === 'valley' ? 1420 : map.id === 'coast' ? 1340 : 1308);
-        expect(node.y).toBeGreaterThanOrEqual(map.id === 'valley' ? 30 : 150);
-        expect(node.y).toBeLessThanOrEqual(map.id === 'valley' ? 970 : map.id === 'coast' ? 830 : 820);
+        expect(node.x).toBeGreaterThanOrEqual(bounds[map.id].left);
+        expect(node.x).toBeLessThanOrEqual(bounds[map.id].right);
+        expect(node.y).toBeGreaterThanOrEqual(bounds[map.id].top);
+        expect(node.y).toBeLessThanOrEqual(bounds[map.id].bottom);
       }
       for (let i = 0; i < edges.length; i++) {
         for (let j = i + 1; j < edges.length; j++) {
@@ -82,9 +166,17 @@ describe('three map road networks', () => {
           expect(intersects(a, b, c, d), `${map.id}: ${a.id}-${b.id} touches ${c.id}-${d.id} without a junction`).toBe(false);
         }
       }
-      if (map.id === 'valley') {
+      if (map.id === 'sundered') {
+        for (const [a, b] of edges) for (const node of nodes) {
+          if (node.id === a.id || node.id === b.id) continue;
+          const cross = (b.x - a.x) * (node.y - a.y) - (b.y - a.y) * (node.x - a.x);
+          const inside = (node.x - a.x) * (node.x - b.x) + (node.y - a.y) * (node.y - b.y) < 0;
+          expect(Math.abs(cross) < 1e-6 && inside, `sundered edge ${a.id}-${b.id} passes node ${node.id} without connecting`).toBe(false);
+        }
+      }
+      if (map.id === 'valley' || map.id === 'sundered') {
         for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
-          expect(Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y), `valley nodes ${i} and ${j} are too close`).toBeGreaterThanOrEqual(52);
+          expect(Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y), `${map.id} nodes ${i} and ${j} are too close`).toBeGreaterThanOrEqual(52);
         }
       }
     });

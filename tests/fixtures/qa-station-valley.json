@@ -21,7 +21,8 @@
         "ai": true,
         "personality": "cautious"
       }
-    ]
+    ],
+    "propertyTrading": true
   },
   "players": [
     {
@@ -32,10 +33,10 @@
       "personality": "balanced",
       "id": "p1",
       "cash": 100000,
-      "stamina": 97,
+      "stamina": 98,
       "mood": 99,
-      "position": 54,
-      "previousPosition": 55,
+      "position": 12,
+      "previousPosition": 11,
       "routeNextPosition": null,
       "travelProgress": 1,
       "inventory": [
@@ -67,6 +68,7 @@
       "pawnedItems": [],
       "capacity": 10,
       "holdings": {},
+      "stockCostBasis": {},
       "confinement": null,
       "statuses": [],
       "bankrupt": false
@@ -114,6 +116,7 @@
       "pawnedItems": [],
       "capacity": 10,
       "holdings": {},
+      "stockCostBasis": {},
       "confinement": null,
       "statuses": [],
       "bankrupt": false
@@ -123,7 +126,9 @@
   "day": 1,
   "weatherId": "clear",
   "properties": {},
+  "propertyListings": [],
   "encounters": [],
+  "turnEncounters": [],
   "stocks": [
     {
       "id": "aurora",
@@ -180,7 +185,7 @@
     {
       "id": 11,
       "day": 1,
-      "text": "验收玩家 掷出 1 点，来到 云岚·星轨站54号。",
+      "text": "验收玩家 掷出 1 点，来到 松脊·星轨站12号。",
       "tone": "info"
     }
   ],
@@ -188,19 +193,9 @@
   "phase": "decision",
   "pending": {
     "kind": "station",
-    "title": "云岚·星轨站54号",
+    "title": "松脊·星轨站12号",
     "body": "乘车前往另一站，票价 100 PM。",
     "choices": [
-      {
-        "id": "station:20",
-        "label": "松脊·星轨站20号",
-        "disabled": false
-      },
-      {
-        "id": "station:22",
-        "label": "月麓·星轨站22号",
-        "disabled": false
-      },
       {
         "id": "station:24",
         "label": "月麓·星轨站24号",
@@ -212,12 +207,22 @@
         "disabled": false
       },
       {
+        "id": "station:54",
+        "label": "云岚·星轨站54号",
+        "disabled": false
+      },
+      {
+        "id": "station:88",
+        "label": "月麓·星轨站88号",
+        "disabled": false
+      },
+      {
         "id": "leave",
         "label": "离开"
       }
     ],
     "data": {
-      "nodeId": 54
+      "nodeId": 12
     }
   },
   "movement": null,
@@ -228,6 +233,7 @@
   "winnerId": null,
   "lastMarketEvent": null,
   "selectedDie": 6,
+  "controlledRoll": null,
   "weatherHistory": [
     "clear"
   ]

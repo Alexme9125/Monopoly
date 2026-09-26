@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WEATHERS } from '../src/game/data';
 import { act, createGame } from '../src/game/engine';
 import { weatherWeights } from '../src/game/weather';
-import type { GameConfig, GameState } from '../src/game/types';
+import type { GameConfig, GameState, MapId } from '../src/game/types';
 
 const summer = {
   clear: 10, soft: 6, fireflies: 3, drizzle: 15, rain: 10, thunder: 8, storm: 1.5,
@@ -19,8 +19,8 @@ const extreme = ['blizzard', 'freezing', 'storm', 'scorch', 'sandstorm', 'haze',
 const allIds = Object.keys(WEATHERS);
 const total = (weights: Record<string, number>) => Object.values(weights).reduce((sum, weight) => sum + weight, 0);
 
-function game(seed = 17, weatherMode: GameConfig['weatherMode'] = 'standard'): GameState {
-  return createGame({ mapId: 'lake', mode: 'pve', seasons: 0, weatherMode, seed, players: [
+function game(seed = 17, weatherMode: GameConfig['weatherMode'] = 'standard', mapId: MapId = 'lake'): GameState {
+  return createGame({ mapId, mode: 'pve', seasons: 0, weatherMode, seed, players: [
     { name: '旅行家', color: '#e9635c', shape: 'circle', ai: false, personality: 'balanced' },
     { name: '同行者', color: '#6794dd', shape: 'diamond', ai: true, personality: 'cautious' },
   ] });
@@ -33,8 +33,8 @@ function baseline(state: GameState, day: number) {
   return weatherWeights(state);
 }
 
-function completeDays(seed: number, mode: GameConfig['weatherMode']) {
-  let state = game(seed, mode);
+function completeDays(seed: number, mode: GameConfig['weatherMode'], mapId: MapId = 'lake') {
+  let state = game(seed, mode, mapId);
   const days: { day: number; weatherId: string; history: string[] }[] = [];
   while (state.day <= 84) {
     // Day 1 is created by the new-game path; keep it out of the natural day-transition sample.
@@ -52,6 +52,76 @@ function completeDays(seed: number, mode: GameConfig['weatherMode']) {
 }
 
 describe('seasonal weather balance', () => {
+  it('applies only the declared valley and sundered natural-weather multipliers', () => {
+    const state = game();
+    const mild = new Set(['clear', 'soft', 'fireflies', 'breeze', 'drought']);
+    const rough = new Set(['chill', 'snow', 'drizzle', 'rain', 'thunder', 'gale', 'mist', 'fog']);
+    const hard = new Set(['blizzard', 'freezing', 'storm']);
+    const regionFactors: Record<'valley' | 'sundered', [number, number, number]> = {
+      valley: [0.92, 1.15, 1.12], sundered: [0.85, 1.30, 1.25],
+    };
+    for (const mode of ['standard', 'challenge'] as const) for (const day of [1, 21, 22, 43, 64, 85]) {
+      state.config.weatherMode = mode;
+      state.config.mapId = 'lake';
+      const lake = baseline(state, day);
+      state.config.mapId = 'coast';
+      expect(baseline(state, day)).toEqual(lake);
+      for (const mapId of ['valley', 'sundered'] as const) {
+        state.config.mapId = mapId;
+        const regional = baseline(state, day);
+        const [mildFactor, roughFactor, hardFactor] = regionFactors[mapId];
+        const season = Math.floor((day - 1) / 21) % 4;
+        for (const id of allIds) {
+          const factor = mild.has(id) ? mildFactor : rough.has(id) ? roughFactor : hard.has(id) ? hardFactor : 1;
+          expect(regional[id], `${mapId}/${mode}/day${day}/${id}`).toBeCloseTo(lake[id] * factor, 12);
+          if (!WEATHERS[id].seasons.includes(season) || WEATHERS[id].family === 'disaster' && day < 22) expect(regional[id]).toBe(0);
+        }
+        const chance = (ids: string[]) => ids.reduce((sum, id) => sum + regional[id], 0) / total(regional);
+        expect(chance(extreme)).toBeLessThan(0.1);
+        if (day <= 21) for (const weather of Object.values(WEATHERS)) {
+          if (weather.family === 'disaster') expect(regional[weather.id]).toBe(0);
+        }
+        if (day === 22) for (const id of ['chill', 'snow', 'blizzard', 'freezing']) expect(regional[id]).toBe(0);
+        if (day === 64) for (const id of ['drizzle', 'rain', 'thunder', 'storm', 'acid']) expect(regional[id]).toBe(0);
+        if (day === 43) expect(regional.freezing).toBeGreaterThan(0);
+      }
+    }
+    const climate = (mapId: MapId, day: number, mode: GameConfig['weatherMode']) => {
+      state.config.mapId = mapId; state.config.weatherMode = mode;
+      const weights = baseline(state, day);
+      const share = (ids: string[]) => ids.reduce((sum, id) => sum + weights[id], 0) / total(weights);
+      return { clear: share(['clear', 'soft', 'fireflies']), rough: share(['chill', 'snow', 'drizzle', 'rain', 'thunder', 'gale', 'mist', 'fog']) };
+    };
+    for (const mode of ['standard', 'challenge'] as const) for (const day of [1, 22, 43, 64]) {
+      const lake = climate('lake', day, mode), valley = climate('valley', day, mode), sundered = climate('sundered', day, mode);
+      expect(lake.clear).toBeGreaterThan(valley.clear);
+      expect(valley.clear).toBeGreaterThan(sundered.clear);
+      expect(sundered.clear).toBeGreaterThan(0.12);
+      expect(lake.rough).toBeLessThan(valley.rough);
+      expect(valley.rough).toBeLessThan(sundered.rough);
+    }
+    state.config.mapId = 'sundered'; state.config.weatherMode = 'challenge';
+    const normal = baseline(state, 43);
+    state.weatherHistory = ['storm', 'scorch'];
+    const streak = weatherWeights(state);
+    for (const id of allIds) expect(streak[id]).toBeCloseTo(normal[id] * (extreme.includes(id) ? 0.25 : 1), 12);
+  });
+
+  it('draws eligible weather across all four sundered seasons in real turn progression', () => {
+    for (const mode of ['standard', 'challenge'] as const) {
+      const days = completeDays(1217, mode, 'sundered');
+      expect(days).toHaveLength(83);
+      for (const { day, weatherId } of days) {
+        const season = Math.floor((day - 1) / 21) % 4;
+        expect(WEATHERS[weatherId].seasons, `day ${day}`).toContain(season);
+        if (day < 22) expect(WEATHERS[weatherId].family).not.toBe('disaster');
+      }
+      expect(days.find(entry => entry.day === 22)).toBeDefined();
+      expect(days.find(entry => entry.day === 43)).toBeDefined();
+      expect(days.find(entry => entry.day === 64)).toBeDefined();
+    }
+  });
+
   it('uses the exact 100-point summer and winter standard weights before history adjustments', () => {
     const state = game();
     for (const [day, expected] of [[22, summer], [64, winter]] as const) {

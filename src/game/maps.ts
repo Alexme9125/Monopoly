@@ -107,10 +107,20 @@ const valleyPaths: { points: Point[]; loop?: boolean }[] = [
   { points: [[600, 510], [675, 510], [750, 510], [750, 574], [825, 574], [900, 574]] },
 ];
 
+const sunderedPaths: { points: Point[]; loop?: boolean }[] = [
+  { points: sampledLoop([[180, 560], [600, 560], [600, 680], [780, 680], [780, 860], [180, 860]], [7, 2, 3, 3, 10, 5]), loop: true },
+  { points: sampledLoop([[180, 140], [780, 140], [780, 320], [600, 320], [600, 440], [180, 440]], [10, 3, 3, 2, 7, 5]), loop: true },
+  { points: sampledLoop([[1020, 140], [1320, 140], [1320, 380], [1200, 380], [1200, 620], [1320, 620], [1320, 860], [1020, 860]], [5, 4, 2, 4, 2, 4, 5, 12]), loop: true },
+  { points: [[420, 440], [420, 500], [420, 560]] },
+  { points: [[780, 260], [840, 260], [900, 260], [960, 260], [1020, 260]] },
+  { points: [[780, 740], [840, 740], [900, 740], [960, 740], [1020, 740]] },
+];
+
 const themes: Record<MapId, MapTheme> = {
   lake: { id: 'lake', name: '棱镜湖畔', subtitle: '湖光环路', description: '环湖道路与外城道路由多条短桥相接，投资者在水岸与城郊之间穿行。', accent: '#58b7c4', districts: ['芦湾', '星汀', '镜湖', '银栈'], seed: 241 },
   coast: { id: 'coast', name: '原色海岸', subtitle: '斜向双湾八字路', description: '西北与东南两座矩形海湾只在潮汐广场交会，形成清晰的斜向八字道路。', accent: '#f1a45d', districts: ['晨潮', '海镜', '暮帆', '珊瑚'], seed: 593 },
   valley: { id: 'valley', name: '怡人山谷', subtitle: '三环阶梯山道', description: '外缘阶梯山道环抱两片错层谷地，林间支路和折线栈桥把三环相接。', accent: '#a994d5', districts: ['云岚', '松脊', '晶谷', '月麓'], seed: 887 },
+  sundered: { id: 'sundered', name: '破碎山道', subtitle: '林谷·断桥·高脊', description: '松林、湖泊与裂谷桥连接风雪高脊；旧屋、废弃矿道与气象站留下远行者的痕迹。', accent: '#8796aa', districts: ['漫行高原', '望穹高脊', '末灯林地', '回声裂谷'], seed: 1217 },
 };
 
 const essentialFacilities: TileKind[] = [
@@ -125,6 +135,30 @@ const facilityNames: Record<string, string> = {
   telecom: '通讯台', casino: '星筹馆',
 };
 const scenicNames = ['晴波', '萤岸', '银沙', '月桥', '翠岚', '远帆', '星石', '晨曦', '琉光', '云径'];
+// Exchange station sites with existing public facilities; road and land nodes stay fixed.
+const stationFacilitySwaps: Partial<Record<MapId, readonly (readonly [number, number, TileKind])[]>> = {
+  lake: [[4, 47, 'sanatorium'], [33, 26, 'exchange'], [57, 77, 'casino']],
+  coast: [[43, 14, 'shop'], [68, 33, 'sanatorium'], [44, 45, 'casino'], [54, 59, 'casino']],
+  valley: [[20, 12, 'exchange'], [22, 88, 'casino']],
+  sundered: [[14, 6, 'shop'], [47, 31, 'exchange'], [70, 60, 'exchange']],
+};
+
+function spreadStations(nodes: MapNode[], theme: MapTheme) {
+  for (const [stationId, destinationId, previousKind] of stationFacilitySwaps[theme.id] ?? []) {
+    const station = nodes[stationId], destination = nodes[destinationId];
+    if (station.kind !== 'station' || destination.kind !== previousKind) {
+      throw new Error(`Invalid ${theme.id} station layout at ${stationId}/${destinationId}`);
+    }
+    station.kind = previousKind;
+    destination.kind = 'station';
+    for (const node of [station, destination]) {
+      const districtIndex = (node.x >= 750 ? 1 : 0) + (node.y >= 485 ? 2 : 0);
+      node.name = `${theme.districts[districtIndex]}·${facilityNames[node.kind]}${node.id}号`;
+      if (['hospital', 'prison', 'sanatorium', 'parking'].includes(node.kind)) delete node.price;
+      else node.price = Math.min(4000, 800 + districtIndex * 480 + (node.id % 7) * 260 + (node.kind === 'station' ? 450 : 0));
+    }
+  }
+}
 
 function shuffled(ids: number[], seed: number): number[] {
   const result = [...ids];
@@ -175,6 +209,7 @@ function populate(theme: MapTheme, paths: { points: Point[]; loop?: boolean }[])
     }
     node.neighbors.sort((a, b) => a - b);
   }
+  spreadStations(nodes, theme);
   return { id: theme.id, name: theme.name, subtitle: theme.subtitle, description: theme.description, width: 1500, height: 1000, nodes, accent: theme.accent };
 }
 
@@ -182,7 +217,16 @@ export const MAPS: Record<MapId, MapData> = {
   lake: populate(themes.lake, lakePaths),
   coast: populate(themes.coast, coastPaths),
   valley: populate(themes.valley, valleyPaths),
+  sundered: populate(themes.sundered, sunderedPaths),
 };
+
+for (const [id, name] of [
+  [6, '末灯林地站6号'], [16, '末灯林地站16号'], [31, '漫行高原站31号'],
+  [60, '望穹高脊站60号'], [78, '回声裂谷站78号'],
+] as const) {
+  if (MAPS.sundered.nodes[id].kind !== 'station') throw new Error(`Invalid sundered station name at ${id}`);
+  MAPS.sundered.nodes[id].name = name;
+}
 
 // The four arms of the southeast lake junction need room for five roadside
 // lots. Moving only their intermediate nodes preserves IDs and adjacency.

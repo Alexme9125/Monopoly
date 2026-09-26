@@ -43,6 +43,7 @@ describe('browser acceptance fixtures', () => {
     expect(state.pending?.choices.some(choice => choice.id === 'leave')).toBe(true);
     expect(state.pending?.data?.traded).not.toBe(true);
     expect(MAPS[state.config.mapId].nodes[player.position].kind).toBe('exchange');
+    expect(player.position).toBe(33);
     expect(player.cash).toBe(100_000);
     expect(player.holdings.aurora).toBe(20);
     expect(act(state, { type: 'stockTrade', stockId: 'aurora', quantity: -1 })).not.toBe(state);
@@ -63,9 +64,9 @@ describe('browser acceptance fixtures', () => {
   });
 });
 
-describe('square lots directly beside their own roads', () => {
+describe('fully developed square lots directly beside their own roads', () => {
   for (const map of Object.values(MAPS)) {
-    it(`${map.id} has no overlap and every lot touches its road edge`, () => {
+    it(`${map.id} fits every parcel at once without lot or road overlap`, () => {
       const layout = getLotLayout(map);
       const lots = Object.entries(layout);
       expect(lots).toHaveLength(map.nodes.filter(hasLot).length);
@@ -108,7 +109,7 @@ describe('square lots directly beside their own roads', () => {
 });
 
 describe('station callouts at normal zoom', () => {
-  it.each([[374, 500], [807, 913], [1280, 720]])('keeps all three maps readable inside a %i × %i board', (width, height) => {
+  it.each([[374, 500], [807, 913], [1280, 720]])('keeps every map readable inside a %i × %i board', (width, height) => {
     for (const map of Object.values(MAPS)) {
       const view = map.id === 'valley' ? { x: -90, y: -125, width: 1680, height: 1240 }
         : { x: 40, y: 15, width: 1420, height: 950 };
@@ -135,6 +136,86 @@ describe('station callouts at normal zoom', () => {
           expect(overlap(bounds, otherBounds), `${map.id} ${width}×${height} station ${marker.id}/${other.id}`).toBe(0);
         }
       }
+    }
+  });
+
+  it('keeps mountain station selections distinct in a 320 × 568 board', () => {
+    const map = MAPS.sundered;
+    const width = 320, height = 568;
+    const view = { x: 40, y: 15, width: 1420, height: 950 };
+    const scale = Math.min(width / view.width, height / view.height);
+    const letterboxX = (width - view.width * scale) / 2;
+    const letterboxY = (height - view.height * scale) / 2;
+    const anchors = map.nodes.filter(node => node.kind === 'station').map(node => ({
+      id: node.id,
+      x: letterboxX + (node.x - view.x) * scale,
+      y: letterboxY + (node.y - view.y) * scale,
+    }));
+    const markers = layoutStationMarkers(anchors, width, height);
+    expect(markers).toHaveLength(anchors.length);
+    for (const [index, marker] of markers.entries()) {
+      const bounds = { left: marker.x - marker.width / 2, right: marker.x + marker.width / 2,
+        top: marker.y - marker.height / 2, bottom: marker.y + marker.height / 2 };
+      expect(bounds.left).toBeGreaterThanOrEqual(0);
+      expect(bounds.top).toBeGreaterThanOrEqual(0);
+      expect(bounds.right).toBeLessThanOrEqual(width);
+      expect(bounds.bottom).toBeLessThanOrEqual(height);
+      for (const other of markers.slice(index + 1)) {
+        const otherBounds = { left: other.x - other.width / 2, right: other.x + other.width / 2,
+          top: other.y - other.height / 2, bottom: other.y + other.height / 2 };
+        expect(overlap(bounds, otherBounds), `stations ${marker.id}/${other.id}`).toBe(0);
+      }
+    }
+  });
+
+  it('keeps all five mountain station buttons clear of the top-right controls on a compact board', () => {
+    const width = 304, height = 330;
+    const view = { x: 40, y: 15, width: 1420, height: 950 };
+    const scale = Math.min(width / view.width, height / view.height);
+    const letterboxY = (height - view.height * scale) / 2;
+    const anchors = MAPS.sundered.nodes.filter(node => node.kind === 'station').map(node => ({
+      id: node.id,
+      x: (node.x - view.x) * scale,
+      y: letterboxY + (node.y - view.y) * scale,
+    }));
+    const controls = { left: 235, top: 0, right: width, bottom: 104 };
+    const markers = layoutStationMarkers(anchors, width, height, [controls]);
+    expect(markers).toHaveLength(5);
+    for (const [index, marker] of markers.entries()) {
+      const bounds = { left: marker.x - marker.width / 2, right: marker.x + marker.width / 2,
+        top: marker.y - marker.height / 2, bottom: marker.y + marker.height / 2 };
+      expect(bounds.left).toBeGreaterThanOrEqual(0);
+      expect(bounds.top).toBeGreaterThanOrEqual(0);
+      expect(bounds.right).toBeLessThanOrEqual(width);
+      expect(bounds.bottom).toBeLessThanOrEqual(height);
+      expect(overlap(bounds, controls), `station ${marker.id} covers the controls`).toBe(0);
+      for (const other of markers.slice(index + 1)) {
+        const otherBounds = { left: other.x - other.width / 2, right: other.x + other.width / 2,
+          top: other.y - other.height / 2, bottom: other.y + other.height / 2 };
+        expect(overlap(bounds, otherBounds), `stations ${marker.id}/${other.id} overlap`).toBe(0);
+      }
+    }
+  });
+
+  it.each([[320, 568], [374, 500]])('keeps the mountain stations within a %i × %i board after zooming', (width, height) => {
+    const map = MAPS.sundered;
+    const view = { x: 40, y: 15, width: 1420, height: 950 };
+    const scale = Math.min(width / view.width, height / view.height);
+    const letterboxX = (width - view.width * scale) / 2;
+    const letterboxY = (height - view.height * scale) / 2;
+    const zoom = 1.8;
+    const anchors = map.nodes.filter(node => node.kind === 'station').map(node => ({
+      id: node.id,
+      x: letterboxX + (((node.x - 750) * zoom + 750) - view.x) * scale,
+      y: letterboxY + (((node.y - 500) * zoom + 500) - view.y) * scale,
+    }));
+    const markers = layoutStationMarkers(anchors, width, height);
+    expect(markers).toHaveLength(anchors.length);
+    for (const marker of markers) {
+      expect(marker.x - marker.width / 2, `station ${marker.id} left`).toBeGreaterThanOrEqual(0);
+      expect(marker.x + marker.width / 2, `station ${marker.id} right`).toBeLessThanOrEqual(width);
+      expect(marker.y - marker.height / 2, `station ${marker.id} top`).toBeGreaterThanOrEqual(0);
+      expect(marker.y + marker.height / 2, `station ${marker.id} bottom`).toBeLessThanOrEqual(height);
     }
   });
 });

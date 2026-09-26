@@ -265,7 +265,7 @@ describe('authoritative room server', () => {
     const host = await Client.connect(server.port); clients.push(host);
     const guest = await Client.connect(server.port); clients.push(guest);
     let since = host.messages.length;
-    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: 102 } });
+    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: 1946 } });
     const created = await host.wait(message => message.type === 'room' && message.room.members.length === 1, since);
     const code = created.room.code;
     since = guest.messages.length;

@@ -11,6 +11,7 @@ import { createRoomServer } from '../server/index';
 import type { GameConfig, GameState, MapId } from '../src/game/types';
 
 const maps: MapId[] = ['lake', 'coast', 'valley'];
+const allMaps: MapId[] = [...maps, 'sundered'];
 const aiPlayers = AI_PRESETS.slice(0, 4);
 
 function game(mapId: MapId = 'lake', seed = 7, weatherMode: GameConfig['weatherMode'] = 'standard', seasons = 4): GameState {
@@ -59,7 +60,7 @@ function validState(state: GameState) {
 }
 
 describe('four-season acceptance simulation', () => {
-  it('completes seeded AI games on all maps without deadlocks or invalid values', () => {
+  it('preserves the seeded AI baselines on the original three maps', () => {
     const seeds = [7, 126, 20260925];
     for (const mapId of maps) for (const [index, seed] of seeds.entries()) {
       let state = game(mapId, seed, index === 1 ? 'challenge' : 'standard');
@@ -81,6 +82,33 @@ describe('four-season acceptance simulation', () => {
       expect(state.day, `${mapId}/${seed} ended before all four seasons`).toBeGreaterThanOrEqual(85);
       expect(state.winnerId).toBeTruthy();
     }
+  }, 60_000);
+
+  it.each([
+    [7, 'standard'],
+    [126, 'challenge'],
+  ] as const)('completes a four-season mountain game with seed %i in %s weather', (seed, weatherMode) => {
+    const play = (audit: boolean) => {
+      let state = game('sundered', seed, weatherMode);
+      let steps = 0;
+      while (state.phase !== 'gameover' && steps++ < 6000) {
+        if (audit) validState(state);
+        if (state.seasonReport) state = act(state, { type: 'dismissSeason' });
+        const next = runAI(state);
+        expect(next, `sundered/${seed} stuck on day ${state.day}, phase ${state.phase}, prompt ${state.pending?.kind}`).not.toBe(state);
+        expect(next.day - state.day).toBeGreaterThanOrEqual(0);
+        expect(next.day - state.day).toBeLessThanOrEqual(1);
+        state = next;
+      }
+      if (audit) validState(state);
+      expect(steps).toBeLessThan(6000);
+      expect(state.phase).toBe('gameover');
+      expect(state.day).toBeGreaterThanOrEqual(85);
+      expect(state.winnerId).toBeTruthy();
+      return state;
+    };
+    const result = play(true);
+    expect(play(false)).toEqual(result);
   }, 60_000);
 });
 
@@ -127,9 +155,9 @@ describe('journey reward acceptance', () => {
 });
 
 describe('road direction and station travel acceptance', () => {
-  it('offers every forward exit while excluding the incoming edge on all three maps', () => {
+  it('offers every forward exit while excluding the incoming edge on all four maps', () => {
     const seeds = [1972, 1975, 1978]; // D6=1; the following route draw spans thirds of the RNG range.
-    for (const mapId of maps) {
+    for (const mapId of allMaps) {
       const map = MAPS[mapId];
       const base = game(mapId, 20260925);
       base.weatherId = 'clear';
@@ -202,7 +230,7 @@ describe('road direction and station travel acceptance', () => {
     expect(resumed.players[0].routeNextPosition).toBeNull();
   });
 
-  it.each(['lake', 'coast', 'valley'] as const)('lets a %s station visit cancel for free or travel to a listed station for 100 PM', mapId => {
+  it.each([['lake', 13], ['coast', 14], ['valley', 12]] as const)('lets a %s station visit cancel for free or travel to a listed station for 100 PM', (mapId, expectedOrigin) => {
     const state = parseSave(readFileSync(new URL(`./fixtures/qa-station-${mapId}.json`, import.meta.url), 'utf8'));
     const map = MAPS[mapId];
     const origin = state.players[0].position;
@@ -210,6 +238,7 @@ describe('road direction and station travel acceptance', () => {
     const stations = state.pending?.choices.filter(choice => choice.id.startsWith('station:')) ?? [];
     expect(state).toMatchObject({ phase: 'decision', currentPlayerIndex: 0 });
     expect(state.pending?.kind).toBe('station');
+    expect(origin).toBe(expectedOrigin);
     expect(map.nodes[origin].kind).toBe('station');
     expect(stations.length).toBeGreaterThanOrEqual(2);
     expect(stations.every(choice => !choice.disabled)).toBe(true);
@@ -232,10 +261,62 @@ describe('road direction and station travel acceptance', () => {
     expect(parseSave(JSON.stringify(travelled)).players[0].position).toBe(destination);
   });
 
+  it('offers mapped mountain stations, a free cancel, and a persisted 100 PM transfer', () => {
+    const map = MAPS.sundered;
+    const station = map.nodes.find(node => node.kind === 'station'
+      && node.neighbors.some(id => map.nodes[id].neighbors.length === 2))!;
+    expect(station).toBeDefined();
+    const approach = map.nodes[station.neighbors.find(id => map.nodes[id].neighbors.length === 2)!];
+    const inbound = approach.neighbors.find(id => id !== station.id)!;
+    const state = createGame({ mapId: 'sundered', mode: 'pve', seasons: 4, weatherMode: 'standard', seed: 1972,
+      players: [{ ...AI_PRESETS[0], ai: false }, AI_PRESETS[1]] });
+    state.weatherId = 'clear'; state.weatherHistory = ['clear']; state.encounters = [];
+    state.players[0].position = approach.id;
+    state.players[0].previousPosition = inbound;
+    state.rng = 1972;
+    const arrived = act(state, { type: 'roll' });
+    expect(arrived.players[0].position).toBe(station.id);
+    expect(arrived.pending?.kind).toBe('station');
+    const destinations = arrived.pending?.choices.filter(choice => choice.id.startsWith('station:')) ?? [];
+    expect(destinations.length).toBeGreaterThanOrEqual(2);
+    expect(destinations.every(choice => map.nodes[Number(choice.id.slice(8))]?.kind === 'station')).toBe(true);
+    const cash = arrived.players[0].cash;
+    const cancelled = act(arrived, { type: 'choose', choiceId: 'leave' });
+    expect(cancelled.players[0]).toMatchObject({ position: station.id, cash });
+    const selected = destinations.find(choice => !choice.disabled)!;
+    expect(selected).toBeDefined();
+    const destination = Number(selected.id.slice(8));
+    const transferred = act(arrived, { type: 'choose', choiceId: selected.id });
+    expect(transferred.players[0]).toMatchObject({ position: destination, cash: cash - 100 });
+    expect(transferred.movement?.segments).toMatchObject([{ kind: 'transfer', path: [station.id, destination] }]);
+    expect(parseSave(JSON.stringify(transferred)).players[0].position).toBe(destination);
+  });
+
+  it('loads mountain station QA saves with a real landing and a free exit at low cash', () => {
+    const full = parseSave(readFileSync(new URL('./fixtures/qa-station-sundered.json', import.meta.url), 'utf8'));
+    const poor = parseSave(readFileSync(new URL('./fixtures/qa-station-sundered-low.json', import.meta.url), 'utf8'));
+    for (const state of [full, poor]) {
+      expect(state).toMatchObject({ phase: 'decision', currentPlayerIndex: 0, pending: { kind: 'station', data: { nodeId: 6 } } });
+      expect(state.players[0].position).toBe(6);
+      expect(state.pending?.choices.filter(choice => choice.id.startsWith('station:')).map(choice => choice.id))
+        .toEqual(['station:16', 'station:31', 'station:60', 'station:78']);
+      const left = act(state, { type: 'choose', choiceId: 'leave' });
+      expect(left.players[0].position).toBe(6);
+      expect(left.players[0].cash).toBe(state.players[0].cash);
+    }
+    const destination = full.pending!.choices.find(choice => choice.id.startsWith('station:'))!;
+    expect(destination.disabled).toBe(false);
+    expect(act(full, { type: 'choose', choiceId: destination.id }).players[0]).toMatchObject({ position: 16, cash: full.players[0].cash - 100 });
+    expect(poor.players[0].cash).toBe(50);
+    expect(poor.pending!.choices.filter(choice => choice.id.startsWith('station:')).every(choice => choice.disabled)).toBe(true);
+    expect(act(poor, { type: 'choose', choiceId: 'station:16' })).toBe(poor);
+  });
+
   it('disables paid station travel at 50 PM but still lets the player leave for free', () => {
     const state = parseSave(readFileSync(new URL('./fixtures/qa-station-low.json', import.meta.url), 'utf8'));
     const choices = state.pending!.choices.filter(choice => choice.id.startsWith('station:'));
     expect(state.players[0].cash).toBe(50);
+    expect(state.players[0].position).toBe(13);
     expect(choices.length).toBeGreaterThan(0);
     expect(choices.every(choice => choice.disabled)).toBe(true);
     expect(act(state, { type: 'choose', choiceId: choices[0].id })).toBe(state);
