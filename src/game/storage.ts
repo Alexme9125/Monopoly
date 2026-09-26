@@ -229,7 +229,8 @@ export function parseSave(raw: string): GameState {
   if (pending?.kind === 'exchange') {
     const position = players[saved.currentPlayerIndex].position;
     const oldExchange = saved.config.mapId === 'lake' && position === 26
-      || saved.config.mapId === 'valley' && position === 12;
+      || saved.config.mapId === 'valley' && position === 12
+      || saved.config.mapId === 'sundered' && (position === 31 || position === 60);
     if (oldExchange && map.nodes[position].kind === 'station') {
       pending = { ...pending, kind: 'info', title: '交易所已迁址',
         body: '现金和股票持仓保持不变，本次访问可免费结束。', choices: [{ id: 'leave', label: '离开' }] };

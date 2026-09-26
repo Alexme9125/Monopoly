@@ -37,6 +37,7 @@ describe('map road networks', () => {
     ['lake', [13, 26, 47, 77], 12, 8],
     ['coast', [14, 33, 45, 59], 13, 9],
     ['valley', [12, 24, 44, 54, 88], 12, 10],
+    ['sundered', [6, 16, 31, 60, 78], 10, 10],
   ] as const)('spreads %s stations across the road network', (mapId, expectedIds, minimumGap, maximumReach) => {
     const nodes = MAPS[mapId].nodes;
     const stations = nodes.filter(node => node.kind === 'station');
@@ -58,12 +59,25 @@ describe('map road networks', () => {
       expect(stations.filter(node => !outer(node) && node.x < 750)).toHaveLength(1);
       expect(stations.filter(node => !outer(node) && node.x >= 750)).toHaveLength(1);
     }
+    if (mapId === 'sundered') {
+      expect(stations.filter(node => node.x <= 780 && node.y >= 560)).toHaveLength(2);
+      expect(stations.filter(node => node.x <= 780 && node.y <= 440)).toHaveLength(1);
+      expect(stations.filter(node => node.x >= 1020 && node.y < 440)).toHaveLength(1);
+      expect(stations.filter(node => node.x >= 1020 && node.y >= 560)).toHaveLength(1);
+      for (const station of stations) expect(station.name).toMatch(new RegExp(`站${station.id}号$`));
+      for (const id of [47, 70]) {
+        expect(nodes[id].kind).toBe('exchange');
+        expect(nodes[id].name).toContain('证券所');
+        expect(nodes[id].name).not.toMatch(/站\d+号$/);
+      }
+    }
   });
 
   it.each([
     ['lake', 39, 48, 26, 113260, '08fea40118c7d1c5cc6f00c192a864aa131a90bb3959e18567182e819dc4bfca', 'c9838cf4e0abf61c4120c93258a5d1179f22139dc62e82ab654a1728d73e01b4'],
     ['coast', 32, 38, 21, 97000, '72883eb0ad26dd94264a61686436b7e20b6f6e546c5b39e43ea56b5d6df8e68f', '075609f55e6f959078ba46c654543d34c88ae03d16d3766e99088ac19ff66420'],
     ['valley', 45, 54, 30, 124200, 'af12ca435b9ef4d18fc87e0bbc0dbcea70daea1b7e7f6cde3955759db41197b6', '94fc3fa566782479e228618a0669cdc771736411e06780664e9b8b5682a5d9db'],
+    ['sundered', 47, 58, 32, 131540, 'b5c3cd5f47716b4eae30a4df059b3bbc3112641ec4e30d9e1348a97d01cb60e7', '8fb6f5f61a2bf2c4fc17f5ef089f62ce57c9277d74d8784e0ab775ecc031befc'],
   ] as const)('preserves %s roads and purchasable property while moving facilities', (mapId, landCount, propertyCount, facilityCount, totalPrice, propertyFingerprint, roadFingerprint) => {
     const nodes = MAPS[mapId].nodes;
     const properties = nodes.filter(node => propertyKinds.has(node.kind));

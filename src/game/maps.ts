@@ -140,6 +140,7 @@ const stationFacilitySwaps: Partial<Record<MapId, readonly (readonly [number, nu
   lake: [[4, 47, 'sanatorium'], [33, 26, 'exchange'], [57, 77, 'casino']],
   coast: [[43, 14, 'shop'], [68, 33, 'sanatorium'], [44, 45, 'casino'], [54, 59, 'casino']],
   valley: [[20, 12, 'exchange'], [22, 88, 'casino']],
+  sundered: [[14, 6, 'shop'], [47, 31, 'exchange'], [70, 60, 'exchange']],
 };
 
 function spreadStations(nodes: MapNode[], theme: MapTheme) {
@@ -219,9 +220,13 @@ export const MAPS: Record<MapId, MapData> = {
   sundered: populate(themes.sundered, sunderedPaths),
 };
 
-MAPS.sundered.nodes[16].name = '末灯林地站16号';
-MAPS.sundered.nodes[47].name = '漫行高原站47号';
-MAPS.sundered.nodes[70].name = '望穹高脊站70号';
+for (const [id, name] of [
+  [6, '末灯林地站6号'], [16, '末灯林地站16号'], [31, '漫行高原站31号'],
+  [60, '望穹高脊站60号'], [78, '回声裂谷站78号'],
+] as const) {
+  if (MAPS.sundered.nodes[id].kind !== 'station') throw new Error(`Invalid sundered station name at ${id}`);
+  MAPS.sundered.nodes[id].name = name;
+}
 
 // The four arms of the southeast lake junction need room for five roadside
 // lots. Moving only their intermediate nodes preserves IDs and adjacency.

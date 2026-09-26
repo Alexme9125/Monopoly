@@ -292,6 +292,26 @@ describe('road direction and station travel acceptance', () => {
     expect(parseSave(JSON.stringify(transferred)).players[0].position).toBe(destination);
   });
 
+  it('loads mountain station QA saves with a real landing and a free exit at low cash', () => {
+    const full = parseSave(readFileSync(new URL('./fixtures/qa-station-sundered.json', import.meta.url), 'utf8'));
+    const poor = parseSave(readFileSync(new URL('./fixtures/qa-station-sundered-low.json', import.meta.url), 'utf8'));
+    for (const state of [full, poor]) {
+      expect(state).toMatchObject({ phase: 'decision', currentPlayerIndex: 0, pending: { kind: 'station', data: { nodeId: 6 } } });
+      expect(state.players[0].position).toBe(6);
+      expect(state.pending?.choices.filter(choice => choice.id.startsWith('station:')).map(choice => choice.id))
+        .toEqual(['station:16', 'station:31', 'station:60', 'station:78']);
+      const left = act(state, { type: 'choose', choiceId: 'leave' });
+      expect(left.players[0].position).toBe(6);
+      expect(left.players[0].cash).toBe(state.players[0].cash);
+    }
+    const destination = full.pending!.choices.find(choice => choice.id.startsWith('station:'))!;
+    expect(destination.disabled).toBe(false);
+    expect(act(full, { type: 'choose', choiceId: destination.id }).players[0]).toMatchObject({ position: 16, cash: full.players[0].cash - 100 });
+    expect(poor.players[0].cash).toBe(50);
+    expect(poor.pending!.choices.filter(choice => choice.id.startsWith('station:')).every(choice => choice.disabled)).toBe(true);
+    expect(act(poor, { type: 'choose', choiceId: 'station:16' })).toBe(poor);
+  });
+
   it('disables paid station travel at 50 PM but still lets the player leave for free', () => {
     const state = parseSave(readFileSync(new URL('./fixtures/qa-station-low.json', import.meta.url), 'utf8'));
     const choices = state.pending!.choices.filter(choice => choice.id.startsWith('station:'));

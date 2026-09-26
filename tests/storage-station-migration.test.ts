@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ITEMS } from '../src/game/data';
 import { act, createGame } from '../src/game/engine';
 import { MAPS } from '../src/game/maps';
 import { parseSave } from '../src/game/storage';
@@ -27,6 +28,8 @@ describe('pre-relocation facility saves', () => {
     for (const [mapId, origin, oldDestinations] of [
       ['lake', 13, [4, 33, 57]],
       ['valley', 54, [20, 22, 24, 44]],
+      ['sundered', 16, [14, 47, 70, 78]],
+      ['sundered', 78, [14, 16, 47, 70]],
     ] as const) {
       const old = savedStation(mapId, origin, [...oldDestinations]);
       const resumed = parseSave(JSON.stringify(old));
@@ -52,6 +55,9 @@ describe('pre-relocation facility saves', () => {
       ['lake', 4, [13, 33, 57]],
       ['coast', 68, [43, 44, 54]],
       ['valley', 22, [20, 24, 44, 54]],
+      ['sundered', 14, [16, 47, 70, 78]],
+      ['sundered', 47, [14, 16, 70, 78]],
+      ['sundered', 70, [14, 16, 47, 78]],
     ] as const) {
       const old = savedStation(mapId, origin, [...oldDestinations]);
       expect(MAPS[mapId].nodes[origin].kind).not.toBe('station');
@@ -105,6 +111,7 @@ describe('pre-relocation facility saves', () => {
     const visits = [
       { mapId: 'coast', nodeId: 14, kind: 'shop', data: { itemIds: ['snack'], shopPurchases: { snack: 1 } }, choices: [{ id: 'buy:snack', label: '购买' }, { id: 'leave', label: '离开' }] },
       { mapId: 'lake', nodeId: 77, kind: 'casino', data: { played: true }, choices: [{ id: 'slots', label: '老虎机' }, { id: 'leave', label: '离开' }] },
+      { mapId: 'sundered', nodeId: 6, kind: 'shop', data: { itemIds: ['snack'], shopPurchases: {} }, choices: [{ id: 'buy:snack', label: '购买' }, { id: 'leave', label: '离开' }] },
     ] as const;
     for (const visit of visits) {
       const old = game(visit.mapId);
@@ -115,11 +122,18 @@ describe('pre-relocation facility saves', () => {
       expect(resumed.pending).toEqual(old.pending);
       expect(MAPS[visit.mapId].nodes[visit.nodeId].kind).not.toBe(visit.kind);
       expect(act(resumed, { type: 'choose', choiceId: 'leave' }).pending).toBeNull();
+      if (visit.mapId === 'sundered') {
+        const bought = act(resumed, { type: 'choose', choiceId: 'buy:snack' });
+        expect(bought).not.toBe(resumed);
+        expect(bought.players[0].cash).toBe(resumed.players[0].cash - ITEMS.snack.price);
+        expect(bought.players[0].inventory.filter(slot => slot.itemId === 'snack').length).toBeGreaterThan(resumed.players[0].inventory.filter(slot => slot.itemId === 'snack').length);
+        expect(act(bought, { type: 'choose', choiceId: 'leave' }).pending).toBeNull();
+      }
     }
   });
 
-  it('turns only the two relocated exchange visits into free-exit information', () => {
-    for (const [mapId, oldExchange] of [['lake', 26], ['valley', 12]] as const) {
+  it('turns relocated exchange visits into free-exit information', () => {
+    for (const [mapId, oldExchange] of [['lake', 26], ['valley', 12], ['sundered', 31], ['sundered', 60]] as const) {
       const old = game(mapId);
       old.players[0].position = oldExchange;
       old.players[0].previousPosition = MAPS[mapId].nodes[oldExchange].neighbors[0];
