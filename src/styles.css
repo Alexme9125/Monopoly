@@ -538,6 +538,18 @@
 .station-selecting .game-main .board-stage{top:12px}
 @media(max-width:520px){.station-selecting .game-main .board-stage{top:5px}}
 
+/* Regional event identity stays compact in both decision and shared encounter cards. */
+.map-option-main .map-option-events{font-size:9px;line-height:1.35;color:#6f8b7d;letter-spacing:0}
+.event-identity{display:flex;align-items:center;flex-wrap:wrap;gap:5px 6px;max-width:100%;min-width:0;margin:1px 0 10px;line-height:1.35}
+.encounter-header .event-identity{margin:1px 0 0}
+.event-identity>span{display:inline-flex;align-items:center;gap:4px;min-width:0;border:1px solid transparent;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:650;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+.event-identity svg{flex:none}
+.event-identity>.event-identity-origin{color:#3e6569;background:#edf5f3;border-color:#d1e1dd}
+.event-identity>.event-identity-rarity-common{color:#466a70;background:#e8f1f1;border-color:#d1e0e1}
+.event-identity>.event-identity-rarity-uncommon{color:#3f6780;background:#e8f0f7;border-color:#cddde9}
+.event-identity>.event-identity-rarity-rare{color:#7b6028;background:#faf2dd;border-color:#e8d9ac}
+@media(max-width:520px){.map-option-main .map-option-events{font-size:8px}.event-identity>span{font-size:10px;padding:3px 6px}}
+
 /* Rent is an explicit budget decision: compare cash with a single saved card. */
 .modal-rent{width:min(620px,100%)}
 .rent-decision{color:#3e5b4c}

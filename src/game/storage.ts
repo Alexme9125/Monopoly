@@ -1,6 +1,7 @@
 import type { GameState, MapId, PlayerConfig, Shape } from './types';
 import { MAPS } from './maps';
-import { EVENTS, INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
+import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
+import { findEligibleEvent, getEventPool } from './eventPool';
 import { normalizePlayerColors } from './colors';
 import { validShopData } from './shop';
 
@@ -8,7 +9,6 @@ const KEY = 'prism-days-save-v1';
 const MAP_IDS: MapId[] = ['lake', 'coast', 'valley'];
 const SHAPES: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
 const STOCK_IDS = new Set(INITIAL_STOCKS.map(stock => stock.id));
-const EVENT_IDS = new Set(EVENTS.map(event => event.id));
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -63,6 +63,7 @@ export function parseSave(raw: string): GameState {
   if (config.mode === 'pve' && config.players.filter((p: PlayerConfig) => !p.ai).length !== 1) throw new Error('PVE 存档必须有一位真人玩家。');
   if (config.mode === 'pvp' && config.players.some((p: PlayerConfig) => p.ai)) throw new Error('PVP 存档不能包含电脑玩家。');
   const maxNode = MAPS[config.mapId as MapId].nodes.length;
+  const eligibleEventIds = new Set(getEventPool(config.mapId as MapId).map(event => event.id));
   if (!Array.isArray(state.players) || state.players.length !== config.players.length
     || state.players.some((p: unknown) => !record(p) || typeof p.id !== 'string' || !validPlayerConfig(p)
       || !Number.isFinite(p.cash) || !Number.isFinite(p.stamina) || !Number.isFinite(p.mood)
@@ -108,7 +109,7 @@ export function parseSave(raw: string): GameState {
       || !Number.isSafeInteger(item.day) || item.day !== state.day
       || !Number.isSafeInteger(item.nodeId) || Number(item.nodeId) < 0 || Number(item.nodeId) >= maxNode
       || !['event', 'empty'].includes(MAPS[config.mapId as MapId].nodes[Number(item.nodeId)].kind)
-      || typeof item.eventId !== 'string' || !EVENT_IDS.has(item.eventId)
+      || typeof item.eventId !== 'string' || !eligibleEventIds.has(item.eventId)
       || typeof item.title !== 'string' || !item.title.trim() || item.title.length > 200
       || typeof item.story !== 'string' || !item.story.trim() || item.story.length > 2000
       || !['good', 'bad', 'choice'].includes(String(item.tone))
@@ -176,6 +177,8 @@ export function parseSave(raw: string): GameState {
         || (choice.description !== undefined && typeof choice.description !== 'string')
         || (choice.disabled !== undefined && typeof choice.disabled !== 'boolean'))
       || (state.pending.casinoResult !== undefined && (state.pending.kind !== 'casino' || !validCasinoResult(state.pending.casinoResult, state.sequence)))
+      || (state.pending.kind === 'event' && (!record(state.pending.data)
+        || typeof state.pending.data.eventId !== 'string' || !eligibleEventIds.has(state.pending.data.eventId)))
       || (state.pending.kind === 'shop' && !validShopData(state.pending.data))))
     || (config.propertyTrading === false && record(state.pending) && state.pending.kind === 'trade')
     || (state.seasonReport !== null && (!record(state.seasonReport) || !Array.isArray(state.seasonReport.rankings)
@@ -208,7 +211,7 @@ export function parseSave(raw: string): GameState {
     pending = { ...pending, data: { ...pending.data, shopPurchases: {} } };
   }
   if (pending?.kind === 'event') {
-    const event = EVENTS.find(entry => entry.id === pending?.data?.eventId);
+    const event = findEligibleEvent(saved.config.mapId, String(pending?.data?.eventId ?? ''));
     const player = players[saved.currentPlayerIndex];
     const node = map.nodes[player.position];
     if (event && ['event', 'empty'].includes(node.kind)

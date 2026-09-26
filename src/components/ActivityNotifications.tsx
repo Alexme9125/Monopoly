@@ -135,7 +135,7 @@ export default function ActivityNotifications({ state, busy, blocked = false, on
   return <>
     <aside ref={carouselRef} className={`activity-carousel ${displayedEncounters.length ? 'has-turn-encounters' : ''}`} aria-label={displayedEncounters.length ? '本回合不期而遇' : '旅途播报'}>
       <div className="activity-heading"><strong>{displayedEncounters.length ? '本回合 · 不期而遇' : '旅途播报'}</strong><button type="button" onClick={onOpenLogs}>旅途手记</button></div>
-      {displayedEncounters.length ? <TurnEncounters encounters={displayedEncounters} players={state.players} /> : <>{active ? <article className={`activity-card notice-tone-${active.tone}`}>
+      {displayedEncounters.length ? <TurnEncounters encounters={displayedEncounters} players={state.players} mapId={state.config.mapId} /> : <>{active ? <article className={`activity-card notice-tone-${active.tone}`}>
         <small>第 {active.day} 天 · {active.kind === 'rent' ? '租金' : active.kind === 'milestone' ? '行进奖励' : active.kind === 'trade' ? '房产交易' : '事件'}</small>
         <strong>{active.title}</strong>
         <p>{active.body}</p>
