@@ -2,6 +2,7 @@ import type { GameState, MapId, PlayerConfig, Shape } from './types';
 import { MAPS } from './maps';
 import { EVENTS, INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
 import { normalizePlayerColors } from './colors';
+import { validShopData } from './shop';
 
 const KEY = 'prism-days-save-v1';
 const MAP_IDS: MapId[] = ['lake', 'coast', 'valley'];
@@ -174,7 +175,8 @@ export function parseSave(raw: string): GameState {
       || state.pending.choices.some((choice: unknown) => !record(choice) || typeof choice.id !== 'string' || typeof choice.label !== 'string'
         || (choice.description !== undefined && typeof choice.description !== 'string')
         || (choice.disabled !== undefined && typeof choice.disabled !== 'boolean'))
-      || (state.pending.casinoResult !== undefined && (state.pending.kind !== 'casino' || !validCasinoResult(state.pending.casinoResult, state.sequence)))))
+      || (state.pending.casinoResult !== undefined && (state.pending.kind !== 'casino' || !validCasinoResult(state.pending.casinoResult, state.sequence)))
+      || (state.pending.kind === 'shop' && !validShopData(state.pending.data))))
     || (config.propertyTrading === false && record(state.pending) && state.pending.kind === 'trade')
     || (state.seasonReport !== null && (!record(state.seasonReport) || !Array.isArray(state.seasonReport.rankings)
       || state.seasonReport.rankings.some((row: unknown) => !record(row) || typeof row.name !== 'string' || !Number.isFinite(row.assets))))
@@ -202,6 +204,9 @@ export function parseSave(raw: string): GameState {
     players: saved.config.players.map((entry, index) => ({ ...entry, color: players[index].color })) };
   const publicEncounters = [...(saved.turnEncounters ?? [])];
   let pending = saved.pending;
+  if (pending?.kind === 'shop' && pending.data?.shopPurchases === undefined) {
+    pending = { ...pending, data: { ...pending.data, shopPurchases: {} } };
+  }
   if (pending?.kind === 'event') {
     const event = EVENTS.find(entry => entry.id === pending?.data?.eventId);
     const player = players[saved.currentPlayerIndex];
