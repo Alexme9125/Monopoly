@@ -3,6 +3,7 @@ import { MAPS } from './maps';
 import { normalizePlayerColors } from './colors';
 import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
 import { weatherWeights } from './weather';
+import { getShopOffer, SHOP_ITEM_RARITY } from './shop';
 export { weatherWeights } from './weather';
 import type { CasinoResult, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, PropertyListing, Stock, TurnEncounter } from './types';
 
@@ -676,7 +677,7 @@ function enterNode(state: GameState, skipStation = false, glitchBacktrack = fals
       ...stations.map(n => ({ id: `station:${n.id}`, label: n.name, disabled: player.cash < 100 })), { id: 'leave', label: '离开' },
     ], { ...data, nodeId: node.id }));
   } else if (node.kind === 'shop' && state.weatherId !== 'paradox') {
-    const available = Object.values(ITEMS).filter(i => i.shop && i.id !== 'dice100');
+    const available = Object.values(ITEMS).filter(i => i.shop && Object.hasOwn(SHOP_ITEM_RARITY, i.id));
     const sample = [...available];
     for (let i = sample.length - 1; i > 0; i--) { const j = rand(state, 0, i); [sample[i], sample[j]] = [sample[j], sample[i]]; }
     const ids = sample.slice(0, 5).map(i => i.id);
@@ -691,10 +692,18 @@ function enterNode(state: GameState, skipStation = false, glitchBacktrack = fals
 
 function shopPrompt(state: GameState, ids: string[], extra?: Record<string, unknown>): Prompt {
   const player = current(state);
-  return simplePrompt('shop', '道具商店', '可多次购买，离开后结束回合。', [
-    ...ids.map(id => ({ id: `buy:${id}`, label: `${ITEMS[id].name} · ${ITEMS[id].price} PM`, description: ITEMS[id].description, disabled: player.cash < ITEMS[id].price || !canAdd(player, id) })),
+  const prompt = simplePrompt('shop', '道具商店', '每种商品本次进店有购买额度，重新进店刷新。', [],
+    { ...extra, itemIds: ids, shopPurchases: extra?.shopPurchases ?? {} });
+  prompt.choices = [
+    ...ids.map(id => {
+      const offer = getShopOffer(prompt, id)!;
+      return { id: `buy:${id}`, label: `${ITEMS[id].name} · ${ITEMS[id].price} PM`,
+        description: `${ITEMS[id].description} · ${offer.label}，本次剩余 ${offer.remaining}/${offer.limit}`,
+        disabled: offer.remaining === 0 || player.cash < ITEMS[id].price || !canAdd(player, id) };
+    }),
     { id: 'leave', label: '离开' },
-  ], { ...extra, itemIds: ids });
+  ];
+  return prompt;
 }
 
 function casinoPrompt(state: GameState, extra?: Record<string, unknown>, casinoResult?: CasinoResult): Prompt {
@@ -930,10 +939,15 @@ function doChoice(state: GameState, choiceId?: string) {
   }
   if (prompt.kind === 'shop' && choiceId?.startsWith('buy:') && state.weatherId !== 'paradox') {
     const itemId = choiceId.slice(4); const def = ITEMS[itemId];
-    if (!def || !Array.isArray(prompt.data?.itemIds) || !prompt.data.itemIds.includes(itemId) || !def.shop || player.cash < def.price || !canAdd(player, itemId)) return false;
-    charge(state, player, def.price); addItem(state, player, itemId); log(state, `${player.name} 购买 ${def.name}。`, 'good');
+    const offer = getShopOffer(prompt, itemId);
+    if (!def || !offer || offer.remaining <= 0 || player.cash < def.price || !canAdd(player, itemId)) return false;
+    if (!addItem(state, player, itemId)) return false;
+    charge(state, player, def.price);
+    log(state, `${player.name} 购买 ${def.name}。`, 'good');
     setFeedback(state, player, effect('event', `获得${def.name}`, 'good'), effect('cash', `−${def.price} PM`, 'bad'));
-    state.pending = shopPrompt(state, prompt.data.itemIds as string[], prompt.data); return true;
+    state.pending = shopPrompt(state, prompt.data!.itemIds as string[],
+      { ...prompt.data, shopPurchases: { ...(prompt.data?.shopPurchases as Record<string, number> | undefined), [itemId]: offer.purchased + 1 } });
+    return true;
   }
   if (prompt.kind === 'casino' && state.weatherId !== 'paradox') {
     const extra = prompt.data;

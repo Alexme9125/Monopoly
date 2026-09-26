@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Dices, Package, Ticket, Utensils, Zap } from 'lucide-react';
 import { ITEMS } from '../game/data';
+import { getShopOffer } from '../game/shop';
 import type { Choice, ItemDef, Player, Prompt } from '../game/types';
 
 const money = (value: number) => `PM$ ${Math.round(value).toLocaleString('zh-CN')}`;
@@ -36,23 +37,26 @@ export default function ShopPanel({ player, prompt, onChoose, disabled = false }
       <div className="shop-capacity"><small>背包容量</small><strong>{used}/{player.capacity} 格</strong><small>剩余 {remaining} 格</small></div>
     </div>
     <div className="shop-scroll-region">
-    {prompt.body && <p className="shop-intro">{prompt.body}</p>}
+    {prompt.body && <p className="shop-intro">{prompt.body.replace('可多次购买', '每次进店限量供应')}</p>}
     <div className="shop-layout">
       <section className="shop-goods" aria-label="商店商品">
-        <div className="shop-section-head"><h3>商店商品</h3><small>可多次购买</small></div>
+        <div className="shop-section-head"><h3>商店商品</h3><small>限量供应</small></div>
         <div className="shop-item-list">{goods.map((choice: Choice) => {
           const itemId = choice.id.slice(4);
           const item = Object.hasOwn(ITEMS, itemId) ? ITEMS[itemId] : null;
           if (!item) return null;
+          const offer = getShopOffer(prompt, itemId);
           const held = player.inventory.filter(slot => slot.itemId === itemId).reduce((sum, slot) => sum + slot.quantity, 0);
           const stacks = item.stackable && held > 0;
           const nextUsed = used + (stacks ? 0 : 1);
           const shortfall = Math.max(0, item.price - player.cash);
           const noRoom = nextUsed > player.capacity;
-          const reason = shortfall ? `余额不足 · 还差 ${money(shortfall)}` : noRoom ? '背包已满，无法新增道具格' : choice.disabled ? '暂不可购买' : disabled ? '当前无法购买' : '';
+          const soldOut = offer?.remaining === 0;
+          const reason = soldOut ? '本次已售罄' : !offer ? '限购信息缺失，暂不可购买' : shortfall ? `余额不足 · 还差 ${money(shortfall)}` : noRoom ? '背包已满，无法新增道具格' : choice.disabled ? '暂不可购买' : disabled ? '当前无法购买' : '';
+          const quotaText = !offer ? '本次额度暂不可用' : itemId === 'rent' ? `免租卡每次限购 ${offer.limit} 张 · 剩余 ${offer.remaining} 张` : `本次限购 ${offer.limit} 件 · 剩余 ${offer.remaining} 件`;
           return <article className="shop-item" key={choice.id}>
-            <div className="shop-item-main"><span className="shop-item-icon"><ItemCategoryIcon category={item.category} /></span><div className="shop-item-copy"><strong>{item.name}</strong><small>{choice.description || item.description}</small><small className="shop-item-held">已持有 {held} 件{stacks ? ' · 可叠加到现有道具' : ''}</small></div></div>
-            <div className="shop-item-purchase"><strong className="shop-item-price">{money(item.price)}</strong><div className="shop-item-preview"><small>{shortfall ? `购买需 ${money(item.price)}` : `购买后现金 ${money(player.cash - item.price)}`}</small><small>{stacks ? `叠加现有道具 · 仍剩 ${remaining} 格` : noRoom ? '购买需要 1 个空位' : `购买后剩 ${player.capacity - nextUsed} 格`}</small></div><button className="shop-buy-button" type="button" aria-label={`购买${item.name}`} disabled={disabled || choice.disabled || !!reason} title={reason || undefined} onClick={() => onChoose(choice.id)}>购买</button>{reason && <small className="shop-item-reason">{reason}</small>}</div>
+            <div className="shop-item-main"><span className="shop-item-icon"><ItemCategoryIcon category={item.category} /></span><div className="shop-item-copy"><div className="shop-item-name"><strong>{item.name}</strong>{offer ? <span className={`shop-rarity shop-rarity-${offer.rarity}`}>{offer.label}</span> : <span className="shop-rarity shop-rarity-unknown">额度未载入</span>}</div><small>{item.description}</small><small className="shop-item-held">已持有 {held} 件{stacks ? ' · 可叠加到现有道具' : ''}</small><small className="shop-item-quota">{quotaText}</small></div></div>
+            <div className="shop-item-purchase"><strong className="shop-item-price">{money(item.price)}</strong><div className="shop-item-preview"><small>{shortfall ? `购买需 ${money(item.price)}` : `购买后现金 ${money(player.cash - item.price)}`}</small><small>{stacks ? `叠加现有道具 · 仍剩 ${remaining} 格` : noRoom ? '购买需要 1 个空位' : `购买后剩 ${player.capacity - nextUsed} 格`}</small></div><button className="shop-buy-button" type="button" aria-label={soldOut ? `${item.name}已售罄` : `购买${item.name}`} disabled={disabled || choice.disabled || !!reason} title={reason || undefined} onClick={() => onChoose(choice.id)}>{soldOut ? '已售罄' : '购买'}</button>{reason && <small className="shop-item-reason">{reason}</small>}</div>
           </article>;
         })}</div>
       </section>
