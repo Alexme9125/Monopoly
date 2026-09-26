@@ -107,10 +107,20 @@ const valleyPaths: { points: Point[]; loop?: boolean }[] = [
   { points: [[600, 510], [675, 510], [750, 510], [750, 574], [825, 574], [900, 574]] },
 ];
 
+const sunderedPaths: { points: Point[]; loop?: boolean }[] = [
+  { points: sampledLoop([[180, 560], [600, 560], [600, 680], [780, 680], [780, 860], [180, 860]], [7, 2, 3, 3, 10, 5]), loop: true },
+  { points: sampledLoop([[180, 140], [780, 140], [780, 320], [600, 320], [600, 440], [180, 440]], [10, 3, 3, 2, 7, 5]), loop: true },
+  { points: sampledLoop([[1020, 140], [1320, 140], [1320, 380], [1200, 380], [1200, 620], [1320, 620], [1320, 860], [1020, 860]], [5, 4, 2, 4, 2, 4, 5, 12]), loop: true },
+  { points: [[420, 440], [420, 500], [420, 560]] },
+  { points: [[780, 260], [840, 260], [900, 260], [960, 260], [1020, 260]] },
+  { points: [[780, 740], [840, 740], [900, 740], [960, 740], [1020, 740]] },
+];
+
 const themes: Record<MapId, MapTheme> = {
   lake: { id: 'lake', name: '棱镜湖畔', subtitle: '湖光环路', description: '环湖道路与外城道路由多条短桥相接，投资者在水岸与城郊之间穿行。', accent: '#58b7c4', districts: ['芦湾', '星汀', '镜湖', '银栈'], seed: 241 },
   coast: { id: 'coast', name: '原色海岸', subtitle: '斜向双湾八字路', description: '西北与东南两座矩形海湾只在潮汐广场交会，形成清晰的斜向八字道路。', accent: '#f1a45d', districts: ['晨潮', '海镜', '暮帆', '珊瑚'], seed: 593 },
   valley: { id: 'valley', name: '怡人山谷', subtitle: '三环阶梯山道', description: '外缘阶梯山道环抱两片错层谷地，林间支路和折线栈桥把三环相接。', accent: '#a994d5', districts: ['云岚', '松脊', '晶谷', '月麓'], seed: 887 },
+  sundered: { id: 'sundered', name: '破碎山道', subtitle: '林谷·断桥·高脊', description: '松林、湖泊与裂谷桥连接风雪高脊；旧屋、废弃矿道与气象站留下远行者的痕迹。', accent: '#8796aa', districts: ['漫行高原', '望穹高脊', '末灯林地', '回声裂谷'], seed: 1217 },
 };
 
 const essentialFacilities: TileKind[] = [
@@ -182,7 +192,12 @@ export const MAPS: Record<MapId, MapData> = {
   lake: populate(themes.lake, lakePaths),
   coast: populate(themes.coast, coastPaths),
   valley: populate(themes.valley, valleyPaths),
+  sundered: populate(themes.sundered, sunderedPaths),
 };
+
+MAPS.sundered.nodes[16].name = '末灯林地站16号';
+MAPS.sundered.nodes[47].name = '漫行高原站47号';
+MAPS.sundered.nodes[70].name = '望穹高脊站70号';
 
 // The four arms of the southeast lake junction need room for five roadside
 // lots. Moving only their intermediate nodes preserves IDs and adjacency.

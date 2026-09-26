@@ -8,6 +8,7 @@ import { getTileRentPreview } from '../game/engine';
 import { focusCameraPan, followCameraPan, screenDragToPan, type CameraViewport } from './cameraMath';
 import { layoutStationMarkers } from './stationLayout';
 import { PropertyLevelGlyph, PropertyLevelIcon, propertyLevelName } from './PropertyLevel';
+import { SunderedBridges, SunderedTerrain } from './SunderedTerrain';
 
 interface BoardProps { map: MapData; state?: GameState; viewerId?: string; selectedNode?: number | null; onSelectNode?: (id: number) => void; onMovementComplete?: () => void; preview?: boolean; zoom?: number; playing?: boolean; stationSelection?: { originId: number; destinationIds: number[]; disabled?: boolean }; }
 const hiddenWeather = new Set(['rain', 'storm', 'sand', 'sandstorm', 'mist', 'fog', 'haze', 'glitch', 'paradox']);
@@ -37,6 +38,7 @@ function lakeInside(x:number,y:number) { return ((x-876)/208)**2+((y-490)/142)**
 function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) {
  const island=map.id==='valley'?'M42-85Q-35-85-35-5V990Q-35 1080 60 1080H1440Q1545 1080 1545 990V5Q1545-85 1440-85Z':'M161 137Q195 79 304 91L1218 91Q1347 107 1366 187L1385 739Q1404 859 1290 896L279 919Q139 894 130 801L113 258Q108 165 161 137Z';
  const trees=useMemo(()=>{
+  if (map.id === 'sundered') return [];
   const edges=map.nodes.flatMap(n=>n.neighbors.filter(i=>i>n.id).map(i=>[n,map.nodes[i]] as const));
   return Array.from({length:310},(_,i)=>({x:125+pseudo(i,3)*1250,y:95+pseudo(i,7)*810,s:.5+pseudo(i,11)*.35,v:i%4})).filter(t=>{
    if(map.id==='lake'&&lakeInside(t.x,t.y))return false;
@@ -49,7 +51,7 @@ function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) 
  return <>
   <defs>
    <linearGradient id={`${id}-water`} x1="0" y1="0" x2=".7" y2="1"><stop stopColor="#B9DDE0"/><stop offset="1" stopColor="#82B8C5"/></linearGradient>
-   <linearGradient id={`${id}-land`} x1="0" y1="0" x2=".7" y2="1"><stop stopColor={map.id==='coast'?'#E6DEC5':'#DCE6D0'}/><stop offset="1" stopColor={map.id==='valley'?'#C4D5B9':'#D0DEC5'}/></linearGradient>
+   <linearGradient id={`${id}-land`} x1="0" y1="0" x2=".7" y2="1"><stop stopColor={map.id==='coast'?'#E6DEC5':map.id==='sundered'?'#c5d3c4':'#DCE6D0'}/><stop offset="1" stopColor={map.id==='valley'?'#C4D5B9':map.id==='sundered'?'#a9bbaa':'#D0DEC5'}/></linearGradient>
    <filter id={`${id}-shadow`} x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
    <pattern id={`${id}-grain`} patternUnits="userSpaceOnUse" width="42" height="42"><circle cx="4" cy="6" r=".8" fill="#4F755B" opacity=".09"/><circle cx="27" cy="25" r=".65" fill="#4F755B" opacity=".09"/></pattern>
   </defs>
@@ -85,7 +87,8 @@ function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) 
     {[{x:480,y:520,w:39,h:108},{x:1020,y:620,w:38,h:108}].map((m,i)=><g key={i}><ellipse cx={m.x+7} cy={m.y+8} rx={m.w} ry="25" fill="#94AD96" opacity=".23"/><path d={`M${m.x-m.w} ${m.y}Q${m.x-30} ${m.y-m.h+28} ${m.x} ${m.y-m.h}L${m.x+m.w} ${m.y}Z`} fill="#A3B7A0"/><path d={`M${m.x-m.w} ${m.y}Q${m.x-30} ${m.y-m.h+28} ${m.x} ${m.y-m.h}L${m.x+10} ${m.y}Z`} fill="#C2CCAE"/><path d={`M${m.x-25} ${m.y-m.h+34}L${m.x} ${m.y-m.h} ${m.x+28} ${m.y-m.h+39} ${m.x+4} ${m.y-m.h+30} ${m.x-9} ${m.y-m.h+41}Z`} fill="#E7E9D3"/></g>)}
     <text x="753" y="399" textAnchor="middle" className="map-district-label" transform="rotate(-86 753 399)">萤 火 溪</text>
   </>}
-  {Array.from({length:26},(_,i)=>({x:160+pseudo(i,25)*1170,y:120+pseudo(i,19)*740})).filter(t=>map.nodes.every(n=>Math.hypot(n.x-t.x,n.y-t.y)>75)&&Object.values(lots).every(l=>!overlap({left:t.x-12,right:t.x+12,top:t.y-15,bottom:t.y+3},l.bounds,10))&&!(map.id==='lake'&&lakeInside(t.x,t.y))).map((t,i)=><g key={i} transform={`translate(${t.x} ${t.y})`} opacity=".5"><path d="M0 0q-6-12-8-4M1 0q0-14 5-7M3 0q9-9 10-3" stroke="#8CA484" strokeWidth="2" fill="none" strokeLinecap="round"/></g>)}
+  {map.id==='sundered'&&<SunderedTerrain map={map} lots={lots} id={id}/>}
+  {map.id!=='sundered'&&Array.from({length:26},(_,i)=>({x:160+pseudo(i,25)*1170,y:120+pseudo(i,19)*740})).filter(t=>map.nodes.every(n=>Math.hypot(n.x-t.x,n.y-t.y)>75)&&Object.values(lots).every(l=>!overlap({left:t.x-12,right:t.x+12,top:t.y-15,bottom:t.y+3},l.bounds,10))&&!(map.id==='lake'&&lakeInside(t.x,t.y))).map((t,i)=><g key={i} transform={`translate(${t.x} ${t.y})`} opacity=".5"><path d="M0 0q-6-12-8-4M1 0q0-14 5-7M3 0q9-9 10-3" stroke="#8CA484" strokeWidth="2" fill="none" strokeLinecap="round"/></g>)}
   {trees.map((t,i)=><Tree key={i} {...t} variant={t.v}/>)}
  </>;
 }
@@ -187,11 +190,16 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
   frame=requestAnimationFrame(follow);
   return()=>cancelAnimationFrame(frame);
  },[cameraEnabled,cameraMode,moment?.movement.id,zoom,svgSize.width,svgSize.height]);
+ const controlElement=stationSelection?boardRef.current?.parentElement?.querySelector<HTMLElement>('.map-controls'):null;
+ const controlBounds=controlElement?.getBoundingClientRect();
+ const svgBounds=svgRef.current?.getBoundingClientRect();
+ const reservedControls=controlBounds&&svgBounds?[{left:controlBounds.left-svgBounds.left,top:controlBounds.top-svgBounds.top,
+  right:controlBounds.right-svgBounds.left,bottom:controlBounds.bottom-svgBounds.top}]:[];
  const stationMarkers=stationSelection&&svgSize.width?layoutStationMarkers(
   [stationSelection.originId,...stationSelection.destinationIds].filter((nodeId,index,ids)=>ids.indexOf(nodeId)===index).map(nodeId=>{
    const node=map.nodes[nodeId];
    return {id:nodeId,x:letterboxX+(((node.x-750)*zoom+750+pan.x)-viewBox.x)*baseScale,y:letterboxY+(((node.y-500)*zoom+500+pan.y)-viewBox.y)*baseScale};
-  }),svgSize.width,svgSize.height):[];
+  }),svgSize.width,svgSize.height,reservedControls):[];
  const stepLabel=moment?.stage==='weather'
   ? moment.label||'天气变化'
   : moment?.stage==='move'
@@ -234,6 +242,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
    <g transform={`translate(${750+pan.x} ${500+pan.y}) scale(${zoom}) translate(-750 -500)`}>
     <Terrain map={map} id={id} lots={lots}/>
     <g fill="none" strokeLinecap="round" strokeLinejoin="round"><path d={roadPath} stroke="#AEC1AD" strokeWidth="43" opacity=".5" transform="translate(0 3)"/><path d={roadPath} stroke="#FBF8E8" strokeWidth="40"/><path d={roadPath} stroke="#B4BBA2" strokeWidth="1.5" strokeDasharray="5 8"/></g>
+    {map.id==='sundered'&&<SunderedBridges/>}
     <g>
     {map.nodes.map(node=>{
       const property=state?.properties[node.id],owner=players.find(p=>p.id===property?.ownerId),pos=lots[node.id]??node,kind=node.kind;
@@ -320,7 +329,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
      const node=map.nodes[marker.id],origin=marker.id===stationSelection.originId,selected=marker.id===selectedNode;
      const toView=(x:number,y:number)=>({x:viewBox.x+(x-letterboxX)/baseScale,y:viewBox.y+(y-letterboxY)/baseScale});
      const pos=toView(marker.x,marker.y),anchor=toView(marker.anchorX,marker.anchorY);
-     const label=`${node.name.split('·')[0]} · ${String(node.id).padStart(2,'0')}`;
+     const label=`${(map.id==='sundered'?node.name.replace(/站\d+号$/, ''):node.name).split('·')[0]} · ${String(node.id).padStart(2,'0')}`;
      const select=()=>{if(!origin&&!stationSelection.disabled&&!dragged.current)onSelectNode?.(node.id);};
      return <g key={node.id} className={`station-marker ${origin?'is-origin':''} ${selected?'is-destination':''}`} data-station-id={node.id} role={!origin?'button':undefined} tabIndex={!origin?0:undefined} aria-label={origin?`当前车站 #${node.id} ${node.name}`:`选择目的站 #${node.id} ${node.name}`} aria-pressed={!origin?selected:undefined} aria-disabled={!origin?!!stationSelection.disabled:undefined} onClick={select} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select();}}}>
       <path className="station-leader" d={`M${anchor.x} ${anchor.y}L${pos.x} ${pos.y}`} vectorEffect="non-scaling-stroke"/>
@@ -328,7 +337,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
       <g transform={`translate(${pos.x} ${pos.y}) scale(${1/baseScale})`}>
        <rect className="station-marker-face" x={-marker.width/2} y={-marker.height/2} width={marker.width} height={marker.height} rx="9"/>
        <TrainFront x="-43" y="-10" width="18" height="18" strokeWidth="1.8"/>
-       <text className="station-marker-name" x="-18" y="-3">{label}</text>
+       <text className="station-marker-name" x="-18" y="-3" style={map.id==='sundered'?{fontSize:11}:undefined}>{label}</text>
        <text className="station-marker-caption" x="-18" y="12">{origin?'当前车站':selected?'已选终点':'点选前往'}</text>
       </g>
      </g>;

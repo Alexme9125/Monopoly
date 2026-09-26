@@ -34,7 +34,8 @@ function withinMap(map: MapData, bounds: Rect): boolean {
 function besideWater(map: MapData, bounds: Rect): boolean {
   const ponds = map.id === 'lake' ? [{ x: 876, y: 490, rx: 208, ry: 142 }]
     : map.id === 'coast' ? [{ x: 450, y: 320, rx: 150, ry: 94 }, { x: 1050, y: 660, rx: 150, ry: 87 }]
-      : [{ x: 480, y: 465, rx: 59, ry: 66 }, { x: 1020, y: 565, rx: 56, ry: 65 }];
+      : map.id === 'sundered' ? [{ x: 390, y: 285, rx: 115, ry: 70 }]
+        : [{ x: 480, y: 465, rx: 59, ry: 66 }, { x: 1020, y: 565, rx: 56, ry: 65 }];
   return ponds.some(pond => {
     const nearestX = Math.max(bounds.left, Math.min(pond.x, bounds.right));
     const nearestY = Math.max(bounds.top, Math.min(pond.y, bounds.bottom));

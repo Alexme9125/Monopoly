@@ -6,7 +6,7 @@ import { normalizePlayerColors } from './colors';
 import { validShopData } from './shop';
 
 const KEY = 'prism-days-save-v1';
-const MAP_IDS: MapId[] = ['lake', 'coast', 'valley'];
+const MAP_IDS: MapId[] = ['lake', 'coast', 'valley', 'sundered'];
 const SHAPES: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
 const STOCK_IDS = new Set(INITIAL_STOCKS.map(stock => stock.id));
 

@@ -8,7 +8,7 @@ import { REGIONAL_EVENTS } from '../src/game/regionalEvents';
 import { parseSave } from '../src/game/storage';
 import type { EventDef, GameConfig, GameState, MapId } from '../src/game/types';
 
-const mapIds: MapId[] = ['lake', 'coast', 'valley'];
+const mapIds: MapId[] = ['lake', 'coast', 'valley', 'sundered'];
 const config = (mapId: MapId, ai = false): GameConfig => ({
   mapId, mode: 'pve', seasons: 4, weatherMode: 'standard', seed: 1978,
   players: [
@@ -42,8 +42,8 @@ describe('map-exclusive regional encounters', () => {
   it('keeps the 46 universal events and exposes exactly 5/3/2 regional events per map', () => {
     expect(REGIONAL_EVENTS).toEqual(JSON.parse(readFileSync(new URL('../docs/regional-events-design.json', import.meta.url), 'utf8')));
     expect(EVENTS).toHaveLength(46);
-    expect(REGIONAL_EVENTS).toHaveLength(30);
-    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(76);
+    expect(REGIONAL_EVENTS).toHaveLength(40);
+    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(86);
     for (const mapId of mapIds) {
       const regional = REGIONAL_EVENTS.filter(event => event.mapId === mapId);
       expect(regional).toHaveLength(10);
@@ -178,7 +178,7 @@ describe('map-exclusive regional encounters', () => {
     expect(runAI(noBuilding).turnEncounters?.at(-1)?.selectedChoiceId).toBe('lake_cable_alarm_defer');
   });
 
-  it('resolves real low-resource and full-bag regional landings for all 30 events', () => {
+  it('resolves real low-resource and full-bag regional landings for all 40 events', () => {
     let blockedOptions = 0;
     let fallbackCount = 0;
     for (const mapId of mapIds) {

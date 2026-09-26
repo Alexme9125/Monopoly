@@ -799,5 +799,265 @@ export const REGIONAL_EVENTS: EventDef[] = [
         "stamina": 8
       }
     ]
+  },
+  {
+    "id": "sundered_last_lamp",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "title": "末灯旧屋的炉火",
+    "story": "林线下最后一间亮着灯的小屋还留有一张护林员的便条：添过柴的人，可以取一份热饮。你的代理人整理好炉边，终于能坐下来歇口气。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "sundered_last_lamp_rest",
+        "label": "在炉边休息",
+        "description": "体力 +8、心情 +12。",
+        "stamina": 8,
+        "mood": 12
+      },
+      {
+        "id": "sundered_last_lamp_tea",
+        "label": "带走随行热饮",
+        "description": "获得 1 份月露茶。",
+        "item": "tea"
+      }
+    ]
+  },
+  {
+    "id": "sundered_rosehip_trail",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "title": "白桦旁的玫瑰果",
+    "story": "末灯林地的旧路标旁长着一丛玫瑰果，巡林站正在为山上木屋补充食品。代理人可以帮忙采集领取报酬，也能领取一份已经封好的路餐。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "sundered_rosehip_trail_pick",
+        "label": "协助采集玫瑰果",
+        "description": "体力 -2，获得 260 PM$。",
+        "stamina": -2,
+        "cash": 260
+      },
+      {
+        "id": "sundered_rosehip_trail_ration",
+        "label": "领取巡林路餐",
+        "description": "获得 1 份能量小食。",
+        "item": "snack"
+      }
+    ]
+  },
+  {
+    "id": "sundered_angler_lake",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "title": "漫行湖的鱼讯",
+    "story": "高原湖边只有一座小小的钓鱼棚。管理员想把鱼群记录送到山下，你可以让代理人帮忙整理渔获换一份热食，或代传记录领取跑腿费。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_angler_lake_catch",
+        "label": "协助整理渔获",
+        "description": "体力 -5，获得 1 份星港盛宴。",
+        "stamina": -5,
+        "item": "feast"
+      },
+      {
+        "id": "sundered_angler_lake_record",
+        "label": "转交鱼群记录",
+        "description": "获得 180 PM$。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "sundered_refuge_roof",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "title": "避难木屋的旧屋顶",
+    "story": "你为代理人预留的山道木屋被落枝砸松了屋顶，管理员正在检查漏风处。可以分担维修材料费，也可以让代理人亲手固定棚板。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sundered_refuge_roof_materials",
+        "label": "支付补缝材料费",
+        "description": "支付 280 PM$。",
+        "cash": -280
+      },
+      {
+        "id": "sundered_refuge_roof_secure",
+        "label": "固定松动棚板",
+        "description": "体力 -5、心情 -2。",
+        "stamina": -5,
+        "mood": -2
+      }
+    ]
+  },
+  {
+    "id": "sundered_reluctant_shortcut",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "title": "不太情愿的近路",
+    "story": "一块褪色指路牌把代理人引向废弃矿道，所谓近路只剩下成堆碎石。向养护队借搬运车需要付费，自己挪开路障则更耗体力。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sundered_reluctant_shortcut_cart",
+        "label": "租用碎石搬运车",
+        "description": "支付 320 PM$。",
+        "cash": -320
+      },
+      {
+        "id": "sundered_reluctant_shortcut_clear",
+        "label": "自行清理路障",
+        "description": "体力 -6。",
+        "stamina": -6
+      }
+    ]
+  },
+  {
+    "id": "sundered_wolf_tracks",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "雪线下的狼影",
+    "story": "巡林员在回声裂谷的两端发现了灰脊狼群的足迹，暂时拦住了代理人的补给车。可以购买护送服务、耐心配合警戒，或把车留在安全停车区等候。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sundered_wolf_tracks_escort",
+        "label": "购买巡林护送服务",
+        "description": "支付 650 PM$。",
+        "cash": -650
+      },
+      {
+        "id": "sundered_wolf_tracks_watch",
+        "label": "配合巡林警戒",
+        "description": "心情 -10。",
+        "mood": -10
+      },
+      {
+        "id": "sundered_wolf_tracks_park",
+        "label": "留在安全停车区",
+        "description": "进入停车场，禁锢 3 次行动，期间仍可收租。",
+        "confinement": "parking"
+      }
+    ]
+  },
+  {
+    "id": "sundered_shortwave",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "极光里的短波",
+    "story": "气象员带来上一次极光期间录下的短波信号，其中夹杂着重复的信标校准指令。你可以资助解码换取控骰器，也能协助整理录音，或把线索转交巡林站。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_shortwave_decode",
+        "label": "资助信号解码",
+        "description": "支付 600 PM$，获得 1 个控骰器。",
+        "cash": -600,
+        "item": "controller"
+      },
+      {
+        "id": "sundered_shortwave_sort",
+        "label": "整理整夜录音",
+        "description": "体力 -8，获得 700 PM$。",
+        "stamina": -8,
+        "cash": 700
+      },
+      {
+        "id": "sundered_shortwave_forward",
+        "label": "转交信号线索",
+        "description": "心情 +8。",
+        "mood": 8
+      }
+    ]
+  },
+  {
+    "id": "sundered_buried_settlement",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "半埋的旧聚落",
+    "story": "高原旧聚落留下了被碎石半埋的木屋和一份完好的物资清单。修缮队征集材料资金与搬运人手，愿以修复工具或露营补给答谢；完整记录也有保存价值。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_buried_settlement_fund",
+        "label": "资助清点与修缮",
+        "description": "支付 550 PM$，获得 1 个建筑修复包。",
+        "cash": -550,
+        "item": "repair"
+      },
+      {
+        "id": "sundered_buried_settlement_carry",
+        "label": "搬出封存补给箱",
+        "description": "体力 -8，获得 1 份野营休憩包。",
+        "stamina": -8,
+        "item": "restkit"
+      },
+      {
+        "id": "sundered_buried_settlement_archive",
+        "label": "转交聚落清单",
+        "description": "获得 240 PM$。",
+        "cash": 240
+      }
+    ]
+  },
+  {
+    "id": "sundered_weather_archive",
+    "mapId": "sundered",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "第二岩柱的观测档案",
+    "story": "望穹气象站建在高高的岩柱上，断桥另一端保存着多年的风雪观测。站内工程师找到了可回收的局地气象模块，你可以承担修复费用，也可以把档案整理给研究机构。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_weather_archive_restore",
+        "label": "修复局地气象模块",
+        "description": "支付 1700 PM$，获得 1 个天气控制器；使用后才会改变下一次天气。",
+        "cash": -1700,
+        "item": "weather"
+      },
+      {
+        "id": "sundered_weather_archive_records",
+        "label": "整理风雪观测档案",
+        "description": "获得 1100 PM$，心情 +10。",
+        "cash": 1100,
+        "mood": 10
+      }
+    ]
+  },
+  {
+    "id": "sundered_last_horizon",
+    "mapId": "sundered",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "最后一线地平",
+    "story": "代理人沿着旧登山者留下的坐标，在高脊观测匣里找到一枚映着地平线的星核。它可以封装成百面骰；天文协会也愿意购买这段远行记录，替那些没有署名的人留下痕迹。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_last_horizon_core",
+        "label": "封装地平星核",
+        "description": "支付 2400 PM$，获得 1 个百面星核骰。",
+        "cash": -2400,
+        "item": "dice100"
+      },
+      {
+        "id": "sundered_last_horizon_journal",
+        "label": "转交远行记录",
+        "description": "获得 1300 PM$，心情 +12。",
+        "cash": 1300,
+        "mood": 12
+      }
+    ]
   }
 ];

@@ -1,4 +1,4 @@
-export type MapId = 'lake' | 'coast' | 'valley';
+export type MapId = 'lake' | 'coast' | 'valley' | 'sundered';
 export type EventRarity = 'common' | 'uncommon' | 'rare';
 export type Personality = 'cautious' | 'balanced' | 'aggressive';
 export type Shape = 'diamond' | 'circle' | 'hexagon' | 'triangle';
