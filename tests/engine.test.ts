@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { act, canUseItem, createGame, getNetWorth, getRent, getTileRentPreview, marketStep, quoteStockTrade, runAI, weatherWeights } from '../src/game/engine';
+import { act, canUseItem, createGame, getNetWorth, getRent, getStockPosition, getTileRentPreview, marketStep, quoteStockSale, quoteStockTrade, runAI, weatherWeights } from '../src/game/engine';
 import { getMovementTimeline } from '../src/game/presentation';
 import { drawSlotItem, SLOT_POOL_TOTAL, SLOT_PRIZE_POOL, SLOTS_STAKE } from '../src/game/casino';
 import { PLAYER_COLORS } from '../src/game/colors';
@@ -1091,6 +1091,84 @@ describe('pure deterministic engine', () => {
     expect(liquidated.players[0].cash - due.players[0].cash).toBe(quoteStockTrade(due.stocks.find(s => s.id === stock.id)!.price, -7).total);
   });
 
+  it('tracks remaining stock cost including purchase fees across different prices and partial sales', () => {
+    const state = game(); const stockId = state.stocks[0].id;
+    state.players[0].position = exchange.id; state.phase = 'decision';
+    state.pending = { kind: 'exchange', title: '交易所', body: '', choices: [{ id: 'leave', label: '离开' }] };
+    state.stocks[0].price = 100;
+    const first = act(state, { type: 'stockTrade', stockId, quantity: 10 });
+    expect(first.players[0].stockCostBasis?.[stockId]).toBe(1003);
+    first.stocks[0].price = 200;
+    const second = act(first, { type: 'stockTrade', stockId, quantity: 5 });
+    expect(getStockPosition(second.players[0], second.stocks[0])).toMatchObject({ quantity: 15, costBasis: 2006, marketValue: 3000,
+      liquidation: { gross: 3000, fee: 9, total: 2991 }, profit: 985 });
+    expect(getStockPosition(second.players[0], second.stocks[0]).averageCost).toBeCloseTo(2006 / 15);
+    expect(quoteStockSale(second.players[0], second.stocks[0], 6)).toMatchObject({ gross: 1200, fee: 4, total: 1196 });
+    expect(quoteStockSale(second.players[0], second.stocks[0], 6)?.costBasis).toBeCloseTo(802.4);
+    expect(quoteStockSale(second.players[0], second.stocks[0], 6)?.profit).toBeCloseTo(393.6);
+    expect(quoteStockSale(second.players[0], second.stocks[0], 6)?.profitRate).toBeCloseTo(393.6 / 802.4);
+    const partial = act(second, { type: 'stockTrade', stockId, quantity: -6 });
+    expect(partial.players[0].holdings[stockId]).toBe(9);
+    expect(partial.players[0].stockCostBasis?.[stockId]).toBeCloseTo(1203.6);
+    const cleared = act(partial, { type: 'stockTrade', stockId, quantity: -9 });
+    expect(cleared.players[0].stockCostBasis?.[stockId]).toBeUndefined();
+    expect(getStockPosition(cleared.players[0], cleared.stocks[0])).toMatchObject({ quantity: 0, costBasis: null, averageCost: null, profit: null, profitRate: null });
+    expect(quoteStockSale(cleared.players[0], cleared.stocks[0], 1)).toBeNull();
+    const rebought = act(cleared, { type: 'stockTrade', stockId, quantity: 1 });
+    expect(rebought.players[0].stockCostBasis?.[stockId]).toBe(201);
+  });
+
+  it('counts both fees as a loss at an unchanged price and keeps old holdings unpriced until cleared', () => {
+    const state = game(); const stockId = state.stocks[0].id;
+    state.players[0].position = exchange.id; state.phase = 'decision';
+    state.pending = { kind: 'exchange', title: '交易所', body: '', choices: [{ id: 'leave', label: '离开' }] };
+    state.stocks[0].price = 100;
+    const bought = act(state, { type: 'stockTrade', stockId, quantity: 1 });
+    expect(quoteStockSale(bought.players[0], bought.stocks[0], 1)).toMatchObject({ total: 99, costBasis: 101, profit: -2, profitRate: -2 / 101 });
+    expect(quoteStockSale(bought.players[0], bought.stocks[0], 0)).toBeNull();
+    expect(quoteStockSale(bought.players[0], bought.stocks[0], 2)).toBeNull();
+    expect(quoteStockSale(bought.players[0], bought.stocks[0], 1.5)).toBeNull();
+    expect(act(bought, { type: 'stockTrade', stockId, quantity: -2 })).toBe(bought);
+
+    const old = structuredClone(state); old.players[0].holdings[stockId] = 4; delete old.players[0].stockCostBasis;
+    const imported = parseSave(JSON.stringify(old));
+    expect(getStockPosition(imported.players[0], imported.stocks[0]).costBasis).toBeNull();
+    const added = act(imported, { type: 'stockTrade', stockId, quantity: 2 });
+    expect(added.players[0].stockCostBasis?.[stockId]).toBeUndefined();
+    expect(quoteStockSale(added.players[0], added.stocks[0], 3)?.profit).toBeNull();
+    const partial = act(added, { type: 'stockTrade', stockId, quantity: -3 });
+    expect(partial.players[0].stockCostBasis?.[stockId]).toBeUndefined();
+    const empty = act(partial, { type: 'stockTrade', stockId, quantity: -3 });
+    const fresh = act(empty, { type: 'stockTrade', stockId, quantity: 1 });
+    expect(fresh.players[0].stockCostBasis?.[stockId]).toBe(101);
+  });
+
+  it('removes cost basis on debt liquidation and bankruptcy and validates saved positions', () => {
+    const state = game(); const stock = state.stocks[0];
+    state.players[0].holdings[stock.id] = 7;
+    state.players[0].stockCostBasis = { [stock.id]: 3507 };
+    state.players[0].cash = 50; state.phase = 'end';
+    let due = act(state, { type: 'endTurn' }); due.phase = 'end'; due = act(due, { type: 'endTurn' });
+    expect(due.pending?.kind).toBe('debt');
+    const liquidated = act(due, { type: 'choose', choiceId: `sellstock:${stock.id}` });
+    expect(liquidated.players[0].holdings[stock.id]).toBe(0);
+    expect(liquidated.players[0].stockCostBasis?.[stock.id]).toBeUndefined();
+    const bankrupt = act(due, { type: 'choose', choiceId: 'bankrupt' });
+    expect(bankrupt.players[0].stockCostBasis).toEqual({});
+
+    const valid = parseSave(JSON.stringify(due));
+    expect(valid.players[0].stockCostBasis).toEqual(due.players[0].stockCostBasis);
+    for (const basis of [-1, null, '100', Number.MAX_SAFE_INTEGER + 1]) {
+      const corrupt = structuredClone(due);
+      (corrupt.players[0].stockCostBasis as Record<string, unknown>)[stock.id] = basis;
+      expect(() => parseSave(JSON.stringify(corrupt))).toThrow('玩家');
+    }
+    const emptyHolding = structuredClone(due); emptyHolding.players[0].holdings[stock.id] = 0;
+    expect(() => parseSave(JSON.stringify(emptyHolding))).toThrow('玩家');
+    const unknownStock = structuredClone(due); unknownStock.players[0].stockCostBasis!.fake = 1;
+    expect(() => parseSave(JSON.stringify(unknownStock))).toThrow('玩家');
+  });
+
   it('draws exactly one item from the fixed slot pool for 300 PM', () => {
     expect(SLOTS_STAKE).toBe(300);
     expect(SLOT_PRIZE_POOL.reduce((sum, prize) => sum + prize.weight, 0)).toBe(SLOT_POOL_TOTAL);
@@ -1292,6 +1370,9 @@ describe('pure deterministic engine', () => {
     }
     expect(coinLanding).toBeDefined();
     const amount = coinLanding!.players[0].cash - 100_000;
+    expect(amount).toBeGreaterThanOrEqual(60);
+    expect(amount).toBeLessThanOrEqual(120);
+    expect(coinLanding!.logs.at(-1)?.text).toBe(`${coinLanding!.players[0].name} 捡到 ${amount} PM。`);
     expect(coinLanding!.movement?.effects).toContainEqual({ kind: 'cash', label: `拾得 +${amount} PM`, tone: 'good' });
     expect(coinLanding!.feedback).toBeNull();
 
