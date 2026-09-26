@@ -597,3 +597,51 @@
  .dice-control-preview{padding:12px}.dice-control-preview p{font-size:11px}
  .dice-control-actions{margin-top:15px;gap:8px}.dice-control-actions button{flex:1;font-size:11px;padding:10px}
 }
+
+/* Trading desk: owned positions first, then a quantity-specific trade preview. */
+.stock-cost-note{margin:14px 0 18px;font-size:12px;line-height:1.7;color:#58704e}
+.stock-holdings{margin-bottom:25px}
+.stock-holdings h3{font-size:15px;font-weight:650;color:#385943;margin:0 0 11px}
+.stock-holdings-empty{margin:0;padding:22px;border:1px dashed #c8d8c5;border-radius:11px;background:#f8faf4;color:#6e826b;text-align:center;font-size:12px}
+.stock-position-list{display:grid;gap:10px}
+.stock-position{border:1px solid #d7e2d0;background:#f8faf3;border-radius:11px;padding:15px 17px}
+.stock-position-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
+.stock-position-heading strong{font-size:14px;color:#365a43}
+.stock-position-heading span{font-size:12px;color:#627c62}
+.stock-position-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.stock-position-metrics>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.stock-position-metrics span,.stock-position-profit>span{font-size:11px;color:#657d67}
+.stock-position-metrics strong{font:600 13px/1.5 ui-monospace,SFMono-Regular,monospace;color:#344f3c;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stock-position-profit{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin-top:13px;padding-top:11px;border-top:1px solid #dbe5d5}
+.stock-position-profit strong{font:650 14px/1.5 ui-monospace,SFMono-Regular,monospace;font-variant-numeric:tabular-nums;color:#386e4b}
+.stock-position-profit.is-loss strong,.stock-sale-profit.is-loss{color:#9e5944}
+.stock-position-profit.is-unknown strong,.stock-sale-profit.is-unknown{color:#6f7b69}
+.trading-desk .stock-list{gap:13px}
+.trading-desk .stock-row{padding:15px;gap:12px}
+.trading-desk .stock-row small{font-size:11px}
+.stock-input-row{grid-column:1/-1;display:flex;align-items:end;gap:10px;padding-top:3px}
+.stock-input-row label{display:flex;flex-direction:column;gap:5px;width:145px;color:#4f6b52;font-size:12px;font-weight:600}
+.stock-input-row input{width:100%;padding:8px 10px;font-size:13px;font-variant-numeric:tabular-nums}
+.stock-input-row button{min-height:36px;padding:8px 12px;font-size:11px}
+.trading-desk .stock-quote{line-height:1.55;gap:8px 18px;padding:12px 14px}
+.trading-desk .stock-quote>span{font-size:11px;color:#526b49}
+.trading-desk .stock-quote-side{gap:5px}
+.trading-desk .stock-quote-side strong{font-size:13px}
+.trading-desk .stock-quote-side>small{font-size:11px}
+.stock-sale-profit{font-weight:650;color:#386e4b}
+.trading-desk .stock-actions{gap:10px}
+.trading-desk .stock-actions button{min-height:38px;font-size:12px}
+.trading-desk>.modal-actions{position:sticky;bottom:0;z-index:2;margin-top:15px;padding:10px 0 2px;background:#fbfcf5;border-top:1px solid #dfe8d7}
+@media(max-width:520px){
+ .stock-cost-note{font-size:11px;margin:12px 0 15px}
+ .stock-position{padding:13px 14px}
+ .stock-position-heading{align-items:start;flex-direction:column;gap:3px;margin-bottom:11px}
+ .stock-position-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+ .stock-position-metrics strong{font-size:12px}
+ .stock-position-profit strong{font-size:12px}
+ .trading-desk .stock-row{grid-template-columns:minmax(0,1fr) 60px minmax(0,1fr);padding:12px;gap:9px}
+ .stock-input-row label{width:112px}
+ .stock-input-row button{font-size:11px}
+ .trading-desk .stock-quote{padding:11px}
+ .trading-desk .stock-quote-side strong{font-size:12px}
+}

@@ -99,10 +99,55 @@ export function quoteStockTrade(price: number, quantity: number): { gross: numbe
   return { gross, fee, total: quantity < 0 ? gross - fee : gross + fee };
 }
 
+export function quoteStockSale(player: Player, stock: Stock, quantity: number): {
+  gross: number; fee: number; total: number; costBasis: number | null; profit: number | null; profitRate: number | null;
+} | null {
+  const held = player.holdings[stock.id] ?? 0;
+  if (!Number.isSafeInteger(quantity) || quantity <= 0 || quantity > held || !Number.isSafeInteger(held) || held <= 0) return null;
+  const quote = quoteStockTrade(stock.price, -quantity);
+  const known = player.stockCostBasis?.[stock.id];
+  const costBasis = known === undefined ? null : quantity === held ? known : known * quantity / held;
+  const profit = costBasis === null ? null : quote.total - costBasis;
+  return { ...quote, costBasis, profit, profitRate: profit === null || costBasis === null || costBasis === 0 ? null : profit / costBasis };
+}
+
+export function getStockPosition(player: Player, stock: Stock): {
+  quantity: number; costBasis: number | null; averageCost: number | null; marketValue: number;
+  liquidation: { gross: number; fee: number; total: number }; profit: number | null; profitRate: number | null;
+} {
+  const quantity = player.holdings[stock.id] ?? 0;
+  const liquidation = quoteStockTrade(stock.price, -quantity);
+  const sale = quantity > 0 ? quoteStockSale(player, stock, quantity) : null;
+  const costBasis = sale?.costBasis ?? null;
+  return { quantity, costBasis, averageCost: costBasis === null || quantity === 0 ? null : costBasis / quantity,
+    marketValue: quantity * stock.price, liquidation, profit: sale?.profit ?? null, profitRate: sale?.profitRate ?? null };
+}
+
+function buyStock(player: Player, stock: Stock, quantity: number, total: number) {
+  const held = player.holdings[stock.id] ?? 0;
+  const known = player.stockCostBasis?.[stock.id];
+  player.holdings[stock.id] = held + quantity;
+  if (held === 0) (player.stockCostBasis ??= {})[stock.id] = total;
+  else if (known !== undefined) player.stockCostBasis![stock.id] = known + total;
+  player.cash -= total;
+}
+
+function sellStock(player: Player, stock: Stock, quantity: number) {
+  const sale = quoteStockSale(player, stock, quantity);
+  if (!sale) return null;
+  const remaining = player.holdings[stock.id] - quantity;
+  player.holdings[stock.id] = remaining;
+  if (remaining === 0) delete player.stockCostBasis?.[stock.id];
+  else if (sale.costBasis !== null) player.stockCostBasis![stock.id] -= sale.costBasis;
+  credit(player, sale.total);
+  return sale;
+}
+
 function declareBankruptcy(state: GameState, player: Player) {
   player.bankrupt = true;
   player.cash = 0;
   player.holdings = {};
+  player.stockCostBasis = {};
   player.inventory = [];
   player.pawnedItems = [];
   for (const [id, prop] of Object.entries(state.properties)) if (prop.ownerId === player.id) delete state.properties[Number(id)];
@@ -346,7 +391,7 @@ export function createGame(config: GameConfig): GameState {
   const normalizedPlayers = normalizePlayerColors(config.players);
   const players: Player[] = normalizedPlayers.map((p, index) => ({
     ...copy(p), id: `p${index + 1}`, cash: START_CASH, stamina: 100, mood: 100, position: start, previousPosition: null, routeNextPosition: null, travelProgress: 0,
-    inventory: [], pawnedItems: [], capacity: 10, holdings: {}, confinement: null, statuses: [], bankrupt: false,
+    inventory: [], pawnedItems: [], capacity: 10, holdings: {}, stockCostBasis: {}, confinement: null, statuses: [], bankrupt: false,
   }));
   const stocks: Stock[] = copy(INITIAL_STOCKS).map(s => ({ ...s, history: s.history?.length ? s.history : [s.price], change: s.change ?? 0 }));
   const state: GameState = { version: 1, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
@@ -614,7 +659,7 @@ function enterNode(state: GameState, skipStation = false, glitchBacktrack = fals
       ], { ...data, nodeId: node.id }));
     }
   } else if (node.kind === 'coin') {
-    const amount = rand(state, 50, 100); credit(player, amount); log(state, `${player.name} 捡到 ${amount} PM。`, 'good'); addLandingEffect(state, effect('cash', `拾得 +${amount} PM`, 'good'));
+    const amount = rand(state, 60, 120); credit(player, amount); log(state, `${player.name} 捡到 ${amount} PM。`, 'good'); addLandingEffect(state, effect('cash', `拾得 +${amount} PM`, 'good'));
   } else if ((node.kind === 'event' || state.encounters.includes(node.id)) && state.weatherId !== 'paradox') {
     if (node.kind !== 'event') state.encounters = state.encounters.filter(id => id !== node.id);
     const event = selectEvent(state);
@@ -814,9 +859,10 @@ function doChoice(state: GameState, choiceId?: string) {
       const stockId = choiceId.slice(10); const stock = state.stocks.find(s => s.id === stockId);
       const count = stock ? player.holdings[stockId] ?? 0 : 0;
       if (!stock || count <= 0) return false;
-      player.holdings[stockId] = 0; credit(player, quoteStockTrade(stock.price, -count).total);
+      const sale = sellStock(player, stock, count);
+      if (!sale) return false;
       log(state, `${player.name} 卖出 ${count} 股 ${stock.name} 偿还债务。`);
-      setFeedback(state, player, effect('cash', `卖股偿债 +${quoteStockTrade(stock.price, -count).total} PM`, 'good'));
+      setFeedback(state, player, effect('cash', `卖股偿债 +${sale.total} PM`, 'good'));
     } else return false;
     enforceDebt(state);
     if (resumeGlitch && state.pending?.kind !== 'debt' && state.phase !== 'gameover') glitchBacktrack(state, true);
@@ -1064,8 +1110,8 @@ function stockTrade(state: GameState, action: GameAction) {
   const qty = action.quantity;
   if (state.pending?.kind !== 'exchange' || state.weatherId === 'paradox' || nodeAt(state, player.position)?.kind !== 'exchange' || !stock || !Number.isSafeInteger(qty) || !qty || Math.abs(qty) > 1_000_000) return false;
   const quote = quoteStockTrade(stock.price, qty);
-  if (qty > 0) { if (player.cash < quote.total) return false; player.cash -= quote.total; player.holdings[stock.id] = (player.holdings[stock.id] ?? 0) + qty; }
-  else { const held = player.holdings[stock.id] ?? 0; if (held < -qty) return false; player.holdings[stock.id] = held + qty; credit(player, quote.total); }
+  if (qty > 0) { if (player.cash < quote.total) return false; buyStock(player, stock, qty, quote.total); }
+  else if (!sellStock(player, stock, -qty)) return false;
   state.pending!.data = { ...state.pending!.data, traded: true };
   log(state, `${player.name} ${qty > 0 ? '买入' : '卖出'} ${Math.abs(qty)} 股 ${stock.name}。`);
   setFeedback(state, player, effect('event', `${qty > 0 ? '买入' : '卖出'}${Math.abs(qty)}股${stock.name}`, 'info'),

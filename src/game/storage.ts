@@ -75,6 +75,10 @@ export function parseSave(raw: string): GameState {
       || !Array.isArray(p.inventory) || !p.inventory.every(validSlot)
       || !Array.isArray(p.pawnedItems) || !p.pawnedItems.every((pawn: unknown) => record(pawn) && validSlot(pawn.slot) && Number.isFinite(pawn.principal) && Number(pawn.principal) >= 0)
       || !record(p.holdings) || Object.entries(p.holdings).some(([id, value]) => !STOCK_IDS.has(id) || !Number.isSafeInteger(value) || Number(value) < 0)
+      || (p.stockCostBasis !== undefined && (!record(p.stockCostBasis)
+        || Object.entries(p.stockCostBasis).some(([id, value]) => !STOCK_IDS.has(id) || !Number.isFinite(value)
+          || Number(value) < 0 || Number(value) > Number.MAX_SAFE_INTEGER || !Number.isSafeInteger((p.holdings as Record<string, unknown>)[id])
+          || Number((p.holdings as Record<string, unknown>)[id]) <= 0)))
       || !Number.isSafeInteger(p.capacity) || Number(p.capacity) < 1 || Number(p.capacity) > 100
       || !Array.isArray(p.statuses) || p.statuses.some((status: unknown) => !record(status) || typeof status.id !== 'string' || !Number.isSafeInteger(status.remaining))
       || (p.confinement !== null && (!record(p.confinement) || !['hospital', 'prison', 'sanatorium', 'parking'].includes(String(p.confinement.kind)) || !Number.isSafeInteger(p.confinement.remaining)))
