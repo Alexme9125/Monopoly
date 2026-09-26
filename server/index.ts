@@ -10,7 +10,7 @@ import { getMovementTimeline } from '../src/game/presentation';
 import { assignPlayerColor } from '../src/game/colors';
 import type { GameAction, GameState, MapId, Personality, PlayerConfig, Shape } from '../src/game/types';
 
-type RoomConfig = { mapId: MapId; seasons: number; weatherMode: 'standard' | 'challenge'; seed: number };
+type RoomConfig = { mapId: MapId; seasons: number; weatherMode: 'standard' | 'challenge'; seed: number; propertyTrading?: boolean };
 type Member = { seatId: string; clientId: string | null; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; ready: boolean; connected: boolean; host: boolean };
 type Room = { code: string; members: Member[]; config: RoomConfig; started: boolean; state: GameState | null; sockets: Map<string, WebSocket>; timer: ReturnType<typeof setTimeout> | null; movementUntil: number; lastMovementId: number | null; touched: number };
 type Session = { clientId: string | null; roomCode: string | null; seatId: string | null; received: number[] };
@@ -25,7 +25,8 @@ const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const mapIds: MapId[] = ['lake', 'coast', 'valley'];
 const shapes: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
 const personalities: Personality[] = ['cautious', 'balanced', 'aggressive'];
-const actionTypes: GameAction['type'][] = ['roll', 'rest', 'endTurn', 'choose', 'useItem', 'discardItem', 'stockTrade', 'offerTrade', 'mortgage', 'redeem', 'sellAsset', 'pawnItem', 'redeemItem', 'dismissSeason'];
+const actionTypes: GameAction['type'][] = ['roll', 'rest', 'endTurn', 'choose', 'useItem', 'discardItem', 'stockTrade', 'offerTrade', 'listProperty', 'cancelListing', 'buyListing', 'mortgage', 'redeem', 'sellAsset', 'pawnItem', 'redeemItem', 'dismissSeason'];
+const listingActions = new Set<GameAction['type']>(['listProperty', 'cancelListing', 'buyListing']);
 
 function record(value: unknown): value is Message { return typeof value === 'object' && value !== null && !Array.isArray(value); }
 function send(socket: WebSocket, value: unknown) { if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(value)); }
@@ -41,13 +42,15 @@ function profile(value: unknown, ai: boolean): PlayerConfig | null {
 function config(value: unknown): RoomConfig | null {
   if (!record(value) || !mapIds.includes(value.mapId as MapId) || ![0, 4, 8, 16].includes(value.seasons as number)
     || !['standard', 'challenge'].includes(value.weatherMode as string) || !Number.isSafeInteger(value.seed)
-    || (value.seed as number) < 0 || (value.seed as number) > 0xffff_ffff) return null;
-  return { mapId: value.mapId as MapId, seasons: value.seasons as number, weatherMode: value.weatherMode as RoomConfig['weatherMode'], seed: value.seed as number };
+    || (value.seed as number) < 0 || (value.seed as number) > 0xffff_ffff
+    || (value.propertyTrading !== undefined && typeof value.propertyTrading !== 'boolean')) return null;
+  return { mapId: value.mapId as MapId, seasons: value.seasons as number, weatherMode: value.weatherMode as RoomConfig['weatherMode'], seed: value.seed as number,
+    propertyTrading: value.propertyTrading ?? true };
 }
 function action(value: unknown): GameAction | null {
-  if (!record(value) || !actionTypes.includes(value.type as GameAction['type'])) return null;
+  if (!record(value) || !actionTypes.includes(value.type as GameAction['type']) || value.actorId !== undefined) return null;
   const result: GameAction = { type: value.type as GameAction['type'] };
-  for (const key of ['choiceId', 'itemUid', 'targetId', 'stockId', 'weatherId'] as const) {
+  for (const key of ['choiceId', 'itemUid', 'targetId', 'stockId', 'weatherId', 'listingId'] as const) {
     if (value[key] !== undefined) {
       if (typeof value[key] !== 'string' || (value[key] as string).length > 80) return null;
       result[key] = value[key] as string;
@@ -321,8 +324,10 @@ export async function createRoomServer(options: { port?: number; host?: string; 
     }
     if (message.type === 'action') {
       if (!room.state) return error(socket, '对局尚未开始。');
+      if (message.actorId !== undefined) return error(socket, '玩家身份只能由服务器验证。');
       const a = action(message.action);
       if (!a) return error(socket, '行动参数无效。');
+      let actorId: string | undefined;
       if (a.type === 'dismissSeason') {
         if (!room.state.seasonReport) return error(socket, '当前没有季节结算。');
       } else {
@@ -330,18 +335,29 @@ export async function createRoomServer(options: { port?: number; host?: string; 
         if (room.members.some(m => !m.ai && !m.connected)) return error(socket, '有真人玩家断线，对局已暂停。');
         const playerIndex = room.members.findIndex(m => m.seatId === member.seatId);
         const playerId = room.state.players[playerIndex]?.id;
-        const tradeBuyerId = room.state.pending?.kind === 'trade' ? room.state.pending.data?.buyerId : null;
-        const expected = tradeBuyerId && a.type === 'choose' ? tradeBuyerId : room.state.players[room.state.currentPlayerIndex]?.id;
-        if (playerId !== expected) return error(socket, '现在不是你的行动回合。');
-        if (tradeBuyerId && a.type !== 'choose') return error(socket, '请等待买方回应交易。');
-        if (Date.now() < room.movementUntil) return error(socket, '请等待棋子移动完成。');
+        if (!playerId) return error(socket, '玩家身份无效。');
+        if (listingActions.has(a.type)) {
+          if (room.state.config.propertyTrading === false) return error(socket, '本局已关闭房产自由交易。');
+          if (Date.now() < room.movementUntil) return error(socket, '请等待棋子移动完成。');
+          if ((room.state.phase !== 'ready' && room.state.phase !== 'end') || room.state.pending) return error(socket, '请先完成当前决定。');
+          if (room.state.players[playerIndex].bankrupt) return error(socket, '破产玩家无法交易房产。');
+          actorId = playerId;
+        } else {
+          const tradeBuyerId = room.state.pending?.kind === 'trade' ? room.state.pending.data?.buyerId : null;
+          const expected = tradeBuyerId && a.type === 'choose' ? tradeBuyerId : room.state.players[room.state.currentPlayerIndex]?.id;
+          if (playerId !== expected) return error(socket, '现在不是你的行动回合。');
+          if (tradeBuyerId && a.type !== 'choose') return error(socket, '请等待买方回应交易。');
+          if (Date.now() < room.movementUntil) return error(socket, '请等待棋子移动完成。');
+        }
       }
-      const next = act(room.state, a);
+      const next = actorId ? act(room.state, a, actorId) : act(room.state, a);
       if (next === room.state) return error(socket, '此行动当前不可执行。');
       room.state = next;
       noteMovement(room);
       broadcast(room);
-      scheduleAI(room);
+      // A non-current market action does not advance the turn. Keep an already
+      // scheduled AI tick so repeated listings cannot postpone it indefinitely.
+      if (!listingActions.has(a.type) || !room.timer) scheduleAI(room);
       return;
     }
     error(socket, '未知消息类型。');

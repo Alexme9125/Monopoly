@@ -136,10 +136,10 @@ export default function ActivityNotifications({ state, busy, blocked = false, on
     <aside ref={carouselRef} className={`activity-carousel ${displayedEncounters.length ? 'has-turn-encounters' : ''}`} aria-label={displayedEncounters.length ? '本回合不期而遇' : '旅途播报'}>
       <div className="activity-heading"><strong>{displayedEncounters.length ? '本回合 · 不期而遇' : '旅途播报'}</strong><button type="button" onClick={onOpenLogs}>旅途手记</button></div>
       {displayedEncounters.length ? <TurnEncounters encounters={displayedEncounters} players={state.players} /> : <>{active ? <article className={`activity-card notice-tone-${active.tone}`}>
-        <small>第 {active.day} 天 · {active.kind === 'rent' ? '租金' : active.kind === 'milestone' ? '行进奖励' : '事件'}</small>
+        <small>第 {active.day} 天 · {active.kind === 'rent' ? '租金' : active.kind === 'milestone' ? '行进奖励' : active.kind === 'trade' ? '房产交易' : '事件'}</small>
         <strong>{active.title}</strong>
         <p>{active.body}</p>
-      </article> : <div className="activity-card empty-state"><p>旅途事件、租金往来与行进奖励会出现在这里。</p></div>}
+      </article> : <div className="activity-card empty-state"><p>旅途事件、租金往来、房产交易与行进奖励会出现在这里。</p></div>}
       <div className="carousel-controls">
         <button type="button" onClick={() => move(1)} disabled={history.length < 2} aria-label="上一条播报" title="上一条播报"><ChevronLeft size={16} /></button>
         <span aria-label={`第 ${history.length ? activeIndex + 1 : 0} 条，共 ${history.length} 条`}>{history.length ? activeIndex + 1 : 0} / {history.length}</span>

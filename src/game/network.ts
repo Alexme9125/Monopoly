@@ -4,7 +4,7 @@ export interface RoomMember { seatId: string; name: string; color: string; shape
 export interface RoomSnapshot {
   code: string;
   members: RoomMember[];
-  config: Pick<GameConfig, 'mapId' | 'seasons' | 'weatherMode' | 'seed'>;
+  config: Pick<GameConfig, 'mapId' | 'seasons' | 'weatherMode' | 'seed' | 'propertyTrading'>;
   started: boolean;
   state: GameState | null;
   movementUntil?: number;
@@ -14,7 +14,7 @@ export interface RoomSnapshot {
 }
 export type NetworkEvent = { type: 'room'; room: RoomSnapshot } | { type: 'error'; message: string } | { type: 'left' } | { type: 'status'; connected: boolean };
 type Profile = PlayerConfig;
-type RoomConfig = { mapId: MapId; seasons: number; weatherMode: GameConfig['weatherMode']; seed: number };
+type RoomConfig = { mapId: MapId; seasons: number; weatherMode: GameConfig['weatherMode']; seed: number; propertyTrading?: boolean };
 type Outbound =
   | { type: 'hello'; clientId: string }
   | { type: 'create'; profile: Profile; config: RoomConfig }

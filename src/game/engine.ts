@@ -1,14 +1,17 @@
 import { EVENTS, INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_CASH, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
 import { MAPS } from './maps';
 import { normalizePlayerColors } from './colors';
-import type { CasinoResult, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, Stock, TurnEncounter } from './types';
+import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
+import { weatherWeights } from './weather';
+export { weatherWeights } from './weather';
+import type { CasinoResult, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, PropertyListing, Stock, TurnEncounter } from './types';
 
 const START_CASH = 100_000;
-const RENT_MULTIPLIERS = [0.08, 0.18, 0.35, 0.65, 1.2];
+const RENT_MULTIPLIERS = [0.24, 0.54, 1.05, 1.95, 3.6];
 const UTILITY_KINDS = new Set(['power', 'water', 'telecom']);
 const PROPERTY_KINDS = new Set(['land', 'power', 'water', 'telecom']);
 const WIND = new Set(['breeze', 'gale', 'sand', 'sandstorm']);
-const EXTREME_WEATHER = new Set(['blizzard', 'freezing', 'storm', 'scorch', 'sandstorm', 'haze', 'acid', 'glitch', 'paradox']);
+const MAX_PROPERTY_PRICE = 1_000_000_000;
 
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const clamp = (value: number, low = 0, high = 100) => Math.max(low, Math.min(high, value));
@@ -41,6 +44,17 @@ const addStatus = (player: Player, id: string, remaining: number) => {
   else player.statuses.push({ id, remaining });
 };
 const propertyOf = (state: GameState, id: number): Property | undefined => state.properties[id];
+const tradingEnabled = (state: GameState) => state.config.propertyTrading !== false;
+const removeListing = (state: GameState, nodeId: number) => {
+  state.propertyListings = (state.propertyListings ?? []).filter(listing => listing.nodeId !== nodeId);
+};
+const pruneListings = (state: GameState) => {
+  state.propertyListings = (state.propertyListings ?? []).filter(listing => {
+    const property = state.properties[listing.nodeId];
+    const seller = state.players.find(player => player.id === listing.sellerId);
+    return !!seller && !seller.bankrupt && property?.ownerId === listing.sellerId && !property.mortgaged;
+  });
+};
 const isUtility = (node: MapNode) => UTILITY_KINDS.has(node.kind);
 const isProperty = (node: MapNode) => PROPERTY_KINDS.has(node.kind);
 const costOf = (node: MapNode) => Math.max(0, node.price ?? 0);
@@ -92,6 +106,7 @@ function declareBankruptcy(state: GameState, player: Player) {
   player.inventory = [];
   player.pawnedItems = [];
   for (const [id, prop] of Object.entries(state.properties)) if (prop.ownerId === player.id) delete state.properties[Number(id)];
+  state.propertyListings = (state.propertyListings ?? []).filter(listing => listing.sellerId !== player.id);
   log(state, `${player.name} 资不抵债，宣告破产。`, 'bad');
   const survivors = state.players.filter(p => !p.bankrupt);
   if (survivors.length <= 1) {
@@ -213,29 +228,6 @@ export function canUseItem(state: GameState, playerId: string, itemUid: string):
   return true;
 }
 
-/** Weights for the weather about to be drawn on state.day (before its day-start log is added). */
-export function weatherWeights(state: GameState): Record<string, number> {
-  const season = Math.floor((state.day - 1) / 21) % 4;
-  const families = [new Set(['clear', 'rain', 'wind']), new Set(['rain', 'heat']), new Set(['clear', 'wind', 'fog']), new Set(['frost', 'fog'])];
-  const recent = state.weatherHistory ?? [state.weatherId];
-  const severeStreak = recent.length >= 2 && recent.slice(-2).every(id => EXTREME_WEATHER.has(id));
-  return Object.fromEntries(Object.values(WEATHERS).map(weather => {
-    // Natural weather cannot occur outside its declared seasons. A weather controller is an explicit override in startDay.
-    if (!weather.seasons.includes(season)) return [weather.id, 0];
-    if (weather.family === 'disaster' && state.day < 22) return [weather.id, 0];
-    const familyMultiplier = families[season].has(weather.family) ? 1.6
-      : weather.family === 'clear' && (season === 1 || season === 3) ? 1.2 : 0.45;
-    let weight = Math.max(0, weather.weight) * familyMultiplier;
-    if (weather.family === 'rain' && season === 0) weight *= 1.45;
-    if (weather.family === 'rain' && season === 1) weight *= 1.15;
-    if (season === 1 && weather.id === 'storm') weight *= 1.3;
-    if (weather.family === 'disaster') weight *= state.config.weatherMode === 'challenge' ? 0.16 : 0.08;
-    else if (EXTREME_WEATHER.has(weather.id)) weight *= state.config.weatherMode === 'challenge' ? 0.6 : 0.3;
-    if (severeStreak && EXTREME_WEATHER.has(weather.id)) weight *= 0.25;
-    return [weather.id, weight];
-  }));
-}
-
 function chooseWeather(state: GameState) {
   const weights = weatherWeights(state);
   const valid = Object.values(WEATHERS);
@@ -348,6 +340,7 @@ export function createGame(config: GameConfig): GameState {
   if (![0, 4, 8, 16].includes(config.seasons)) throw new Error('Invalid season count');
   if (!['standard', 'challenge'].includes(config.weatherMode)) throw new Error('Invalid weather mode');
   if (!Number.isSafeInteger(config.seed)) throw new Error('Invalid random seed');
+  if (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean') throw new Error('Invalid property trading setting');
   const start = MAPS[config.mapId].nodes.find(n => n.kind === 'start')?.id ?? MAPS[config.mapId].nodes[0].id;
   const seed = config.seed >>> 0;
   const normalizedPlayers = normalizePlayerColors(config.players);
@@ -356,7 +349,7 @@ export function createGame(config: GameConfig): GameState {
     inventory: [], pawnedItems: [], capacity: 10, holdings: {}, confinement: null, statuses: [], bankrupt: false,
   }));
   const stocks: Stock[] = copy(INITIAL_STOCKS).map(s => ({ ...s, history: s.history?.length ? s.history : [s.price], change: s.change ?? 0 }));
-  const state: GameState = { version: 1, config: { ...copy(config), players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {},
+  const state: GameState = { version: 1, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
     encounters: [], turnEncounters: [], stocks, logs: [], notices: [], phase: 'ready', pending: null,
     movement: null, feedback: null, seasonReport: null, rng: seed, sequence: 0, winnerId: null, lastMarketEvent: null, selectedDie: 6, controlledRoll: null };
   for (const player of state.players) { addItem(state, player, 'snack', 2); addItem(state, player, 'rent', 1); addItem(state, player, 'dice8', 1); }
@@ -661,8 +654,8 @@ function shopPrompt(state: GameState, ids: string[], extra?: Record<string, unkn
 
 function casinoPrompt(state: GameState, extra?: Record<string, unknown>, casinoResult?: CasinoResult): Prompt {
   const player = current(state);
-  return { ...simplePrompt('casino', '星港赌场', '老虎机 300 PM；轮盘押红或黑 500 PM。', [
-    { id: 'slots', label: '老虎机 · 300 PM', disabled: player.cash < 300 },
+  return { ...simplePrompt('casino', '星港赌场', '老虎机投入 300 PM 必得一件道具，背包满时不能投入；轮盘押红或黑 500 PM。', [
+    { id: 'slots', label: '老虎机 · 300 PM', description: '必得一件道具；背包满时不能投入。', disabled: player.cash < SLOTS_STAKE || stackSlots(player) >= player.capacity },
     { id: 'red', label: '轮盘押红 · 500 PM', disabled: player.cash < 500 },
     { id: 'black', label: '轮盘押黑 · 500 PM', disabled: player.cash < 500 },
     { id: 'leave', label: '离开' },
@@ -770,7 +763,7 @@ function applyEvent(state: GameState, eventId: string, choiceId: string) {
   }
   if (option.damageBuilding) {
     const owned = Object.entries(state.properties).filter(([id, p]) => p.ownerId === player.id && p.level > 0 && p.level < 4 && !!nodeAt(state, Number(id)) && !isUtility(nodeAt(state, Number(id))!));
-    if (owned.length) { const [id, property] = owned[rand(state, 0, owned.length - 1)]; property.level--; damagedBuilding = `${nodeAt(state, Number(id))?.name ?? '建筑'}降至${property.level}级`; }
+    if (owned.length) { const [id, property] = owned[rand(state, 0, owned.length - 1)]; property.level--; removeListing(state, Number(id)); damagedBuilding = `${nodeAt(state, Number(id))?.name ?? '建筑'}降至${property.level}级`; }
   }
   if (option.confinement) sendTo(state, player, option.confinement);
   log(state, `${player.name}：${event.title} — ${option.label}`, event.tone === 'bad' ? 'bad' : 'good');
@@ -872,7 +865,7 @@ function doChoice(state: GameState, choiceId?: string) {
   if (prompt.kind === 'upgrade' && choiceId === 'upgrade' && node && state.weatherId !== 'paradox' && state.weatherId !== 'acid') {
     const prop = state.properties[nodeId]; const cost = Math.ceil(costOf(node) * 0.75);
     if (!prop || prop.ownerId !== player.id || prop.mortgaged || prop.level >= 4 || player.cash < cost || isUtility(node)) return false;
-    charge(state, player, cost); prop.level++; log(state, `${player.name} 将 ${node.name} 升至 ${prop.level} 级。`, 'good');
+    charge(state, player, cost); prop.level++; removeListing(state, node.id); log(state, `${player.name} 将 ${node.name} 升至 ${prop.level} 级。`, 'good');
     setFeedback(state, player, effect('building', `${node.name}升至${prop.level}级`, 'good'), effect('cash', `−${cost} PM`, 'bad')); finishDecision(state); return true;
   }
   if ((prompt.kind === 'meal' || prompt.kind === 'upgrade') && choiceId === 'meal' && node && player.cash >= 100 && state.weatherId !== 'paradox') {
@@ -898,33 +891,15 @@ function doChoice(state: GameState, choiceId?: string) {
   }
   if (prompt.kind === 'casino' && state.weatherId !== 'paradox') {
     const extra = prompt.data;
-    if (choiceId === 'slots' && player.cash >= 300) {
-      charge(state, player, 300);
-      const roll = rand(state, 0, 9);
-      let payout = 0;
-      let itemId: string | undefined;
-      let outcome: CasinoResult['outcome'] = 'miss';
-      if (roll <= 2) { payout = rand(state, 300, 1800); credit(player, payout); outcome = 'cash'; }
-      else if (roll <= 5) {
-        const available = Object.keys(ITEMS).filter(id => ITEMS[id].shop && canAdd(player, id));
-        if (available.length) {
-          const selected = available[rand(state, 0, available.length - 1)];
-          if (addItem(state, player, selected)) { itemId = selected; outcome = 'item'; }
-          else outcome = 'no_capacity';
-        } else outcome = 'no_capacity';
-      }
-      const net = payout - 300;
-      const cashDetail = `投入 300 PM，返还 ${payout.toLocaleString('zh-CN')} PM，${net >= 0 ? `净得 ${net.toLocaleString('zh-CN')}` : `净支出 ${(-net).toLocaleString('zh-CN')}`} PM`;
-      const title = outcome === 'cash' ? '老虎机 · 现金奖励' : outcome === 'item' ? '老虎机 · 道具奖励'
-        : outcome === 'no_capacity' ? '老虎机 · 背包已满' : '老虎机 · 未中奖';
-      const detail = outcome === 'item' ? `${cashDetail}；获得${ITEMS[itemId!].name}。`
-        : outcome === 'no_capacity' ? `${cashDetail}；背包已满，未发放道具。` : `${cashDetail}。`;
-      const result: CasinoResult = { id: ++state.sequence, game: 'slots', outcome, title, detail, stake: 300, payout, net,
-        ...(itemId ? { itemId } : {}) };
-      log(state, `${player.name} ${result.title}：${result.detail}`, outcome === 'cash' || outcome === 'item' ? 'good' : 'bad');
-      setFeedback(state, player, effect('event', result.title, outcome === 'cash' || outcome === 'item' ? 'good' : 'bad'),
-        ...(itemId ? [effect('event', `获得${ITEMS[itemId].name}`, 'good')] : []),
-        effect('cash', `现金 ${net >= 0 ? '+' : '−'}${Math.abs(net).toLocaleString('zh-CN')} PM`, net >= 0 ? 'good' : 'bad'));
+    if (choiceId === 'slots' && player.cash >= SLOTS_STAKE && stackSlots(player) < player.capacity) {
+      const itemId = drawSlotItem(rand(state, 0, SLOT_POOL_TOTAL - 1));
+      if (!addItem(state, player, itemId)) return false;
+      charge(state, player, SLOTS_STAKE);
+      const result: CasinoResult = { id: ++state.sequence, game: 'slots', outcome: 'item',
+        title: '老虎机 · 道具奖励', detail: `投入 ${SLOTS_STAKE} PM，获得${ITEMS[itemId].name}；道具已放入背包。`,
+        stake: SLOTS_STAKE, payout: 0, net: -SLOTS_STAKE, itemId };
+      log(state, `${player.name} ${result.title}：${result.detail}`, 'good');
+      setFeedback(state, player, effect('event', `获得${ITEMS[itemId].name}`, 'good'), effect('cash', `−${SLOTS_STAKE} PM`, 'bad'));
       state.pending = casinoPrompt(state, { ...extra, played: true }, result); return true;
     }
     if ((choiceId === 'red' || choiceId === 'black') && player.cash >= 500) {
@@ -947,8 +922,12 @@ function doChoice(state: GameState, choiceId?: string) {
     const seller = state.players.find(p => p.id === prompt.data?.sellerId);
     const buyer = state.players.find(p => p.id === prompt.data?.buyerId);
     const tradeNode = Number(prompt.data?.nodeId); const price = Number(prompt.data?.price);
-    if (!seller || !buyer || state.properties[tradeNode]?.ownerId !== seller.id || state.properties[tradeNode]?.mortgaged || !Number.isFinite(price) || price <= 0) return false;
-    if (choiceId === 'accept' && buyer.cash >= price) { buyer.cash -= price; seller.cash += price; state.properties[tradeNode].ownerId = buyer.id; log(state, `${buyer.name} 以 ${price} PM 购入 ${nodeAt(state, tradeNode)?.name}。`, 'good');
+    if (!seller || !buyer || state.properties[tradeNode]?.ownerId !== seller.id || state.properties[tradeNode]?.mortgaged
+      || !Number.isSafeInteger(price) || price <= 0 || price > MAX_PROPERTY_PRICE) return false;
+    if (!tradingEnabled(state) && choiceId === 'accept') return false;
+    if (choiceId === 'accept' && buyer.cash >= price && Number.isSafeInteger(seller.cash + price)) { buyer.cash -= price; seller.cash += price; state.properties[tradeNode].ownerId = buyer.id; removeListing(state, tradeNode); log(state, `${buyer.name} 以 ${price} PM 购入 ${nodeAt(state, tradeNode)?.name}。`, 'good');
+      notice(state, { kind: 'trade', title: '地产交易成交', body: `${buyer.name} 向 ${seller.name} 支付 ${price.toLocaleString('zh-CN')} PM，购入 ${nodeAt(state, tradeNode)?.name}；产权已转移。`,
+        tone: 'info', playerId: buyer.id, recipientId: seller.id, nodeId: tradeNode, amount: price });
       setFeedback(state, buyer, effect('building', `购入${nodeAt(state, tradeNode)?.name}`, 'good'), effect('cash', `−${price} PM`, 'bad')); }
     else { log(state, `${buyer.name} 拒绝了交易。`); setFeedback(state, buyer, effect('event', '产权交易未达成', 'info')); }
     finishDecision(state); return true;
@@ -996,15 +975,15 @@ function doUseItem(state: GameState, action: GameAction) {
     const prop = node && state.properties[node.id]; const owner = prop && state.players.find(p => p.id === prop.ownerId);
     const price = node && prop ? Math.ceil(assetValue(state, node.id, prop) * 1.5) : 0;
     if (!prop || !owner || owner.id === player.id || player.cash < price || price <= 0 || prop.level >= 4) return false;
-    player.cash -= price; owner.cash += price; prop.ownerId = player.id;
+    player.cash -= price; owner.cash += price; prop.ownerId = player.id; removeListing(state, node!.id);
   } else if (id === 'demolish') {
     const prop = node && state.properties[node.id];
     if (!prop || prop.ownerId === player.id || prop.level < 1 || prop.level >= 4 || isUtility(node!)) return false;
-    prop.level--;
+    prop.level--; removeListing(state, node!.id);
   } else if (id === 'repair') {
     const prop = node && state.properties[node.id];
     if (!prop || prop.ownerId !== player.id || prop.mortgaged || prop.level >= 4 || isUtility(node!) || state.weatherId === 'acid') return false;
-    prop.level++;
+    prop.level++; removeListing(state, node!.id);
   } else if (id === 'bomb') {
     sendTo(state, target!, 'hospital'); target!.stamina = clamp(target!.stamina - 30);
     if (next(state) < 0.1) sendTo(state, player, 'prison');
@@ -1038,11 +1017,11 @@ function manageAsset(state: GameState, action: GameAction) {
   const player = current(state); const node = action.nodeId == null ? undefined : nodeAt(state, action.nodeId);
   const prop = node && state.properties[node.id];
   if (!node || !prop || prop.ownerId !== player.id) return false;
-  if (action.type === 'mortgage' && !prop.mortgaged) { const amount = Math.floor(assetValue(state, node.id, prop) * 0.5); prop.mortgaged = true; credit(player, amount);
+  if (action.type === 'mortgage' && !prop.mortgaged) { const amount = Math.floor(assetValue(state, node.id, prop) * 0.5); prop.mortgaged = true; removeListing(state, node.id); credit(player, amount);
     log(state, `${player.name} 抵押 ${node.name}。`); setFeedback(state, player, effect('building', `抵押${node.name}`, 'info'), effect('cash', `+${amount} PM`, 'good')); return true; }
-  if (action.type === 'redeem' && prop.mortgaged) { const cost = Math.ceil(assetValue(state, node.id, prop) * 0.6); if (player.cash < cost) return false; player.cash -= cost; prop.mortgaged = false;
+  if (action.type === 'redeem' && prop.mortgaged) { const cost = Math.ceil(assetValue(state, node.id, prop) * 0.6); if (player.cash < cost) return false; player.cash -= cost; prop.mortgaged = false; removeListing(state, node.id);
     log(state, `${player.name} 赎回 ${node.name}。`); setFeedback(state, player, effect('building', `赎回${node.name}`, 'good'), effect('cash', `−${cost} PM`, 'bad')); return true; }
-  if (action.type === 'sellAsset' && prop.level < 4 && !prop.mortgaged) { const amount = Math.floor(assetValue(state, node.id, prop) * 0.7); credit(player, amount); delete state.properties[node.id];
+  if (action.type === 'sellAsset' && prop.level < 4 && !prop.mortgaged) { const amount = Math.floor(assetValue(state, node.id, prop) * 0.7); credit(player, amount); delete state.properties[node.id]; removeListing(state, node.id);
     log(state, `${player.name} 将 ${node.name} 卖给银行。`); setFeedback(state, player, effect('building', `售出${node.name}`, 'info'), effect('cash', `+${amount} PM`, 'good')); return true; }
   return false;
 }
@@ -1094,13 +1073,64 @@ function stockTrade(state: GameState, action: GameAction) {
   return true;
 }
 
+function propertyMarketAction(state: GameState, action: GameAction, actor: Player): boolean {
+  if (!tradingEnabled(state) || !['ready', 'end'].includes(state.phase) || state.pending || state.seasonReport || actor.bankrupt) return false;
+  if (action.type === 'listProperty') {
+    const node = action.nodeId == null ? undefined : nodeAt(state, action.nodeId);
+    const property = node && state.properties[node.id];
+    const price = action.price;
+    if (!node || !isProperty(node) || !property || property.ownerId !== actor.id || property.mortgaged
+      || !Number.isSafeInteger(price) || price! < 1 || price! > MAX_PROPERTY_PRICE
+      || (state.propertyListings ?? []).some(listing => listing.nodeId === node.id)) return false;
+    const listing: PropertyListing = { id: `listing-${++state.sequence}`, nodeId: node.id, sellerId: actor.id, price: price!, listedDay: state.day };
+    (state.propertyListings ??= []).push(listing);
+    log(state, `${actor.name} 将 ${node.name} 以 ${price} PM 挂牌拍卖行。`);
+    setFeedback(state, actor, effect('building', `${node.name}已挂牌`, 'info'));
+    state.feedback!.nodeId = node.id;
+    return true;
+  }
+  const listing = (state.propertyListings ?? []).find(entry => entry.id === action.listingId);
+  if (!listing) return false;
+  const node = nodeAt(state, listing.nodeId);
+  const property = node && state.properties[node.id];
+  const seller = state.players.find(player => player.id === listing.sellerId);
+  if (!node || !isProperty(node) || !property || property.ownerId !== listing.sellerId || property.mortgaged
+    || !seller || seller.bankrupt || !Number.isSafeInteger(listing.price) || listing.price < 1 || listing.price > MAX_PROPERTY_PRICE) return false;
+  if (action.type === 'cancelListing') {
+    if (actor.id !== seller.id) return false;
+    removeListing(state, node.id);
+    log(state, `${seller.name} 将 ${node.name} 从拍卖行下架。`);
+    setFeedback(state, seller, effect('building', `${node.name}已下架`, 'info'));
+    state.feedback!.nodeId = node.id;
+    return true;
+  }
+  if (action.type === 'buyListing') {
+    if (actor.id === seller.id || actor.cash < listing.price || !Number.isSafeInteger(actor.cash - listing.price)
+      || !Number.isSafeInteger(seller.cash + listing.price)) return false;
+    actor.cash -= listing.price;
+    seller.cash += listing.price;
+    property.ownerId = actor.id;
+    removeListing(state, node.id);
+    const amount = listing.price.toLocaleString('zh-CN');
+    log(state, `${actor.name} 从拍卖行以 ${amount} PM 购买 ${seller.name} 的 ${node.name}，产权已转移。`, 'good');
+    notice(state, { kind: 'trade', title: '拍卖成交', body: `${actor.name} 向 ${seller.name} 支付 ${amount} PM，购入 ${node.name}；产权已转移。`,
+      tone: 'info', playerId: actor.id, recipientId: seller.id, nodeId: node.id, amount: listing.price });
+    setFeedback(state, actor, effect('building', `购入${node.name}`, 'good'), effect('cash', `−${amount} PM`, 'bad'));
+    state.feedback!.nodeId = node.id;
+    return true;
+  }
+  return false;
+}
+
 function offerTrade(state: GameState, action: GameAction) {
   const seller = current(state); const buyer = state.players.find(p => p.id === action.targetId); const node = action.nodeId == null ? undefined : nodeAt(state, action.nodeId);
   const prop = node && state.properties[node.id]; const price = action.price;
-  if (state.phase !== 'ready' && state.phase !== 'end' || !buyer || buyer.id === seller.id || buyer.bankrupt || !node || !prop || prop.ownerId !== seller.id || prop.mortgaged || !Number.isSafeInteger(price) || price! <= 0 || buyer.cash < price!) return false;
+  if (!tradingEnabled(state) || state.seasonReport || state.phase !== 'ready' && state.phase !== 'end' || !buyer || buyer.id === seller.id || buyer.bankrupt || !node || !prop || prop.ownerId !== seller.id || prop.mortgaged || !Number.isSafeInteger(price) || price! <= 0 || price! > MAX_PROPERTY_PRICE || buyer.cash < price!) return false;
   if (buyer.ai) {
     const multiplier = buyer.personality === 'cautious' ? 1.05 : buyer.personality === 'aggressive' ? 1.6 : 1.3;
-    if (price! <= assetValue(state, node.id, prop) * multiplier) { buyer.cash -= price!; seller.cash += price!; prop.ownerId = buyer.id; log(state, `${buyer.name} 接受交易，以 ${price} PM 买入 ${node.name}。`, 'good');
+    if (price! <= assetValue(state, node.id, prop) * multiplier && Number.isSafeInteger(seller.cash + price!)) { buyer.cash -= price!; seller.cash += price!; prop.ownerId = buyer.id; removeListing(state, node.id); log(state, `${buyer.name} 接受交易，以 ${price} PM 买入 ${node.name}。`, 'good');
+      notice(state, { kind: 'trade', title: '地产交易成交', body: `${buyer.name} 向 ${seller.name} 支付 ${price!.toLocaleString('zh-CN')} PM，购入 ${node.name}；产权已转移。`,
+        tone: 'info', playerId: buyer.id, recipientId: seller.id, nodeId: node.id, amount: price! });
       setFeedback(state, seller, effect('building', `出售${node.name}`, 'good'), effect('cash', `+${price} PM`, 'good')); }
     else { log(state, `${buyer.name} 拒绝了交易。`); setFeedback(state, seller, effect('event', '交易报价被拒绝', 'info')); }
     return true;
@@ -1130,7 +1160,18 @@ function bestControlledRoll(state: GameState): number | null {
   return best.score - average >= (player.personality === 'aggressive' ? 900 : 1400) ? best.value : null;
 }
 
-export function act(state: GameState, action: GameAction): GameState {
+export function act(state: GameState, action: GameAction, actorId?: string): GameState {
+  if (action.type === 'listProperty' || action.type === 'cancelListing' || action.type === 'buyListing') {
+    const actor = state.players.find(player => player.id === (actorId ?? current(state)?.id));
+    if (!actor || state.phase === 'gameover') return state;
+    const draft = copy(state);
+    draft.feedback = null;
+    const draftActor = draft.players.find(player => player.id === actor.id)!;
+    if (!propertyMarketAction(draft, action, draftActor)) return state;
+    pruneListings(draft);
+    return draft;
+  }
+  if (actorId !== undefined && actorId !== current(state)?.id) return state;
   if (state.phase === 'gameover' && action.type !== 'dismissSeason') return state;
   if (action.type === 'dismissSeason') { if (!state.seasonReport) return state; const draft = copy(state); draft.seasonReport = null; draft.feedback = null; draft.movement = null; return draft; }
   const player = current(state);
@@ -1160,7 +1201,7 @@ export function act(state: GameState, action: GameAction): GameState {
   else if (action.type === 'offerTrade') valid = offerTrade(draft, action);
   else if ((action.type === 'pawnItem' || action.type === 'redeemItem') && (draft.phase === 'ready' || draft.phase === 'end')) valid = manageItemPawn(draft, action);
   else if (['mortgage', 'redeem', 'sellAsset'].includes(action.type) && (draft.phase === 'ready' || draft.phase === 'end')) valid = manageAsset(draft, action);
-  if (valid) enforceDebt(draft);
+  if (valid) { pruneListings(draft); enforceDebt(draft); }
   return valid ? draft : state;
 }
 
@@ -1214,6 +1255,34 @@ export function runAI(state: GameState): GameState {
     return act(state, { type: 'choose', choiceId: choice });
   }
   if (state.phase === 'end') return act(state, { type: 'endTurn' });
+  if (tradingEnabled(state) && state.phase === 'ready' && !state.pending && !state.seasonReport) {
+    const reserve = player.personality === 'cautious' ? 40_000 : player.personality === 'balanced' ? 25_000 : 12_000;
+    const willing = player.personality === 'cautious' ? 0.95 : player.personality === 'balanced' ? 1.1 : 1.3;
+    const boughtToday = (state.notices ?? []).some(entry => entry.kind === 'trade' && entry.playerId === player.id && entry.day === state.day);
+    if (!boughtToday) {
+      const worthBuying = (state.propertyListings ?? []).filter(listing => {
+        const property = state.properties[listing.nodeId];
+        return listing.sellerId !== player.id && property?.ownerId === listing.sellerId && !property.mortgaged
+          && listing.price <= assetValue(state, listing.nodeId, property) * willing && player.cash - listing.price >= reserve;
+      }).sort((a, b) => a.price / assetValue(state, a.nodeId, state.properties[a.nodeId])
+        - b.price / assetValue(state, b.nodeId, state.properties[b.nodeId]));
+      if (worthBuying.length) return act(state, { type: 'buyListing', listingId: worthBuying[0].id });
+    }
+    const lowCash = player.personality === 'cautious' ? 18_000 : player.personality === 'balanced' ? 12_000 : 7_000;
+    const alreadyListed = (state.propertyListings ?? []).some(listing => listing.sellerId === player.id && listing.listedDay === state.day);
+    const soldToday = (state.notices ?? []).some(entry => entry.kind === 'trade' && entry.recipientId === player.id && entry.day === state.day);
+    if (player.cash < lowCash && !alreadyListed && !soldToday) {
+      const candidates = Object.entries(state.properties).filter(([id, property]) => property.ownerId === player.id && !property.mortgaged
+        && property.level < 4 && !(state.propertyListings ?? []).some(listing => listing.nodeId === Number(id)))
+        .sort(([a, first], [b, second]) => assetValue(state, Number(a), first) - assetValue(state, Number(b), second));
+      const [id, property] = candidates[0] ?? [];
+      if (id && property) {
+        const ask = player.personality === 'cautious' ? 1.25 : player.personality === 'balanced' ? 1.15 : 1.08;
+        const price = Math.min(MAX_PROPERTY_PRICE, Math.max(1, Math.ceil(assetValue(state, Number(id), property) * ask)));
+        return act(state, { type: 'listProperty', nodeId: Number(id), price });
+      }
+    }
+  }
   if (player.stamina < 25 || player.mood < 25) {
     const wanted = player.stamina < 25 && player.mood < 25 ? ['restkit', 'coffee', 'feast', 'snack', 'tea']
       : player.stamina < 25 ? ['feast', 'snack', 'restkit', 'coffee'] : ['tea', 'restkit', 'coffee'];
