@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { AI_PRESETS, EVENTS, INITIAL_STOCKS, ITEMS, WEATHERS } from '../src/game/data';
 import { MAPS } from '../src/game/maps';
@@ -5,6 +6,19 @@ import type { MapId, MapNode, TileKind } from '../src/game/types';
 
 const allKinds: TileKind[] = ['start', 'land', 'empty', 'coin', 'event', 'hospital', 'prison', 'sanatorium', 'parking', 'power', 'water', 'telecom', 'station', 'shop', 'casino', 'exchange'];
 const facilityKinds = new Set<TileKind>(['hospital', 'prison', 'sanatorium', 'parking', 'power', 'water', 'telecom', 'station', 'shop', 'casino', 'exchange']);
+const propertyKinds = new Set<TileKind>(['land', 'power', 'water', 'telecom']);
+
+function roadDistances(nodes: MapNode[], startId: number): number[] {
+  const distances = Array<number>(nodes.length).fill(Infinity);
+  distances[startId] = 0;
+  const queue = [startId];
+  for (const nodeId of queue) for (const neighborId of nodes[nodeId].neighbors) {
+    if (distances[neighborId] !== Infinity) continue;
+    distances[neighborId] = distances[nodeId] + 1;
+    queue.push(neighborId);
+  }
+  return distances;
+}
 
 function intersects(a: MapNode, b: MapNode, c: MapNode, d: MapNode): boolean {
   const orientation = (p: MapNode, q: MapNode, r: MapNode) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
@@ -19,6 +33,51 @@ function intersects(a: MapNode, b: MapNode, c: MapNode, d: MapNode): boolean {
 }
 
 describe('map road networks', () => {
+  it.each([
+    ['lake', [13, 26, 47, 77], 12, 8],
+    ['coast', [14, 33, 45, 59], 13, 9],
+    ['valley', [12, 24, 44, 54, 88], 12, 10],
+  ] as const)('spreads %s stations across the road network', (mapId, expectedIds, minimumGap, maximumReach) => {
+    const nodes = MAPS[mapId].nodes;
+    const stations = nodes.filter(node => node.kind === 'station');
+    expect(stations.map(node => node.id)).toEqual(expectedIds);
+    const distances = stations.map(station => roadDistances(nodes, station.id));
+    for (let i = 0; i < stations.length; i++) for (let j = i + 1; j < stations.length; j++) {
+      expect(distances[i][stations[j].id], `${mapId} stations ${stations[i].id}/${stations[j].id} are too close`).toBeGreaterThanOrEqual(minimumGap);
+    }
+    for (const node of nodes) {
+      expect(Math.min(...distances.map(fromStation => fromStation[node.id])), `${mapId} node ${node.id} is too far from a station`).toBeLessThanOrEqual(maximumReach);
+    }
+    if (mapId === 'coast') {
+      expect(stations.filter(node => node.x <= 750 && node.y <= 490)).toHaveLength(2);
+      expect(stations.filter(node => node.x >= 750 && node.y >= 490)).toHaveLength(2);
+    }
+    if (mapId === 'valley') {
+      const outer = (node: MapNode) => node.x < 200 || node.x > 1300 || node.y < 150 || node.y > 900;
+      expect(stations.filter(outer)).toHaveLength(3);
+      expect(stations.filter(node => !outer(node) && node.x < 750)).toHaveLength(1);
+      expect(stations.filter(node => !outer(node) && node.x >= 750)).toHaveLength(1);
+    }
+  });
+
+  it.each([
+    ['lake', 39, 48, 26, 113260, '08fea40118c7d1c5cc6f00c192a864aa131a90bb3959e18567182e819dc4bfca', 'c9838cf4e0abf61c4120c93258a5d1179f22139dc62e82ab654a1728d73e01b4'],
+    ['coast', 32, 38, 21, 97000, '72883eb0ad26dd94264a61686436b7e20b6f6e546c5b39e43ea56b5d6df8e68f', '075609f55e6f959078ba46c654543d34c88ae03d16d3766e99088ac19ff66420'],
+    ['valley', 45, 54, 30, 124200, 'af12ca435b9ef4d18fc87e0bbc0dbcea70daea1b7e7f6cde3955759db41197b6', '94fc3fa566782479e228618a0669cdc771736411e06780664e9b8b5682a5d9db'],
+  ] as const)('preserves %s roads and purchasable property while moving facilities', (mapId, landCount, propertyCount, facilityCount, totalPrice, propertyFingerprint, roadFingerprint) => {
+    const nodes = MAPS[mapId].nodes;
+    const properties = nodes.filter(node => propertyKinds.has(node.kind));
+    expect(nodes.filter(node => node.kind === 'land')).toHaveLength(landCount);
+    expect(properties).toHaveLength(propertyCount);
+    expect(nodes.filter(node => facilityKinds.has(node.kind))).toHaveLength(facilityCount);
+    expect(properties.reduce((sum, node) => sum + (node.price ?? 0), 0)).toBe(totalPrice);
+    // Compact baseline from the pre-relocation map: property id, kind, and price must not move.
+    const listing = properties.map(node => `${node.id}:${node.kind}:${node.price}`).join('|');
+    expect(createHash('sha256').update(listing).digest('hex')).toBe(propertyFingerprint);
+    const roads = JSON.stringify(nodes.map(node => [node.id, node.x, node.y, node.neighbors]));
+    expect(createHash('sha256').update(roads).digest('hex')).toBe(roadFingerprint);
+  });
+
   it('preserves the named routes and their distinguishing geometry', () => {
     expect(MAPS.lake.name).toBe('棱镜湖畔');
     expect(MAPS.coast.name).toBe('原色海岸');

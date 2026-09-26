@@ -34,8 +34,8 @@
       "cash": 100000,
       "stamina": 5,
       "mood": 85,
-      "position": 26,
-      "previousPosition": 27,
+      "position": 33,
+      "previousPosition": 34,
       "inventory": [
         {
           "uid": "1",
@@ -1278,7 +1278,7 @@
     {
       "id": 332,
       "day": 17,
-      "text": "验收玩家 掷出 5 点，来到 银栈·证券所26号。",
+      "text": "验收玩家 掷出 5 点，来到 银栈·证券所33号。",
       "tone": "info"
     }
   ],

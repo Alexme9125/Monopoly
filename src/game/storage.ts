@@ -197,16 +197,44 @@ export function parseSave(raw: string): GameState {
   // A saved path has already changed the logical position. Resume with the piece at its destination.
   const saved = state as unknown as GameState;
   const map = MAPS[saved.config.mapId];
-  const players = normalizePlayerColors(saved.players).map(player => ({ ...player,
-    previousPosition: player.previousPosition !== null && map.nodes[player.position].neighbors.includes(player.previousPosition)
-      ? player.previousPosition : null,
-    routeNextPosition: player.routeNextPosition ?? null,
-    travelProgress: player.travelProgress ?? 0,
-  }));
+  const players = normalizePlayerColors(saved.players).map(player => {
+    // These two sanatoria exchanged places with stations. Move only patients saved at the old ward.
+    const oldWard = saved.config.mapId === 'lake' ? 47 : saved.config.mapId === 'coast' ? 33 : null;
+    const newWard = saved.config.mapId === 'lake' ? 4 : saved.config.mapId === 'coast' ? 68 : null;
+    const relocated = player.confinement?.kind === 'sanatorium' && player.position === oldWard
+      && newWard !== null && map.nodes[newWard]?.kind === 'sanatorium';
+    return { ...player, position: relocated ? newWard : player.position,
+      previousPosition: !relocated && player.previousPosition !== null && map.nodes[player.position].neighbors.includes(player.previousPosition)
+        ? player.previousPosition : null,
+      routeNextPosition: relocated ? null : player.routeNextPosition ?? null,
+      travelProgress: player.travelProgress ?? 0,
+    };
+  });
   const normalizedConfig = { ...saved.config, propertyTrading: saved.config.propertyTrading ?? true,
     players: saved.config.players.map((entry, index) => ({ ...entry, color: players[index].color })) };
   const publicEncounters = [...(saved.turnEncounters ?? [])];
   let pending = saved.pending;
+  if (pending?.kind === 'station') {
+    const player = players[saved.currentPlayerIndex];
+    const origin = map.nodes[player.position];
+    if (origin.kind === 'station' && pending.data?.nodeId === player.position) {
+      pending = { ...pending, title: origin.name, body: '乘车前往另一站，票价 100 PM。', choices: [
+        ...map.nodes.filter(node => node.kind === 'station' && node.id !== origin.id)
+          .map(node => ({ id: `station:${node.id}`, label: node.name, disabled: player.cash < 100 })),
+        { id: 'leave', label: '离开' },
+      ] };
+    } else pending = { ...pending, title: '车站已迁址', body: '该站点已迁址，本次乘车可免费结束。',
+      choices: [{ id: 'leave', label: '车站已迁址，结束本次乘车' }] };
+  }
+  if (pending?.kind === 'exchange') {
+    const position = players[saved.currentPlayerIndex].position;
+    const oldExchange = saved.config.mapId === 'lake' && position === 26
+      || saved.config.mapId === 'valley' && position === 12;
+    if (oldExchange && map.nodes[position].kind === 'station') {
+      pending = { ...pending, kind: 'info', title: '交易所已迁址',
+        body: '现金和股票持仓保持不变，本次访问可免费结束。', choices: [{ id: 'leave', label: '离开' }] };
+    }
+  }
   if (pending?.kind === 'shop' && pending.data?.shopPurchases === undefined) {
     pending = { ...pending, data: { ...pending.data, shopPurchases: {} } };
   }

@@ -230,7 +230,7 @@ describe('road direction and station travel acceptance', () => {
     expect(resumed.players[0].routeNextPosition).toBeNull();
   });
 
-  it.each(['lake', 'coast', 'valley'] as const)('lets a %s station visit cancel for free or travel to a listed station for 100 PM', mapId => {
+  it.each([['lake', 13], ['coast', 14], ['valley', 12]] as const)('lets a %s station visit cancel for free or travel to a listed station for 100 PM', (mapId, expectedOrigin) => {
     const state = parseSave(readFileSync(new URL(`./fixtures/qa-station-${mapId}.json`, import.meta.url), 'utf8'));
     const map = MAPS[mapId];
     const origin = state.players[0].position;
@@ -238,6 +238,7 @@ describe('road direction and station travel acceptance', () => {
     const stations = state.pending?.choices.filter(choice => choice.id.startsWith('station:')) ?? [];
     expect(state).toMatchObject({ phase: 'decision', currentPlayerIndex: 0 });
     expect(state.pending?.kind).toBe('station');
+    expect(origin).toBe(expectedOrigin);
     expect(map.nodes[origin].kind).toBe('station');
     expect(stations.length).toBeGreaterThanOrEqual(2);
     expect(stations.every(choice => !choice.disabled)).toBe(true);
@@ -295,6 +296,7 @@ describe('road direction and station travel acceptance', () => {
     const state = parseSave(readFileSync(new URL('./fixtures/qa-station-low.json', import.meta.url), 'utf8'));
     const choices = state.pending!.choices.filter(choice => choice.id.startsWith('station:'));
     expect(state.players[0].cash).toBe(50);
+    expect(state.players[0].position).toBe(13);
     expect(choices.length).toBeGreaterThan(0);
     expect(choices.every(choice => choice.disabled)).toBe(true);
     expect(act(state, { type: 'choose', choiceId: choices[0].id })).toBe(state);

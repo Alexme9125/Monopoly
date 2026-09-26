@@ -135,6 +135,29 @@ const facilityNames: Record<string, string> = {
   telecom: '通讯台', casino: '星筹馆',
 };
 const scenicNames = ['晴波', '萤岸', '银沙', '月桥', '翠岚', '远帆', '星石', '晨曦', '琉光', '云径'];
+// Exchange station sites with existing public facilities; road and land nodes stay fixed.
+const stationFacilitySwaps: Partial<Record<MapId, readonly (readonly [number, number, TileKind])[]>> = {
+  lake: [[4, 47, 'sanatorium'], [33, 26, 'exchange'], [57, 77, 'casino']],
+  coast: [[43, 14, 'shop'], [68, 33, 'sanatorium'], [44, 45, 'casino'], [54, 59, 'casino']],
+  valley: [[20, 12, 'exchange'], [22, 88, 'casino']],
+};
+
+function spreadStations(nodes: MapNode[], theme: MapTheme) {
+  for (const [stationId, destinationId, previousKind] of stationFacilitySwaps[theme.id] ?? []) {
+    const station = nodes[stationId], destination = nodes[destinationId];
+    if (station.kind !== 'station' || destination.kind !== previousKind) {
+      throw new Error(`Invalid ${theme.id} station layout at ${stationId}/${destinationId}`);
+    }
+    station.kind = previousKind;
+    destination.kind = 'station';
+    for (const node of [station, destination]) {
+      const districtIndex = (node.x >= 750 ? 1 : 0) + (node.y >= 485 ? 2 : 0);
+      node.name = `${theme.districts[districtIndex]}·${facilityNames[node.kind]}${node.id}号`;
+      if (['hospital', 'prison', 'sanatorium', 'parking'].includes(node.kind)) delete node.price;
+      else node.price = Math.min(4000, 800 + districtIndex * 480 + (node.id % 7) * 260 + (node.kind === 'station' ? 450 : 0));
+    }
+  }
+}
 
 function shuffled(ids: number[], seed: number): number[] {
   const result = [...ids];
@@ -185,6 +208,7 @@ function populate(theme: MapTheme, paths: { points: Point[]; loop?: boolean }[])
     }
     node.neighbors.sort((a, b) => a - b);
   }
+  spreadStations(nodes, theme);
   return { id: theme.id, name: theme.name, subtitle: theme.subtitle, description: theme.description, width: 1500, height: 1000, nodes, accent: theme.accent };
 }
 

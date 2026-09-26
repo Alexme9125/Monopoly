@@ -43,6 +43,7 @@ describe('browser acceptance fixtures', () => {
     expect(state.pending?.choices.some(choice => choice.id === 'leave')).toBe(true);
     expect(state.pending?.data?.traded).not.toBe(true);
     expect(MAPS[state.config.mapId].nodes[player.position].kind).toBe('exchange');
+    expect(player.position).toBe(33);
     expect(player.cash).toBe(100_000);
     expect(player.holdings.aurora).toBe(20);
     expect(act(state, { type: 'stockTrade', stockId: 'aurora', quantity: -1 })).not.toBe(state);

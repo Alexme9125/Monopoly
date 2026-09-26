@@ -262,7 +262,9 @@ export function GameView({ state, viewerId, isOnline, connected, busy, playingMo
   const doMarketAction = (action: GameAction) => { if (canMarket) onAction(action, viewer.id); };
   const readFile = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) { onImport(file); setPanel(null); setSelectedNode(null); } event.target.value = ''; };
   const showPrompt = !!state.pending && !busy && !state.seasonReport && (state.pending.kind === 'trade' ? tradePromptForMe : myTurn);
-  const stationSelecting = showPrompt && state.pending?.kind === 'station';
+  const pendingStationId = Number(state.pending?.data?.nodeId);
+  const stationSelecting = showPrompt && state.pending?.kind === 'station' && map.nodes[current.position]?.kind === 'station'
+    && (!Number.isInteger(pendingStationId) || pendingStationId === current.position);
   const stationOriginId = stationSelecting && Number.isInteger(Number(state.pending?.data?.nodeId)) ? Number(state.pending?.data?.nodeId) : current.position;
   const stationChoiceIds = stationSelecting ? state.pending!.choices.filter(choice => /^station:\d+$/.test(choice.id)).map(choice => Number(choice.id.slice(8))).filter(id => map.nodes[id]?.kind === 'station' && id !== stationOriginId) : [];
   const stationPromptKey = stationSelecting ? `${state.day}:${stationOriginId}:${state.movement?.id ?? 'none'}` : null;
