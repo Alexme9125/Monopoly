@@ -245,10 +245,10 @@ describe('game content', () => {
   });
 
   it('offers executable unique event choices, six AI presets and four stocks', () => {
-    expect(EVENTS).toHaveLength(46);
+    expect(EVENTS).toHaveLength(48);
     const newEvents = ['aurora_film', 'orchard', 'courier', 'signal_fee', 'sinkhole', 'drone', 'leasebook', 'noise', 'pollination', 'survey', 'seminar', 'baggage', 'tide_lock', 'comet_watch', 'counterfeit', 'solar_grant'];
     expect(EVENTS.slice(28, 44).map(e => e.id)).toEqual(newEvents);
-    expect(EVENTS.slice(44).map(e => e.id)).toEqual(['beacon_lab', 'route_workshop']);
+    expect(EVENTS.slice(44).map(e => e.id)).toEqual(['beacon_lab', 'route_workshop', 'prism_relay', 'twin_culture']);
     const choices = EVENTS.flatMap(e => e.choices.map(c => c.id));
     expect(new Set(choices).size).toBe(choices.length);
     expect(new Set(EVENTS.map(e => e.id)).size).toBe(EVENTS.length);

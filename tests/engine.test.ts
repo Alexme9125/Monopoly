@@ -548,13 +548,13 @@ describe('pure deterministic engine', () => {
   it('charges land and utility rent, suspending hospital owners', () => {
     const state = game();
     state.properties[land.id] = { ownerId: 'p1', level: 0, mortgaged: false };
-    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 0.24));
-    for (const [level, multiplier] of [0.24, 0.54, 1.05, 1.95, 3.6].entries()) {
+    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 0.4));
+    for (const [level, multiplier] of [0.4, 0.9, 1.75, 3.25, 6].entries()) {
       state.properties[land.id].level = level;
       expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * multiplier));
     }
     state.properties[land.id].level = 4;
-    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 3.6));
+    expect(getRent(state, land.id)).toBe(Math.ceil(land.price! * 6));
     state.players[0].confinement = { kind: 'hospital', remaining: 3 };
     expect(getRent(state, land.id)).toBe(0);
     state.players[0].confinement = { kind: 'sanatorium', remaining: 3 };
@@ -581,11 +581,11 @@ describe('pure deterministic engine', () => {
   it('previews prospective rent and emits one structured notice for paid and waived rent', () => {
     const utility = MAPS.lake.nodes.find(node => node.kind === 'power')!;
     const start = game(); start.weatherId = 'clear';
-    expect(getTileRentPreview(start, land.id)).toMatchObject({ price: land.price, rent: Math.ceil(land.price! * 0.24), purchasable: true, prospective: true });
-    expect(getTileRentPreview(start, utility.id).rent).toBe(120);
+    expect(getTileRentPreview(start, land.id)).toMatchObject({ price: land.price, rent: Math.ceil(land.price! * 0.4), purchasable: true, prospective: true });
+    expect(getTileRentPreview(start, utility.id).rent).toBe(150);
     const otherUtility = MAPS.lake.nodes.find(node => node.kind === 'water')!;
     start.properties[otherUtility.id] = { ownerId: 'p1', level: 0, mortgaged: false };
-    expect(getTileRentPreview(start, utility.id).rent).toBe(360);
+    expect(getTileRentPreview(start, utility.id).rent).toBe(450);
     start.properties[land.id] = { ownerId: 'p2', level: 1, mortgaged: false };
     expect(getTileRentPreview(start, land.id)).toMatchObject({ rent: getRent(start, land.id), purchasable: false, prospective: false });
 
@@ -669,6 +669,7 @@ describe('pure deterministic engine', () => {
     const shieldLanding = act(shield, { type: 'roll' });
     expect(shieldLanding.pending?.kind).not.toBe('rent');
     expect(shieldLanding.players[0].cash).toBe(shield.players[0].cash - rent);
+    expect(shieldLanding.players[0].mood).toBe(shield.players[0].mood - 1 - 2);
     expect(shieldLanding.players[0].inventory.some(slot => slot.uid === 'shield-rent')).toBe(true);
     const own = approach(); own.properties[5].ownerId = 'p1';
     expect(act(own, { type: 'roll' }).pending?.kind).not.toBe('rent');
@@ -684,6 +685,7 @@ describe('pure deterministic engine', () => {
     expect(fogWaiver).toBeDefined();
     expect(fogWaiver!.pending?.kind).not.toBe('rent');
     expect(fogWaiver!.players[0].inventory.some(slot => slot.itemId === 'rent')).toBe(true);
+    expect(fogWaiver!.players[0].mood).toBe(99);
   });
 
   it('allows rent payment into debt and resumes glitch backtracking only after the rent choice', () => {
@@ -1370,8 +1372,8 @@ describe('pure deterministic engine', () => {
     }
     expect(coinLanding).toBeDefined();
     const amount = coinLanding!.players[0].cash - 100_000;
-    expect(amount).toBeGreaterThanOrEqual(60);
-    expect(amount).toBeLessThanOrEqual(120);
+    expect(amount).toBeGreaterThanOrEqual(100);
+    expect(amount).toBeLessThanOrEqual(200);
     expect(coinLanding!.logs.at(-1)?.text).toBe(`${coinLanding!.players[0].name} 捡到 ${amount} PM。`);
     expect(coinLanding!.movement?.effects).toContainEqual({ kind: 'cash', label: `拾得 +${amount} PM`, tone: 'good' });
     expect(coinLanding!.feedback).toBeNull();

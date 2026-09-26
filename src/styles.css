@@ -673,3 +673,128 @@
  .trading-desk .stock-quote{padding:11px}
  .trading-desk .stock-quote-side strong{font-size:12px}
 }
+
+/* Equipment selection clears the map around a compact field instruction. */
+.equipment-icon{color:#4d7a85}
+.inventory-slot .item-icon>.equipment-stone,.shop-item-icon>.equipment-stone{color:#617495}
+.inventory-slot .item-icon>.equipment-twin,.shop-item-icon>.equipment-twin{color:#557f6e}
+.inventory-target-view{color:#395d57;min-width:0}
+.inventory-target-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+.inventory-target-head>button{flex:none;min-height:40px;padding:9px 12px;border:1px solid #cddbd2;background:#f0f5eb;border-radius:8px;color:#587465;font-size:12px}
+.inventory-target-head h3{margin:0 0 6px;font-size:18px;font-weight:600;line-height:1.5}
+.inventory-target-head p,.inventory-target-view>p{margin:0;color:#718576;font-size:12px;line-height:1.8}
+.inventory-target-head svg{flex:none}
+.player-target-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
+.player-target-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;min-width:0;padding:18px 15px;min-height:146px;border:1px solid #d4dfd3;border-radius:12px;background:#f5f8ef;color:#49664d}
+.player-target-card strong{font-size:14px;line-height:1.5}
+.player-target-card small,.player-target-card span{font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.player-target-card:hover:not(:disabled),.weather-target-card:hover:not(:disabled){border-color:#91aca1;background:#edf4e9}
+.player-target-card[aria-pressed=true],.weather-target-card[aria-pressed=true]{border:2px solid #527d83;padding:17px 14px;background:#edf5f2;box-shadow:0 0 0 3px #527d8312}
+.player-target-card:focus-visible,.weather-target-card:focus-visible{outline:2px solid #4d7a85;outline-offset:3px}
+.player-target-marker{display:inline-flex;align-items:center;justify-content:center;width:35px;height:35px;border-radius:50%;background:var(--player-color,#739d90);color:#fffefa}
+.inventory-target-actions{display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:-1px;background:#fbfcf5;padding:15px 0 2px;border-top:1px solid #dbe4d7;z-index:2}
+.inventory-target-actions button{min-height:42px}
+.inventory-target-summary{padding:13px 16px;background:#edf3ee;border:1px solid #d2e0d7;border-radius:9px;font-size:12px;line-height:1.8;margin:0 0 15px}
+.inventory-target-empty{padding:20px;border:1px dashed #cedccb;border-radius:10px;font-size:12px;line-height:1.8;color:#778874}
+.weather-target-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:15px 0;max-height:360px;overflow-y:auto;overscroll-behavior:contain;padding:3px}
+.weather-target-card{display:flex;flex-direction:column;align-items:center;gap:7px;min-height:85px;padding:14px 8px;border:1px solid #d4dfd3;border-radius:10px;background:#f5f8ef;color:#49664d;font-size:11px}
+.weather-target-card[aria-pressed=true]{padding:13px 7px}
+.game-shell.item-targeting{overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+.item-targeting .player-hud,.item-targeting .turn-panel,.item-targeting .activity-carousel,.item-targeting .turn-order,.item-targeting .map-legend,.item-targeting .activity-toast{display:none}
+.game-shell.item-targeting .game-main{flex-basis:620px;min-height:620px}
+.item-targeting .game-main .board-stage{inset:100px 24px 155px}
+.item-targeting .game-main .map-controls{right:0;top:0}
+.item-target-banner{position:absolute;left:24px;right:24px;top:14px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 18px;background:#f8fcf5f5;border:1px solid #b9d0c8;border-left:4px solid #527d83;border-radius:12px;box-shadow:0 4px 16px #41665f0c;color:#395e60}
+.item-target-banner>div{min-width:0}
+.item-target-banner h3,.item-target-banner h2,.item-target-banner strong{font-size:15px;line-height:1.5;margin:0 0 4px;display:block}
+.item-target-banner p,.item-target-banner small{font-size:11px;line-height:1.65;margin:0;color:#668078;display:block}
+.item-target-banner>button{flex:none;min-height:42px;white-space:nowrap;font-size:12px}
+.item-target-detail{position:absolute;left:50%;bottom:15px;transform:translateX(-50%);width:min(560px,calc(100% - 48px));z-index:5;padding:16px 20px;border:1px solid #bad0c7;border-radius:13px;background:#fafff6f7;box-shadow:0 8px 24px #37554f0d;color:#395e54}
+.item-target-detail h3,.item-target-detail h2{font-size:16px;line-height:1.5;margin:0 0 7px}
+.item-target-detail p{font-size:12px;line-height:1.7;margin:3px 0 8px}
+.item-target-detail small{font-size:11px;line-height:1.7;color:#718777}
+.item-target-detail .item-target-detail-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}
+.item-target-detail button{min-height:42px}
+.item-target-node{color:#507f88}
+.item-target-node .item-target-outline{stroke:#56858d;stroke-width:2;fill:none}
+.item-target-outline>*{vector-effect:non-scaling-stroke}
+.item-target-node.is-selected .item-target-outline{stroke:#285d64;stroke-width:3}
+.is-item-selecting .map-node[data-item-target=false]{opacity:.4;cursor:default}
+.is-item-selecting .map-node[data-item-target=true]{cursor:crosshair}
+.is-item-selecting .weather-atmosphere{opacity:.25}
+.is-item-selecting .player-beacon{opacity:.55}
+.dice-moment:has(.dice-pair){width:260px}
+.dice-moment .animated-dice:has(.dice-pair){width:164px;height:72px;margin:16px auto 12px;animation:none}
+.dice-pair{display:flex;align-items:center;justify-content:center;gap:16px;height:100%;margin:0 auto}
+.dice-pair-die{display:block;width:70px;height:70px;flex:none}
+.dice-pair-die svg{width:100%;height:100%}
+.is-rolling .dice-pair-die{animation:dice-tumble .45s ease-in-out infinite}
+.is-rolling .dice-pair-die:nth-child(2){animation-delay:-.13s}
+.dice-pair .animated-dice{width:70px;height:70px;margin:0}
+.dice-pair>.animated-dice:nth-child(2){animation-delay:-.13s}
+.dice-equation{font:600 18px/1.5 ui-monospace,SFMono-Regular,monospace;color:#385d54;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dice-total{display:inline;font:inherit;color:#385d54}
+@media(max-width:640px){
+ .inventory-target-head{gap:10px;margin-bottom:12px;flex-wrap:wrap}
+ .inventory-target-head h3{font-size:16px}
+ .player-target-grid{grid-template-columns:minmax(0,1fr);gap:8px;margin:14px 0}
+ .player-target-card{min-height:76px;padding:12px 14px;display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:12px;row-gap:3px;align-items:center}
+ .player-target-card[aria-pressed=true]{padding:11px 13px}
+ .player-target-card>svg,.player-target-card>.player-target-marker{grid-row:1/3}
+ .player-target-card strong{font-size:13px}.player-target-card small{font-size:11px}
+ .inventory-target-actions{gap:8px;padding-top:12px}.inventory-target-actions button{flex:1;font-size:11px;padding:10px}
+ .weather-target-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:275px}
+ .weather-target-card{min-height:76px;font-size:10px}
+ .game-shell.item-targeting .game-main{flex-basis:620px;min-height:620px}
+ .item-targeting .game-main .board-stage{inset:124px 0 172px}
+ .item-targeting .game-main .map-controls{right:8px;top:0}
+ .item-target-banner{left:10px;right:10px;top:10px;padding:12px;gap:8px;align-items:flex-start;border-radius:9px}
+ .item-target-banner strong,.item-target-banner h3,.item-target-banner h2{font-size:13px}
+ .item-target-banner p,.item-target-banner small{font-size:10px;line-height:1.7}
+ .item-target-banner>button{min-height:38px;padding:8px;font-size:11px}
+ .item-target-detail{width:calc(100% - 20px);bottom:10px;padding:13px 14px;border-radius:10px}
+ .item-target-detail h3,.item-target-detail h2{font-size:14px}.item-target-detail p{font-size:11px}
+ .item-target-detail .item-target-detail-actions button{flex:1;padding:9px}
+ .dice-moment:has(.dice-pair){width:224px}
+ .dice-moment .animated-dice:has(.dice-pair){width:140px;height:60px;margin:13px auto 10px}.dice-pair{gap:12px}.dice-pair-die{width:60px;height:60px}
+ .dice-equation{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.dice-pair .animated-dice,.dice-pair-die{animation:none!important}}
+
+.player-target-color{display:block;width:28px;height:28px;flex:none;border-radius:7px;background:var(--target-color);box-shadow:inset 0 0 0 1px #283d4022}
+.item-target-banner>div{flex:1}
+.item-target-icon{display:flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;background:#eaf2ed;border-radius:10px}
+.item-target-detail-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.item-target-detail-head>span{font:500 11px/1.5 ui-monospace,monospace;color:#7a8e80}
+.item-target-detail-head>strong{font-size:16px}
+.item-target-detail-facts{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:11px;line-height:1.7;color:#6e8476}
+.player-beacon[data-transfer-phase=depart]{opacity:.35;filter:blur(1px)}
+.player-beacon[data-transfer-phase=arrive]{opacity:.75}
+.transfer-portal{stroke:#719ba8;fill:#c3e0dc;fill-opacity:.3;stroke-width:2}
+@keyframes dice-tumble{0%,100%{transform:rotate(-8deg) translateY(1px)}50%{transform:rotate(13deg) translateY(-5px)}}
+@media(max-width:640px){
+ .player-target-card>.player-target-color{grid-row:1/4}
+ .player-target-card>strong,.player-target-card>small{grid-column:2}
+ .item-target-icon{width:30px;height:30px;border-radius:7px}.item-target-icon svg{width:24px;height:24px}
+ .item-target-banner{display:grid;grid-template-columns:30px minmax(0,1fr) auto}
+ .item-target-banner>button{max-width:72px;white-space:normal;line-height:1.5}
+ .item-target-detail-head>strong{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){.player-beacon[data-transfer-phase]{filter:none;opacity:1}}
+/* Selection instructions and confirmations grow naturally with translated copy. */
+.game-shell.item-targeting .game-main{display:grid;grid-template-rows:auto minmax(320px,1fr) auto;align-content:stretch}
+.item-targeting .game-main .board-stage{position:relative;inset:auto;grid-row:2;min-height:320px;margin:12px 24px 16px}
+.item-targeting .item-target-banner{position:relative;inset:auto;grid-row:1;align-self:start;margin:14px 24px 0}
+.item-targeting .item-target-detail{position:relative;left:auto;bottom:auto;transform:none;grid-row:3;justify-self:center;margin:0 0 15px}
+@media(max-width:640px){
+ .item-targeting .game-main .board-stage{inset:auto;margin:8px 0 14px;min-height:320px}
+ .item-targeting .item-target-banner{margin:10px 10px 0}
+ .item-targeting .item-target-detail{margin-bottom:12px}
+}
+@media(max-width:640px){
+ .inventory-target-head>button{display:none}
+ .inventory-target-head p{font-size:11px;line-height:1.65}
+ .player-target-grid{margin:12px 0;gap:7px}
+ .player-target-card{padding:10px 12px;min-height:76px}
+ .player-target-card[aria-pressed=true]{padding:9px 11px}
+}

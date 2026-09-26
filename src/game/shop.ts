@@ -10,10 +10,10 @@ export const SHOP_ITEM_LIMITS: Record<string, number> = { rent: 1 };
 /** Every item that can appear on a shop shelf has an explicit rarity. */
 export const SHOP_ITEM_RARITY: Record<string, ShopRarity> = {
   dice8: 'common', snack: 'common', feast: 'common', tea: 'common', coffee: 'common',
-  dice12: 'uncommon', restkit: 'uncommon', dry: 'uncommon', arrest: 'uncommon', rent: 'uncommon',
+  dice12: 'uncommon', twinDish: 'uncommon', restkit: 'uncommon', dry: 'uncommon', arrest: 'uncommon', rent: 'uncommon',
   dice20: 'rare', controller: 'rare', bomb: 'rare', demolish: 'rare', acquire: 'rare',
   shield: 'rare', weather: 'rare', bag: 'rare', luck: 'rare', unluck: 'rare',
-  tax: 'rare', teleport: 'rare', umbrella: 'rare', repair: 'rare',
+  tax: 'rare', teleport: 'rare', teleportStone: 'rare', umbrella: 'rare', repair: 'rare',
 };
 
 const record = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);

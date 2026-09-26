@@ -4,6 +4,7 @@ import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
 import { findEligibleEvent, getEventPool } from './eventPool';
 import { normalizePlayerColors } from './colors';
 import { validShopData } from './shop';
+import { getRent } from './engine';
 
 const KEY = 'prism-days-save-v1';
 const MAP_IDS: MapId[] = ['lake', 'coast', 'valley', 'sundered'];
@@ -185,6 +186,8 @@ export function parseSave(raw: string): GameState {
       || state.seasonReport.rankings.some((row: unknown) => !record(row) || typeof row.name !== 'string' || !Number.isFinite(row.assets))))
     || !Number.isSafeInteger(state.rng) || !Number.isSafeInteger(state.sequence) || Number(state.sequence) < 0
     || ![6, 8, 12, 20, 100].includes(Number(state.selectedDie))
+    || (state.twinRoll !== undefined && typeof state.twinRoll !== 'boolean')
+    || (state.twinRoll === true && state.controlledRoll !== undefined && state.controlledRoll !== null)
     || (state.controlledRoll !== undefined && state.controlledRoll !== null
       && (!Number.isSafeInteger(state.controlledRoll) || Number(state.controlledRoll) < 1 || Number(state.controlledRoll) > 6 || state.selectedDie !== 6))
     || (state.winnerId !== null && !playerIds.has(String(state.winnerId)))
@@ -236,6 +239,24 @@ export function parseSave(raw: string): GameState {
         body: '现金和股票持仓保持不变，本次访问可免费结束。', choices: [{ id: 'leave', label: '离开' }] };
     }
   }
+  if (pending?.kind === 'rent') {
+    const payer = players[saved.currentPlayerIndex];
+    const node = map.nodes[payer.position];
+    const property = saved.properties[node.id];
+    const owner = players.find(player => player.id === property?.ownerId);
+    if (!property || !owner || owner.id === payer.id || pending.data?.nodeId !== node.id
+      || pending.data?.ownerId !== owner.id || !['land', 'power', 'water', 'telecom'].includes(node.kind)) {
+      throw new Error('存档中的租金选择无效。');
+    }
+    const amount = getRent({ ...saved, players }, node.id);
+    pending = amount > 0
+      ? { ...pending, title: '租金选择', body: `${payer.name} 到达${node.name}，应向${owner.name}支付 ${amount} PM 租金。`,
+        choices: [{ id: 'use_card', label: '使用免租卡', disabled: !payer.inventory.some(slot => slot.itemId === 'rent' && !slot.wet) },
+          { id: 'pay', label: `支付 ${amount} PM，保留卡片` }],
+        data: { ...pending.data, nodeId: node.id, ownerId: owner.id, amount } }
+      : { ...pending, kind: 'info', title: '租金已免除', body: `${node.name}当前不收租，本次访问可免费结束。`,
+        choices: [{ id: 'leave', label: '离开' }] };
+  }
   if (pending?.kind === 'shop' && pending.data?.shopPurchases === undefined) {
     pending = { ...pending, data: { ...pending.data, shopPurchases: {} } };
   }
@@ -253,7 +274,7 @@ export function parseSave(raw: string): GameState {
     }
   }
   return { ...saved, config: normalizedConfig, players, propertyListings: saved.propertyListings ?? [], notices: saved.notices ?? [], turnEncounters: publicEncounters, pending,
-    controlledRoll: saved.controlledRoll ?? null, movement: null, feedback: null };
+    controlledRoll: saved.controlledRoll ?? null, twinRoll: saved.twinRoll ?? false, movement: null, feedback: null };
 }
 
 export function loadSave(): GameState | null {

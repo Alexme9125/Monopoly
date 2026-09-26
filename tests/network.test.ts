@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { act, createGame } from '../src/game/engine';
+import { act, createGame, getRent } from '../src/game/engine';
+import { RENT_MOOD_LOSS } from '../src/game/economy';
 import { getMovementTimeline } from '../src/game/presentation';
 import { PLAYER_COLORS } from '../src/game/colors';
 import { createRoomServer, type RoomServer } from '../server/index';
@@ -69,6 +70,15 @@ function landSeed(): number {
     if (state.pending?.kind === 'land') return seed;
   }
   throw new Error('Could not find a deterministic land roll');
+}
+
+function beaconSeed(): number {
+  for (let seed = 1; seed < 20_000; seed++) {
+    const config: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
+      players: [hostProfile, guestProfile] as GameConfig['players'] };
+    if (act(createGame(config), { type: 'roll' }).pending?.data?.eventId === 'beacon_lab') return seed;
+  }
+  throw new Error('Could not find a deterministic beacon_lab opening');
 }
 
 function expectStepTimeline(movement: Movement) {
@@ -262,10 +272,14 @@ describe('authoritative room server', () => {
   }, 15_000);
 
   it('shares a controlled D6 roll from an earned controller and rejects remote or invalid use', async () => {
+    const seed = beaconSeed();
+    const preview: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
+      players: [hostProfile, guestProfile] as GameConfig['players'] };
+    expect(act(createGame(preview), { type: 'roll' }).pending?.data?.eventId).toBe('beacon_lab');
     const host = await Client.connect(server.port); clients.push(host);
     const guest = await Client.connect(server.port); clients.push(guest);
     let since = host.messages.length;
-    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: 1946 } });
+    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed } });
     const created = await host.wait(message => message.type === 'room' && message.room.members.length === 1, since);
     const code = created.room.code;
     since = guest.messages.length;
@@ -348,7 +362,8 @@ describe('authoritative room server', () => {
     guest.send({ type: 'action', action: { type: 'roll' } });
     const prompted = await guest.wait(message => message.type === 'room' && message.room.state?.pending?.kind === 'rent', guestSince);
     const hostPrompted = await host.wait(message => message.type === 'room' && message.room.state?.pending?.kind === 'rent', hostSince);
-    expect(prompted.room.state.pending).toMatchObject({ data: { nodeId: 1, ownerId: 'p1', amount: 120 } });
+    const rent = getRent(prompted.room.state, 1);
+    expect(prompted.room.state.pending).toMatchObject({ data: { nodeId: 1, ownerId: 'p1', amount: rent } });
     expect(hostPrompted.room.state.pending).toEqual(prompted.room.state.pending);
     expect(prompted.room.state.players[0].cash).toBe(bought.room.state.players[0].cash);
     expect(prompted.room.state.notices?.filter((entry: { kind: string }) => entry.kind === 'rent')).toHaveLength(0);
@@ -362,8 +377,12 @@ describe('authoritative room server', () => {
     const observed = await host.wait(message => message.type === 'room' && message.room.state?.notices?.some((entry: { kind: string }) => entry.kind === 'rent'), hostChoiceSince);
     expect(paid.room.state.notices).toEqual(observed.room.state.notices);
     expect(paid.room.state.notices.filter((entry: { kind: string }) => entry.kind === 'rent')).toHaveLength(1);
-    expect(paid.room.state.notices.at(-1)).toMatchObject({ amount: 120, playerId: 'p2', recipientId: 'p1' });
+    expect(paid.room.state.notices.at(-1)).toMatchObject({ amount: rent, playerId: 'p2', recipientId: 'p1' });
+    expect(paid.room.state.notices.at(-1).body).toContain(`心情 −${RENT_MOOD_LOSS}`);
     expect(paid.room.state.players[1].inventory.some((slot: { itemId: string }) => slot.itemId === 'rent')).toBe(true);
-    expect(paid.room.state.players[0].cash).toBe(bought.room.state.players[0].cash + 120);
+    expect(paid.room.state.players[0].cash).toBe(bought.room.state.players[0].cash + rent);
+    expect(paid.room.state.players[1].cash).toBe(prompted.room.state.players[1].cash - rent);
+    expect(paid.room.state.players[1].mood).toBe(prompted.room.state.players[1].mood - RENT_MOOD_LOSS);
+    expect(paid.room.state.players[1].mood).toBe(observed.room.state.players[1].mood);
   }, 20_000);
 });

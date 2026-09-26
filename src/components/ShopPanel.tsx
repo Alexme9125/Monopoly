@@ -1,15 +1,11 @@
 import { useState } from 'react';
-import { Dices, Package, Ticket, Utensils, Zap } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { ITEMS } from '../game/data';
 import { getShopOffer } from '../game/shop';
-import type { Choice, ItemDef, Player, Prompt } from '../game/types';
+import type { Choice, Player, Prompt } from '../game/types';
+import ItemIcon from './ItemIcon';
 
 const money = (value: number) => `PM$ ${Math.round(value).toLocaleString('zh-CN')}`;
-
-function ItemCategoryIcon({ category }: { category: ItemDef['category'] }) {
-  const Icon = { dice: Dices, attack: Zap, supply: Utensils, card: Ticket, special: Package }[category];
-  return <Icon size={22} aria-hidden="true" />;
-}
 
 export interface ShopPanelProps {
   player: Player;
@@ -55,7 +51,7 @@ export default function ShopPanel({ player, prompt, onChoose, disabled = false }
           const reason = soldOut ? '本次已售罄' : !offer ? '限购信息缺失，暂不可购买' : shortfall ? `余额不足 · 还差 ${money(shortfall)}` : noRoom ? '背包已满，无法新增道具格' : choice.disabled ? '暂不可购买' : disabled ? '当前无法购买' : '';
           const quotaText = !offer ? '本次额度暂不可用' : itemId === 'rent' ? `免租卡每次限购 ${offer.limit} 张 · 剩余 ${offer.remaining} 张` : `本次限购 ${offer.limit} 件 · 剩余 ${offer.remaining} 件`;
           return <article className="shop-item" key={choice.id}>
-            <div className="shop-item-main"><span className="shop-item-icon"><ItemCategoryIcon category={item.category} /></span><div className="shop-item-copy"><div className="shop-item-name"><strong>{item.name}</strong>{offer ? <span className={`shop-rarity shop-rarity-${offer.rarity}`}>{offer.label}</span> : <span className="shop-rarity shop-rarity-unknown">额度未载入</span>}</div><small>{item.description}</small><small className="shop-item-held">已持有 {held} 件{stacks ? ' · 可叠加到现有道具' : ''}</small><small className="shop-item-quota">{quotaText}</small></div></div>
+            <div className="shop-item-main"><span className="shop-item-icon"><ItemIcon itemId={item.id} size={22} /></span><div className="shop-item-copy"><div className="shop-item-name"><strong>{item.name}</strong>{offer ? <span className={`shop-rarity shop-rarity-${offer.rarity}`}>{offer.label}</span> : <span className="shop-rarity shop-rarity-unknown">额度未载入</span>}</div><small>{item.description}</small><small className="shop-item-held">已持有 {held} 件{stacks ? ' · 可叠加到现有道具' : ''}</small><small className="shop-item-quota">{quotaText}</small></div></div>
             <div className="shop-item-purchase"><strong className="shop-item-price">{money(item.price)}</strong><div className="shop-item-preview"><small>{shortfall ? `购买需 ${money(item.price)}` : `购买后现金 ${money(player.cash - item.price)}`}</small><small>{stacks ? `叠加现有道具 · 仍剩 ${remaining} 格` : noRoom ? '购买需要 1 个空位' : `购买后剩 ${player.capacity - nextUsed} 格`}</small></div><button className="shop-buy-button" type="button" aria-label={soldOut ? `${item.name}已售罄` : `购买${item.name}`} disabled={disabled || choice.disabled || !!reason} title={reason || undefined} onClick={() => onChoose(choice.id)}>{soldOut ? '已售罄' : '购买'}</button>{reason && <small className="shop-item-reason">{reason}</small>}</div>
           </article>;
         })}</div>
@@ -65,7 +61,7 @@ export default function ShopPanel({ player, prompt, onChoose, disabled = false }
         <div className="shop-inventory-list">{owned.size ? [...owned].map(([key, slot]) => {
           const itemId = key.slice(0, key.lastIndexOf(':'));
           const item = Object.hasOwn(ITEMS, itemId) ? ITEMS[itemId] : null;
-          return <div className="shop-inventory-item" key={key}><span className="shop-inventory-icon">{item ? <ItemCategoryIcon category={item.category} /> : <Package size={22} aria-hidden="true" />}</span><div><strong>{item?.name || itemId}</strong><small>数量 {slot.quantity}{slot.wet ? ' · 已受潮' : ''}</small></div></div>;
+          return <div className="shop-inventory-item" key={key}><span className="shop-inventory-icon">{item ? <ItemIcon itemId={item.id} size={22} /> : <Package size={22} aria-hidden="true" />}</span><div><strong>{item?.name || itemId}</strong><small>数量 {slot.quantity}{slot.wet ? ' · 已受潮' : ''}</small></div></div>;
         }) : <p className="shop-inventory-empty">背包还是空的，剩余 {remaining} 格可以装入道具。</p>}</div>
         <p className="shop-inventory-note">购物期间只能查看背包；道具可在行动前使用。</p>
       </details>

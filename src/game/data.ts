@@ -1,4 +1,5 @@
 import type { EventDef, ItemDef, PlayerConfig, Stock, WeatherDef } from './types';
+import { HOSTILE_ITEM_MOOD_LOSS } from './economy';
 
 export const JOURNEY_REWARD_STEPS = 72;
 export const JOURNEY_REWARD_CASH = 10_000;
@@ -7,6 +8,7 @@ const item = (id: string, name: string, icon: string, category: ItemDef['categor
   id, name, icon, category, price, description, shop, susceptible, target,
   stackable: category === 'card', paper: category === 'card',
 });
+const hostileMoodNote = `成功命中后，受害人心情 −${HOSTILE_ITEM_MOOD_LOSS}；若被星盾卡挡下则不损失心情。`;
 
 const itemList: ItemDef[] = [
   item('dice8', '八面电子骰', '🎲', 'dice', 380, '替代普通骰投掷 1d8；电子道具受潮时暂时不能使用。', true, true),
@@ -14,23 +16,25 @@ const itemList: ItemDef[] = [
   item('dice20', '二十面电子骰', '🎲', 'dice', 1280, '替代普通骰投掷 1d20；电子道具受潮时暂时不能使用。', true, true),
   item('dice100', '百面星核骰', '💠', 'dice', 4000, '稀有事件道具，可投掷 1d100；商店不售卖。', false, true),
   item('controller', '控骰器', '🎛️', 'dice', 1600, '行动前指定本次普通六面骰的原始点数（1～6），天气仍会修正点数。确认后消耗一件；本回合不能再使用其他骰具，也不能与已启用的多面骰叠加。电子装置怕水，受潮时暂时无法使用。', true, true, 'dice'),
+  item('twinDish', '双生培养皿', '🧫', 'dice', 980, '行动前使用，下一次独立投掷两枚当前骰子并合计点数。可叠加多面骰，天气只修正合计一次；与控骰器互斥，怕水。', true, true),
   item('snack', '能量小食', '🍪', 'supply', 180, '使用后恢复 20 点体力。'),
   item('feast', '星港盛宴', '🍱', 'supply', 380, '使用后恢复 40 点体力。'),
   item('tea', '月露茶', '🍵', 'supply', 220, '使用后恢复 20 点心情。'),
   item('restkit', '野营休憩包', '⛺', 'supply', 580, '使用后同时恢复 25 点体力与 25 点心情。'),
   item('coffee', '晨星咖啡', '☕', 'supply', 260, '使用后恢复 12 点体力与 8 点心情。'),
-  item('bomb', '传送爆弹', '💣', 'attack', 1800, '指定一名对手，将其送入医院休养 3 次行动；施用者有 10% 概率因扰乱秩序入狱。电子引信受潮时暂时失效。', true, true, 'player'),
-  item('demolish', '拆迁许可', '🛠️', 'attack', 2400, '指定对手一处非地标建筑，拆除 1 层；不能使等级低于 0。', true, false, 'property'),
-  item('acquire', '强制收购契约', '📜', 'card', 3500, '指定对手一处非地标资产，按该资产价格的 1.5 倍向原主人付款后取得所有权；资金不足不能使用。', true, false, 'property'),
+  item('bomb', '传送爆弹', '💣', 'attack', 1800, `指定一名对手，将其送入医院休养 3 次行动；施用者有 10% 概率因扰乱秩序入狱。电子引信受潮时暂时失效。${hostileMoodNote}`, true, true, 'player'),
+  item('demolish', '拆迁许可', '🛠️', 'attack', 2400, `指定对手一处非地标建筑，拆除 1 层；不能使等级低于 0。${hostileMoodNote}`, true, false, 'property'),
+  item('acquire', '强制收购契约', '📜', 'card', 3500, `指定对手一处非地标资产，按该资产价格的 1.5 倍向原主人付款后取得所有权；资金不足不能使用。${hostileMoodNote}`, true, false, 'property'),
   item('arrest', '免捕卡', '🪪', 'card', 880, '一次性抵消即将发生的逮捕或入狱。'),
   item('rent', '免租卡', '🎫', 'card', 980, '收到租金账单时，可自行选择消耗一张来免除本次租金，也可付款并保留；受潮时无法抵免。'),
   item('shield', '星盾卡', '🛡️', 'card', 1200, '一次性抵挡针对自己的道具攻击。'),
   item('weather', '天气控制器', '🌦️', 'special', 2200, '指定下一次天气为选定类型；电子装置受潮时暂时不能使用。', true, true, 'weather'),
   item('bag', '折叠背包', '🎒', 'special', 1800, '永久增加 4 格道具容量；初始容量为 10 格。'),
   item('luck', '幸运星签', '🍀', 'card', 1400, '获得持续 3 日的幸运状态。'),
-  item('unluck', '霉运星签', '🌩️', 'card', 1500, '指定一名对手，使其受到持续 3 日的霉运状态。', true, false, 'player'),
-  item('tax', '税务审计函', '🧾', 'card', 1900, '指定一名对手，令其缴纳 1800 星币税款。', true, false, 'player'),
+  item('unluck', '霉运星签', '🌩️', 'card', 1500, `指定一名对手，使其受到持续 3 日的霉运状态。${hostileMoodNote}`, true, false, 'player'),
+  item('tax', '税务审计函', '🧾', 'card', 1900, `指定一名对手，令其缴纳 1800 星币税款。${hostileMoodNote}`, true, false, 'player'),
   item('teleport', '星轨换乘券', '🚉', 'card', 860, '立即转移至选定车站。'),
+  item('teleportStone', '传送石', '💎', 'special', 3200, '行动前点选任意其他地块，直接传送并结算落点，本回合不再掷骰。传送不计入行走奖励，不受行走位移影响。', true, false, 'node'),
   item('dry', '全效干燥剂', '🧴', 'supply', 760, '立即晾干背包中所有受潮道具，恢复其使用能力。'),
   item('umbrella', '三日星伞', '☂️', 'special', 1100, '获得持续 3 日的天气防护状态。'),
   item('repair', '建筑修复包', '🔧', 'special', 1600, '修复指定房产；原建筑低于 4 层时，还可免费升级 1 层。', true, false, 'property'),
@@ -178,6 +182,14 @@ export const EVENTS: EventDef[] = [
     { id: 'buy', label: '支付材料费', description: '支付 900 棱镜币，获得控骰器。', cash: -900, item: 'controller' },
     { id: 'sort', label: '整理零件', description: '消耗 4 点体力，获得 250 棱镜币。', stamina: -4, cash: 250 },
     { id: 'leave', label: '暂不交易', description: '保留现有物资，继续赶路。' },
+  ]),
+  event('prism_relay', '棱镜中继试验', '通信团队正用一枚相位晶石测试新区的短程中继。他们愿意把试制品交给肯帮忙校准的代理人。', 'good', [
+    { id: 'calibrate', label: '协助校准', description: '体力 −8、支付1200 PM，获得传送石。', cash: -1200, stamina: -8, item: 'teleportStone' },
+    { id: 'record', label: '记录数据', description: '获得260 PM。', cash: 260 },
+  ]),
+  event('twin_culture', '双生培养计划', '路旁实验温室里，两簇微型晶体始终同步生长。研究员邀请你把它们带上路，看看骰子是否也会成双出现。', 'good', [
+    { id: 'nurture', label: '照料样本', description: '心情 −6、支付380 PM，获得双生培养皿。', cash: -380, mood: -6, item: 'twinDish' },
+    { id: 'observe', label: '短暂观摩', description: '心情 +8。', mood: 8 },
   ]),
 ];
 

@@ -39,11 +39,11 @@ function itemQuantity(state: GameState, itemId: string): number {
 }
 
 describe('map-exclusive regional encounters', () => {
-  it('keeps the 46 universal events and exposes exactly 5/3/2 regional events per map', () => {
+  it('keeps the 48 universal events and exposes exactly 5/3/2 regional events per map', () => {
     expect(REGIONAL_EVENTS).toEqual(JSON.parse(readFileSync(new URL('../docs/regional-events-design.json', import.meta.url), 'utf8')));
-    expect(EVENTS).toHaveLength(46);
+    expect(EVENTS).toHaveLength(48);
     expect(REGIONAL_EVENTS).toHaveLength(40);
-    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(86);
+    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(88);
     for (const mapId of mapIds) {
       const regional = REGIONAL_EVENTS.filter(event => event.mapId === mapId);
       expect(regional).toHaveLength(10);
@@ -51,7 +51,7 @@ describe('map-exclusive regional encounters', () => {
       expect(regional.filter(event => event.rarity === 'uncommon')).toHaveLength(3);
       expect(regional.filter(event => event.rarity === 'rare')).toHaveLength(2);
       expect(regional.every(event => event.dlc === true)).toBe(true);
-      expect(getEventPool(mapId)).toHaveLength(56);
+      expect(getEventPool(mapId)).toHaveLength(58);
       for (const event of regional) {
         expect(findEligibleEvent(mapId, event.id)).toBe(event);
         for (const other of mapIds.filter(id => id !== mapId)) expect(findEligibleEvent(other, event.id)).toBeUndefined();
