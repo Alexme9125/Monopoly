@@ -798,3 +798,43 @@
  .player-target-card{padding:10px 12px;min-height:76px}
  .player-target-card[aria-pressed=true]{padding:9px 11px}
 }
+
+/* Six destinations stay scannable beside the preview and on narrow phones. */
+.landing .landing-layout{grid-template-columns:minmax(0,43%) minmax(0,57%)}
+.landing .intro{min-width:0}
+.landing .map-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:520px;gap:8px}
+.landing .map-option{min-width:0;min-height:104px;padding:11px 12px;align-items:flex-start;gap:8px}
+.landing .map-number{flex:none;width:20px;font-size:15px;line-height:1.5}
+.landing .map-option-main{min-width:0;flex:1;gap:3px}
+.landing .map-option-heading{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0}
+.landing .map-option-heading strong{min-width:0;font-size:12px;line-height:1.35;white-space:nowrap}
+.landing .map-node-count{display:inline-flex;flex:none;align-items:center;white-space:nowrap;margin:0;padding:3px 5px;font-size:9px;line-height:1.35}
+.landing .map-option-main small{line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+.landing .map-option-main .map-option-events,.landing .map-option-main .map-weather-note{font-size:9px}
+@media(max-width:850px){
+ .landing .landing-layout{display:flex;flex-direction:column;align-items:stretch}
+ .landing .map-options{max-width:none}
+ .landing .map-option{min-height:100px}
+}
+@media(max-width:520px){
+ .landing .map-options{gap:6px}
+ .landing .map-option{min-height:116px;padding:11px 8px;gap:0}
+ .landing .map-number{display:none}
+ .landing .map-option-heading strong{font-size:13px;white-space:normal;overflow-wrap:anywhere}
+ .landing .map-node-count{font-size:9px;padding:2px 4px}
+ .landing .map-option-main .map-option-subtitle{font-size:10px}
+ .landing .map-option-main .map-option-events,.landing .map-option-main .map-weather-note{font-size:9.5px}
+ .landing .world-preview{height:224px}
+}
+
+/* Regional atmosphere changes the shell, while player and ownership colors stay fixed. */
+.landing[data-map="forest"]{background:radial-gradient(ellipse at 78% 22%,#dceae2 0%,transparent 53%),#eef3ed}
+.landing[data-map="forest"] .map-option.selected{border-color:#a9c4b4;background:#f5faf3}
+.landing[data-map="forest"] .selected .map-number,.landing[data-map="forest"] .preview-label strong{color:#4d7666}
+.landing[data-map="forest"] .map-option-main .map-weather-note{color:#5c7c68}
+.game-shell[data-map="forest"]{background:radial-gradient(ellipse at 50% 46%,#dceae0,#e9f1e9 72%,#f0f4ec)}
+.landing[data-map="starSands"]{background:radial-gradient(ellipse at 78% 22%,#f2e7cd 0%,transparent 54%),#f5f0e5}
+.landing[data-map="starSands"] .map-option.selected{border-color:#d3b88f;background:#fff9ee}
+.landing[data-map="starSands"] .selected .map-number,.landing[data-map="starSands"] .preview-label strong{color:#987149}
+.landing[data-map="starSands"] .map-option-main .map-weather-note{color:#957858}
+.game-shell[data-map="starSands"]{background:radial-gradient(ellipse at 50% 46%,#eee2c9,#f2ede2 72%,#f5f1e8)}

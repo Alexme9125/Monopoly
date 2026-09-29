@@ -115,3 +115,75 @@ it('shares a lake DLC encounter, restricts selection, and retains the result unt
     await server.close();
   }
 }, 15_000);
+
+it('synchronizes both new-map DLC encounters and keeps their choices private to the active player', async () => {
+  const server = await createRoomServer({ port: 0, host: '127.0.0.1' });
+  try {
+    for (const { mapId, seed, eventId, choiceId } of [
+      { mapId: 'forest', seed: 43, eventId: 'forest_root_marker', choiceId: 'forest_root_marker_pay' },
+      { mapId: 'starSands', seed: 20, eventId: 'sands_night_awning', choiceId: 'sands_night_awning_snack' },
+    ] as const) {
+      const clients: Client[] = [];
+      try {
+        const host = await Client.connect(server.port); clients.push(host);
+        const guest = await Client.connect(server.port); clients.push(guest);
+        let since = host.messages.length;
+        host.send({ type: 'create', profile: hostProfile, config: { mapId, seasons: 4, weatherMode: 'standard', seed } });
+        const created = await host.wait(message => message.type === 'room' && message.room?.members.length === 1, since);
+        since = guest.messages.length;
+        guest.send({ type: 'join', code: created.room.code, profile: guestProfile });
+        await guest.wait(message => message.type === 'room' && message.room?.members.length === 2, since);
+        since = host.messages.length;
+        guest.send({ type: 'ready', ready: true });
+        await host.wait(message => message.type === 'room' && message.room?.members[1].ready, since);
+        since = host.messages.length;
+        host.send({ type: 'start' });
+        await host.wait(message => message.type === 'room' && message.room?.started, since);
+
+        const hostSince = host.messages.length, guestSince = guest.messages.length;
+        host.send({ type: 'action', action: { type: 'roll' } });
+        const isEvent = (message: Wire) => message.type === 'room'
+          && message.room?.state?.pending?.data?.eventId === eventId;
+        const hostEvent = await host.wait(isEvent, hostSince);
+        const guestEvent = await guest.wait(isEvent, guestSince);
+        const event = findEligibleEvent(mapId, eventId)!;
+        expect(event).toMatchObject({ mapId, dlc: true });
+        expect(hostEvent.room.state.pending).toEqual(guestEvent.room.state.pending);
+        expect(hostEvent.room.state.pending.body).toBe(event.story);
+        expect(hostEvent.room.state.pending.choices).toEqual(event.choices.map(choice => ({
+          id: choice.id, label: choice.label, description: choice.description, disabled: false,
+        })));
+        expect(hostEvent.room.state.turnEncounters).toEqual(guestEvent.room.state.turnEncounters);
+        expect(hostEvent.room.state.turnEncounters[0]).toMatchObject({ eventId, story: event.story });
+
+        await new Promise(resolve => setTimeout(resolve, Math.max(0, hostEvent.room.movementUntil - Date.now() + 10)));
+        since = guest.messages.length;
+        guest.send({ type: 'action', action: { type: 'choose', choiceId } });
+        expect((await guest.wait(message => message.type === 'error', since)).message).toContain('不是你的行动回合');
+        expect(host.messages.at(-1)?.room?.state?.turnEncounters?.[0]?.selectedChoiceId).toBeUndefined();
+
+        const choiceHostSince = host.messages.length, choiceGuestSince = guest.messages.length;
+        host.send({ type: 'action', action: { type: 'choose', choiceId } });
+        const isChosen = (message: Wire) => message.type === 'room'
+          && message.room?.state?.turnEncounters?.[0]?.selectedChoiceId === choiceId;
+        const hostChosen = await host.wait(isChosen, choiceHostSince);
+        const guestChosen = await guest.wait(isChosen, choiceGuestSince);
+        expect(hostChosen.room.state.turnEncounters).toEqual(guestChosen.room.state.turnEncounters);
+        expect(hostChosen.room.state.turnEncounters[0].result).toContain(event.choices.find(choice => choice.id === choiceId)!.label);
+        if (mapId === 'forest') expect(hostChosen.room.state.players[0].cash).toBe(hostEvent.room.state.players[0].cash - 350);
+        else expect(hostChosen.room.state.players[0].inventory.filter((slot: { itemId: string }) => slot.itemId === 'snack').length)
+          .toBe(hostEvent.room.state.players[0].inventory.filter((slot: { itemId: string }) => slot.itemId === 'snack').length + 1);
+        expect(hostChosen.room.state.currentPlayerIndex).toBe(0);
+
+        since = guest.messages.length;
+        host.send({ type: 'action', action: { type: 'endTurn' } });
+        const next = await guest.wait(message => message.type === 'room' && message.room?.state?.currentPlayerIndex === 1, since);
+        expect(next.room.state.turnEncounters).toEqual([]);
+      } finally {
+        for (const client of clients) await client.close();
+      }
+    }
+  } finally {
+    await server.close();
+  }
+}, 30_000);

@@ -2,13 +2,16 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { weatherWeights } from '../src/game/weather';
 import type { GameState, MapId } from '../src/game/types';
 
-const MAPS: MapId[] = ['lake', 'coast', 'valley', 'sundered'];
+const MAPS: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
 const MODES: GameState['config']['weatherMode'][] = ['standard', 'challenge'];
 const DAYS = { firstSpring: 1, summer: 22, autumn: 43, winter: 64, laterSpring: 85 } as const;
 const GROUPS = {
   clear: ['clear', 'soft', 'fireflies'],
   frostSnow: ['chill', 'snow', 'blizzard', 'freezing'],
   rain: ['drizzle', 'rain', 'thunder', 'storm'],
+  heatDry: ['warm', 'hot', 'heat', 'scorch', 'drought'],
+  windSand: ['breeze', 'gale', 'sand', 'sandstorm'],
+  fog: ['mist', 'fog', 'haze'],
   extreme: ['blizzard', 'freezing', 'storm', 'scorch', 'sandstorm', 'haze', 'acid', 'glitch', 'paradox'],
 } as const;
 

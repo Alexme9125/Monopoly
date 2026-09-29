@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { EVENTS, ITEMS } from '../src/game/data';
 import { act, createGame, runAI } from '../src/game/engine';
@@ -8,7 +9,8 @@ import { REGIONAL_EVENTS } from '../src/game/regionalEvents';
 import { parseSave } from '../src/game/storage';
 import type { EventDef, GameConfig, GameState, MapId } from '../src/game/types';
 
-const mapIds: MapId[] = ['lake', 'coast', 'valley', 'sundered'];
+const mapIds = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'] as MapId[];
+const establishedMapIds = ['lake', 'coast', 'valley', 'sundered'] as MapId[];
 const config = (mapId: MapId, ai = false): GameConfig => ({
   mapId, mode: 'pve', seasons: 4, weatherMode: 'standard', seed: 1978,
   players: [
@@ -42,8 +44,13 @@ describe('map-exclusive regional encounters', () => {
   it('keeps the 48 universal events and exposes exactly 5/3/2 regional events per map', () => {
     expect(REGIONAL_EVENTS).toEqual(JSON.parse(readFileSync(new URL('../docs/regional-events-design.json', import.meta.url), 'utf8')));
     expect(EVENTS).toHaveLength(48);
-    expect(REGIONAL_EVENTS).toHaveLength(40);
-    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(88);
+    expect(REGIONAL_EVENTS).toHaveLength(60);
+    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(108);
+    // Canonical JSON locks the four existing maps' event text and effects while adding two regions.
+    expect(createHash('sha256').update(JSON.stringify(REGIONAL_EVENTS.slice(0, 40))).digest('hex'))
+      .toBe('958d5b438e1dfdcf9d57e92b4d4587b1a193001df811a76140254efc981b77ad');
+    expect(REGIONAL_EVENTS.slice(0, 40).every(event => establishedMapIds.includes(event.mapId!))).toBe(true);
+    expect(REGIONAL_EVENTS.slice(40).every(event => event.mapId === 'forest' || event.mapId === 'starSands')).toBe(true);
     for (const mapId of mapIds) {
       const regional = REGIONAL_EVENTS.filter(event => event.mapId === mapId);
       expect(regional).toHaveLength(10);
@@ -113,6 +120,11 @@ describe('map-exclusive regional encounters', () => {
         expect(ITEMS[option.item], `${event.id}/${option.id} item`).toBeDefined();
         expect(itemQuantity(after, option.item)).toBe(itemQuantity(before, option.item) + 1);
       }
+      if (option.status) {
+        const [statusId, duration] = option.status.split(':');
+        expect(after.players[0].statuses.find(status => status.id === statusId)?.remaining,
+          `${event.id}/${option.id} status`).toBe(Number(duration) || 3);
+      }
       expect(after.turnEncounters?.at(-1)).toMatchObject({ eventId: event.id, selectedChoiceId: option.id });
       expect(after.notices?.at(-1)).toMatchObject({ kind: 'event', title: event.title });
       expect(parseSave(JSON.stringify(after)).turnEncounters).toEqual(after.turnEncounters);
@@ -178,7 +190,7 @@ describe('map-exclusive regional encounters', () => {
     expect(runAI(noBuilding).turnEncounters?.at(-1)?.selectedChoiceId).toBe('lake_cable_alarm_defer');
   });
 
-  it('resolves real low-resource and full-bag regional landings for all 40 events', () => {
+  it('resolves real low-resource and full-bag regional landings for all 60 events', () => {
     let blockedOptions = 0;
     let fallbackCount = 0;
     for (const mapId of mapIds) {
