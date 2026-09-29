@@ -51,7 +51,7 @@ class Client {
   }
 }
 
-it('creates a two-person mountain room and synchronizes the first roll and save', async () => {
+it.each(['sundered', 'forest', 'starSands'] as const)('creates a two-person %s room and synchronizes the first roll and save', async mapId => {
   const server = await createRoomServer({ port: 0, host: '127.0.0.1' });
   const clients: Client[] = [];
   try {
@@ -61,14 +61,14 @@ it('creates a two-person mountain room and synchronizes the first roll and save'
     const guestProfile = { name: '晨曦', color: '#277DA8', shape: 'diamond', ai: false, personality: 'cautious' };
     let since = host.messages.length;
     host.send({ type: 'create', profile: hostProfile,
-      config: { mapId: 'sundered', seasons: 4, weatherMode: 'standard', seed: 1217 } });
+      config: { mapId, seasons: 4, weatherMode: 'standard', seed: 1217 } });
     const created = await host.wait(message => message.type === 'room' && message.room?.members.length === 1, since);
-    expect(created.room?.config.mapId).toBe('sundered');
+    expect(created.room?.config.mapId).toBe(mapId);
     const code = created.room!.code;
     since = guest.messages.length;
     guest.send({ type: 'join', code, profile: guestProfile });
     const joined = await guest.wait(message => message.type === 'room' && message.room?.members.length === 2, since);
-    expect(joined.room?.config.mapId).toBe('sundered');
+    expect(joined.room?.config.mapId).toBe(mapId);
     since = host.messages.length;
     guest.send({ type: 'ready', ready: true });
     await host.wait(message => message.type === 'room' && !!message.room?.members[1].ready, since);
@@ -78,9 +78,9 @@ it('creates a two-person mountain room and synchronizes the first roll and save'
       host.wait(message => message.type === 'room' && !!message.room?.started, hostSince),
       guest.wait(message => message.type === 'room' && !!message.room?.started, guestSince),
     ]);
-    expect(hostStart.room?.state?.config.mapId).toBe('sundered');
+    expect(hostStart.room?.state?.config.mapId).toBe(mapId);
     expect(guestStart.room?.state).toEqual(hostStart.room?.state);
-    expect(MAPS.sundered.nodes[hostStart.room!.state!.players[0].position]).toBeDefined();
+    expect(MAPS[mapId].nodes[hostStart.room!.state!.players[0].position]).toBeDefined();
     const hostRollSince = host.messages.length, guestRollSince = guest.messages.length;
     host.send({ type: 'action', action: { type: 'roll' } });
     const [hostRoll, guestRoll] = await Promise.all([
@@ -90,7 +90,7 @@ it('creates a two-person mountain room and synchronizes the first roll and save'
     expect(hostRoll.room?.state).toEqual(guestRoll.room?.state);
     expect(hostRoll.room?.state?.movement?.path.length).toBeGreaterThan(1);
     const restored = parseSave(JSON.stringify(hostRoll.room!.state));
-    expect(restored.config.mapId).toBe('sundered');
+    expect(restored.config.mapId).toBe(mapId);
     expect(restored.players.map(player => player.position)).toEqual(hostRoll.room!.state!.players.map(player => player.position));
   } finally {
     for (const client of clients) await client.close();

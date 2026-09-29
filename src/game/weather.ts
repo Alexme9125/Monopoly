@@ -9,6 +9,13 @@ const HARD = new Set(['blizzard', 'freezing', 'storm']);
 function regionalMultiplier(mapId: MapId, weatherId: string): number {
   if (mapId === 'valley') return MILD.has(weatherId) ? 0.92 : ROUGH.has(weatherId) ? 1.15 : HARD.has(weatherId) ? 1.12 : 1;
   if (mapId === 'sundered') return MILD.has(weatherId) ? 0.85 : ROUGH.has(weatherId) ? 1.30 : HARD.has(weatherId) ? 1.25 : 1;
+  if (mapId === 'forest') {
+    if (EXTREME_WEATHER.has(weatherId)) return 0.35;
+    if (['clear', 'soft', 'fireflies'].includes(weatherId)) return 1.8;
+    if (weatherId === 'breeze') return 1.4;
+    if (['rain', 'frost', 'fog'].includes(WEATHERS[weatherId].family)) return 0.75;
+    if (['warm', 'hot', 'heat', 'drought', 'gale', 'sand'].includes(weatherId)) return 0.7;
+  }
   return 1;
 }
 
@@ -26,6 +33,34 @@ const WINTER: Record<string, number> = {
   haze: 0.2, glitch: 0.1, paradox: 0.1,
 };
 
+// The arid map has its own natural seasons. Its table deliberately permits mild heat and
+// drought in spring/autumn/winter while excluding every frost event, winter rain, and
+// non-summer heat/scorch. Explicit weather-controller choices remain unrestricted.
+const STAR_SANDS: readonly Record<string, number>[] = [
+  {
+    clear: 13, soft: 8, fireflies: 5, warm: 18, hot: 9, drought: 14,
+    drizzle: 5, rain: 3, breeze: 8, gale: 5, sand: 4, sandstorm: 0.4,
+    mist: 4, fog: 3, haze: 0.3, glitch: 0.2, paradox: 0.1,
+  },
+  {
+    clear: 10.7, soft: 6, fireflies: 4, warm: 20, hot: 17, heat: 11,
+    scorch: 0.8, drought: 16, drizzle: 2, rain: 1.5, thunder: 1, storm: 0.2,
+    breeze: 2, gale: 2, sand: 3, sandstorm: 0.3, mist: 1, fog: 0.6,
+    haze: 0.1, acid: 0.1, glitch: 0.4, paradox: 0.3,
+  },
+  {
+    clear: 14, soft: 8, fireflies: 6, warm: 18, hot: 8, drought: 15,
+    drizzle: 4, rain: 2, thunder: 1, storm: 0.2, breeze: 6, gale: 5,
+    sand: 6, sandstorm: 0.4, mist: 3, fog: 2, haze: 0.2,
+    acid: 0.3, glitch: 0.5, paradox: 0.4,
+  },
+  {
+    clear: 20, soft: 12, fireflies: 10, warm: 8, drought: 30,
+    breeze: 6, gale: 3, sand: 5, sandstorm: 0.3,
+    mist: 3, fog: 2, haze: 0.2, glitch: 0.3, paradox: 0.2,
+  },
+];
+
 /** Weights for the weather about to be drawn on state.day, before its day-start log. */
 export function weatherWeights(state: GameState): Record<string, number> {
   const season = Math.floor((state.day - 1) / 21) % 4;
@@ -33,6 +68,13 @@ export function weatherWeights(state: GameState): Record<string, number> {
   const severeStreak = recent.length >= 2 && recent.slice(-2).every(id => EXTREME_WEATHER.has(id));
   const families = [new Set(['clear', 'rain', 'wind']), new Set(['rain', 'heat']), new Set(['clear', 'wind', 'fog']), new Set(['frost', 'fog'])];
   return Object.fromEntries(Object.values(WEATHERS).map(weather => {
+    if (state.config.mapId === 'starSands') {
+      let weight = STAR_SANDS[season][weather.id] ?? 0;
+      if (weather.family === 'disaster' && state.day < 22) weight = 0;
+      if (state.config.weatherMode === 'challenge' && EXTREME_WEATHER.has(weather.id)) weight *= 2;
+      if (severeStreak && EXTREME_WEATHER.has(weather.id)) weight *= 0.25;
+      return [weather.id, weight];
+    }
     // Natural draws obey seasons and the disaster gate; a weather controller is handled separately by the engine.
     if (!weather.seasons.includes(season) || weather.family === 'disaster' && state.day < 22) return [weather.id, 0];
 

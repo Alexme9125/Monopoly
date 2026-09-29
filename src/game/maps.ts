@@ -116,11 +116,24 @@ const sunderedPaths: { points: Point[]; loop?: boolean }[] = [
   { points: [[780, 740], [840, 740], [900, 740], [960, 740], [1020, 740]] },
 ];
 
+const forestPaths = [
+  { points: sampledLoop([[180, 140], [1320, 140], [1320, 860], [180, 860]], [20, 12, 20, 12]), loop: true },
+];
+
+const starSandsPaths: { points: Point[]; loop?: boolean }[] = [
+  { points: sampledLoop([[180, 200], [600, 200], [600, 800], [180, 800]], [7, 10, 7, 10]), loop: true },
+  { points: sampledLoop([[900, 200], [1320, 200], [1320, 800], [900, 800]], [7, 10, 7, 10]), loop: true },
+  { points: [[600, 380], [660, 380], [720, 380], [780, 380], [840, 380], [900, 380]] },
+  { points: [[600, 620], [660, 620], [720, 620], [780, 620], [840, 620], [900, 620]] },
+];
+
 const themes: Record<MapId, MapTheme> = {
   lake: { id: 'lake', name: '棱镜湖畔', subtitle: '湖光环路', description: '环湖道路与外城道路由多条短桥相接，投资者在水岸与城郊之间穿行。', accent: '#58b7c4', districts: ['芦湾', '星汀', '镜湖', '银栈'], seed: 241 },
   coast: { id: 'coast', name: '原色海岸', subtitle: '斜向双湾八字路', description: '西北与东南两座矩形海湾只在潮汐广场交会，形成清晰的斜向八字道路。', accent: '#f1a45d', districts: ['晨潮', '海镜', '暮帆', '珊瑚'], seed: 593 },
   valley: { id: 'valley', name: '怡人山谷', subtitle: '三环阶梯山道', description: '外缘阶梯山道环抱两片错层谷地，林间支路和折线栈桥把三环相接。', accent: '#a994d5', districts: ['云岚', '松脊', '晶谷', '月麓'], seed: 887 },
   sundered: { id: 'sundered', name: '破碎山道', subtitle: '林谷·断桥·高脊', description: '松林、湖泊与裂谷桥连接风雪高脊；旧屋、废弃矿道与气象站留下远行者的痕迹。', accent: '#8796aa', districts: ['漫行高原', '望穹高脊', '末灯林地', '回声裂谷'], seed: 1217 },
+  forest: { id: 'forest', name: '始初森林', subtitle: '古木环道', description: '古木围成安静的环林道路，四方林地由星轨站均匀串联。', accent: '#69a77d', districts: ['初芽', '冠庭', '蕨溪', '眠根'], seed: 1429 },
+  starSands: { id: 'starSands', name: '星砂荒滩', subtitle: '双环沙洲', description: '两片星砂环道由南北两条连接道相连，干燥的风沿沙洲穿行。', accent: '#d5a45e', districts: ['灼湾', '星砾', '风蚀', '盐汀'], seed: 1867 },
 };
 
 const essentialFacilities: TileKind[] = [
@@ -213,11 +226,66 @@ function populate(theme: MapTheme, paths: { points: Point[]; loop?: boolean }[])
   return { id: theme.id, name: theme.name, subtitle: theme.subtitle, description: theme.description, width: 1500, height: 1000, nodes, accent: theme.accent };
 }
 
+const forestFacilities: Record<number, TileKind> = {
+  2: 'shop', 5: 'power', 8: 'station', 11: 'exchange', 14: 'water', 17: 'hospital', 20: 'casino',
+  24: 'station', 27: 'shop', 30: 'telecom', 33: 'parking', 36: 'power', 40: 'station',
+  43: 'exchange', 46: 'water', 49: 'sanatorium', 52: 'shop', 56: 'station',
+  58: 'telecom', 60: 'casino', 62: 'prison',
+};
+
+const starSandsFacilities: Record<number, TileKind> = {
+  1: 'shop', 4: 'station', 7: 'exchange', 12: 'power', 15: 'hospital', 17: 'water',
+  21: 'station', 24: 'shop', 27: 'casino', 30: 'telecom', 33: 'sanatorium',
+  35: 'shop', 38: 'station', 41: 'power', 44: 'exchange', 47: 'parking', 50: 'water',
+  53: 'prison', 55: 'station', 58: 'shop', 62: 'casino', 66: 'telecom',
+};
+
+function populateNew(theme: MapTheme, paths: { points: Point[]; loop?: boolean }[],
+  facilities: Record<number, TileKind>, landCount: number, loopCount: number): MapData {
+  const nodes = makeGraph(paths);
+  const facilityIds = new Set(Object.keys(facilities).map(Number));
+  if (facilityIds.has(0) || [...facilityIds].some(id => id >= nodes.length)) throw new Error(`Invalid ${theme.id} facility layout`);
+  const candidates = Array.from({ length: loopCount - 1 }, (_, index) => index + 1).filter(id => !facilityIds.has(id));
+  const landIds = new Set(shuffled(candidates, theme.seed).slice(0, landCount));
+  if (landIds.size !== landCount) throw new Error(`Invalid ${theme.id} land layout`);
+  let otherIndex = 0;
+  for (const node of nodes) {
+    const districtIndex = (node.x >= 750 ? 1 : 0) + (node.y >= 500 ? 2 : 0);
+    const district = theme.districts[districtIndex];
+    node.district = district;
+    if (node.id === 0) {
+      node.kind = 'start'; node.name = `${district}·星港起点`;
+    } else if (facilityIds.has(node.id)) {
+      const kind = facilities[node.id];
+      node.kind = kind;
+      node.name = `${district}·${facilityNames[kind]}${node.id}号`;
+      if (!['hospital', 'prison', 'sanatorium', 'parking'].includes(kind)) {
+        node.price = Math.min(4000, 800 + districtIndex * 480 + (node.id % 7) * 260 + (kind === 'station' ? 450 : 0));
+      }
+    } else if (landIds.has(node.id)) {
+      node.kind = 'land';
+      node.name = `${district}·${scenicNames[node.id % scenicNames.length]}${node.id}号地`;
+      node.price = theme.id === 'forest'
+        ? 8000 + districtIndex * 2000 + (node.id % 5) * 500
+        : Math.min(4000, 800 + districtIndex * 530 + (node.id % 8) * 210);
+    } else {
+      node.kind = (['empty', 'coin', 'event'] as TileKind[])[otherIndex++ % 3];
+      const suffix = node.kind === 'empty' ? '空地' : node.kind === 'coin' ? '星币驿' : '奇遇角';
+      node.name = `${district}·${scenicNames[node.id % scenicNames.length]}${suffix}${node.id}号`;
+    }
+    node.neighbors.sort((a, b) => a - b);
+  }
+  return { id: theme.id, name: theme.name, subtitle: theme.subtitle, description: theme.description,
+    width: 1500, height: 1000, nodes, accent: theme.accent };
+}
+
 export const MAPS: Record<MapId, MapData> = {
   lake: populate(themes.lake, lakePaths),
   coast: populate(themes.coast, coastPaths),
   valley: populate(themes.valley, valleyPaths),
   sundered: populate(themes.sundered, sunderedPaths),
+  forest: populateNew(themes.forest, forestPaths, forestFacilities, 29, 64),
+  starSands: populateNew(themes.starSands, starSandsPaths, starSandsFacilities, 34, 68),
 };
 
 for (const [id, name] of [

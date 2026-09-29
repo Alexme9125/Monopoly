@@ -1059,5 +1059,490 @@ export const REGIONAL_EVENTS: EventDef[] = [
         "mood": 12
       }
     ]
+  },
+  {
+    "id": "forest_seed_courier",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "title": "初芽种子邮袋",
+    "story": "林间苗圃只用步行邮袋运送种子，避免运输机惊动正在筑巢的鸟群。园丁请你的代理人把最后一袋送到环路另一侧。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "forest_seed_courier_carry",
+        "label": "送达种子邮袋",
+        "description": "体力 -3，获得 420 PM$。",
+        "stamina": -3,
+        "cash": 420
+      },
+      {
+        "id": "forest_seed_courier_sort",
+        "label": "帮忙核对标签",
+        "description": "获得 180 PM$。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "forest_fern_tea",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "title": "蕨溪茶席",
+    "story": "蕨溪的净水师在树荫下支起茶席。今天的水温恰好适合冲泡月露茶，经过的代理人都能歇一会儿。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "forest_fern_tea_rest",
+        "label": "坐下听溪水",
+        "description": "心情 +14。",
+        "mood": 14
+      },
+      {
+        "id": "forest_fern_tea_tea",
+        "label": "带一杯路上喝",
+        "description": "获得 1 份月露茶。",
+        "item": "tea"
+      }
+    ]
+  },
+  {
+    "id": "forest_pollen_filter",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "title": "树冠花粉季",
+    "story": "树冠上的花粉堵住了信标的进气滤网。维护员带来了备用滤芯，代理人也可以自己慢慢清理。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "forest_pollen_filter_replace",
+        "label": "更换滤芯",
+        "description": "支付 280 PM$。",
+        "cash": -280
+      },
+      {
+        "id": "forest_pollen_filter_clean",
+        "label": "自己清理滤网",
+        "description": "体力 -4、心情 -3。",
+        "stamina": -4,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "forest_root_marker",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "title": "树根旁的界桩",
+    "story": "一条生长缓慢的老树根抵住了测绘界桩。土地事务员需要重新登记保护退界，你可以交服务费，也可以协助测量。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_root_marker_pay",
+        "label": "委托重新测绘",
+        "description": "支付 350 PM$。",
+        "cash": -350
+      },
+      {
+        "id": "forest_root_marker_survey",
+        "label": "协助标记退界",
+        "description": "体力 -5。",
+        "stamina": -5
+      }
+    ]
+  },
+  {
+    "id": "forest_dawn_bird",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "title": "林冠晨鸣",
+    "story": "鸟类观察员正在整理晨鸣记录，缺少一份环路东段的数据。代理人可以留下录音，也可以安静地听到这段合唱结束。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "forest_dawn_bird_record",
+        "label": "提交晨鸣录音",
+        "description": "获得 360 PM$。",
+        "cash": 360
+      },
+      {
+        "id": "forest_dawn_bird_listen",
+        "label": "听完林间合唱",
+        "description": "心情 +12。",
+        "mood": 12
+      }
+    ]
+  },
+  {
+    "id": "forest_twin_nursery",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "双芽育苗室",
+    "story": "冠庭育苗室发现两株同步舒展的晶芽。研究员愿意交出一份双生样本，但需要有人承担培养材料费和照料工作。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_twin_nursery_adopt",
+        "label": "接管双生样本",
+        "description": "支付 480 PM$、心情 -5，获得双生培养皿。",
+        "cash": -480,
+        "mood": -5,
+        "item": "twinDish"
+      },
+      {
+        "id": "forest_twin_nursery_observe",
+        "label": "短暂参观",
+        "description": "体力 +8、心情 +8。",
+        "stamina": 8,
+        "mood": 8
+      }
+    ]
+  },
+  {
+    "id": "forest_canopy_lease",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "林冠协作凭证",
+    "story": "高价林地上的商户组成了共享接待计划。赞助公共步道后，可以领取一张用于下一次过夜结算的免租卡。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_canopy_lease_sponsor",
+        "label": "赞助公共步道",
+        "description": "支付 700 PM$，获得 1 张免租卡。",
+        "cash": -700,
+        "item": "rent"
+      },
+      {
+        "id": "forest_canopy_lease_volunteer",
+        "label": "整理步道记录",
+        "description": "体力 -3，获得 300 PM$。",
+        "stamina": -3,
+        "cash": 300
+      }
+    ]
+  },
+  {
+    "id": "forest_ranger_pack",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "巡林员的折叠包",
+    "story": "巡林员正在改装能穿过密林的折叠背包。你若协助试背并补齐材料费，就能带走这件成品。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_ranger_pack_test",
+        "label": "参加负重试背",
+        "description": "支付 800 PM$、体力 -6，获得折叠背包。",
+        "cash": -800,
+        "stamina": -6,
+        "item": "bag"
+      },
+      {
+        "id": "forest_ranger_pack_rest",
+        "label": "在巡林站休息",
+        "description": "心情 +10。",
+        "mood": 10
+      }
+    ]
+  },
+  {
+    "id": "forest_root_relay",
+    "mapId": "forest",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "古根中的相位晶体",
+    "story": "始初之树的倒伏古根露出一颗相位晶体。测绘队希望把它用于无损勘察，愿把校准后的传送石交给承担费用的协作者。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_root_relay_calibrate",
+        "label": "协助无损校准",
+        "description": "支付 1800 PM$、体力 -10，获得传送石。",
+        "cash": -1800,
+        "stamina": -10,
+        "item": "teleportStone"
+      },
+      {
+        "id": "forest_root_relay_document",
+        "label": "绘制古根记录",
+        "description": "获得 1000 PM$。",
+        "cash": 1000
+      }
+    ]
+  },
+  {
+    "id": "forest_century_rings",
+    "mapId": "forest",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "百轮年轮档案",
+    "story": "古木档案馆发现一份记录百次星轨回归的年轮拓片。研究员用它校准了百面星核骰，邀请你承担最后一段枯燥的复核工作。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_century_rings_proof",
+        "label": "资助并复核拓片",
+        "description": "支付 2600 PM$、心情 -8，获得百面星核骰。",
+        "cash": -2600,
+        "mood": -8,
+        "item": "dice100"
+      },
+      {
+        "id": "forest_century_rings_share",
+        "label": "整理公开摘要",
+        "description": "获得持续 3 日的幸运状态。",
+        "status": "luck:3"
+      }
+    ]
+  },
+  {
+    "id": "sands_water_cart",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "title": "灼湾补水车",
+    "story": "补水车停进遮阳棚，司机正在为穿越荒滩的代理人分发饮水。购买一份冷却补给可以更快恢复体力，也可等免费饮水点开放。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sands_water_cart_buy",
+        "label": "买冷却补给",
+        "description": "支付 120 PM$，体力 +16。",
+        "cash": -120,
+        "stamina": 16
+      },
+      {
+        "id": "sands_water_cart_wait",
+        "label": "在棚下等候",
+        "description": "体力 +4。",
+        "stamina": 4
+      }
+    ]
+  },
+  {
+    "id": "sands_sand_filter",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "title": "砂粒钻进风扇",
+    "story": "横穿连接道时，细砂钻进了信标的散热风扇。维修摊报价并不高，不过耐心拆洗也能解决。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sands_sand_filter_repair",
+        "label": "请维修摊清砂",
+        "description": "支付 260 PM$。",
+        "cash": -260
+      },
+      {
+        "id": "sands_sand_filter_clean",
+        "label": "自行拆洗风扇",
+        "description": "体力 -5。",
+        "stamina": -5
+      }
+    ]
+  },
+  {
+    "id": "sands_glitter_survey",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "title": "星砾采样袋",
+    "story": "荒滩上闪光的砂粒大多是普通矿屑。地质员请代理人协助分袋，避免游客把它们都当成陨星碎片带走。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "sands_glitter_survey_sort",
+        "label": "分类矿屑样本",
+        "description": "体力 -4，获得 420 PM$。",
+        "stamina": -4,
+        "cash": 420
+      },
+      {
+        "id": "sands_glitter_survey_mark",
+        "label": "标记采样位置",
+        "description": "获得 180 PM$。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "sands_false_shore",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "title": "热浪里的假海岸",
+    "story": "午后的热浪让远处盐壳像水面一样晃动。代理人误走了一段勘察便道，向导可以提供快速纠偏的路线记录。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sands_false_shore_guide",
+        "label": "购买向导记录",
+        "description": "支付 200 PM$。",
+        "cash": -200
+      },
+      {
+        "id": "sands_false_shore_retrace",
+        "label": "自己核对来路",
+        "description": "心情 -6。",
+        "mood": -6
+      }
+    ]
+  },
+  {
+    "id": "sands_night_awning",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "title": "盐汀晚风棚",
+    "story": "日落后，盐汀的遮阳棚变成了小小的休息站。摊主请代理人坐一会儿，也准备了方便携带的补给。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "sands_night_awning_sit",
+        "label": "坐下等晚风",
+        "description": "心情 +12。",
+        "mood": 12
+      },
+      {
+        "id": "sands_night_awning_snack",
+        "label": "带走补给",
+        "description": "获得 1 份能量小食。",
+        "item": "snack"
+      }
+    ]
+  },
+  {
+    "id": "sands_sail_shield",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "抗砂遮风帆",
+    "story": "帆具师把报废的防护薄膜改成便携星盾。你可以替她测试固定扣并支付材料费，或先帮忙整理工具。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sands_sail_shield_test",
+        "label": "测试防护薄膜",
+        "description": "支付 600 PM$、体力 -4，获得 1 张星盾卡。",
+        "cash": -600,
+        "stamina": -4,
+        "item": "shield"
+      },
+      {
+        "id": "sands_sail_shield_tidy",
+        "label": "整理帆具工具",
+        "description": "心情 +6。",
+        "mood": 6
+      }
+    ]
+  },
+  {
+    "id": "sands_drying_rack",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "风蚀晾晒架",
+    "story": "连接道边的补给队正在收集高效干燥颗粒。购买密封剂能处理背包里的潮气，搬运晾晒架则能挣一笔工钱。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sands_drying_rack_buy",
+        "label": "买一罐密封干燥剂",
+        "description": "支付 260 PM$，获得全效干燥剂。",
+        "cash": -260,
+        "item": "dry"
+      },
+      {
+        "id": "sands_drying_rack_carry",
+        "label": "帮忙搬运晾晒架",
+        "description": "体力 -6，获得 480 PM$。",
+        "stamina": -6,
+        "cash": 480
+      }
+    ]
+  },
+  {
+    "id": "sands_salt_calibration",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "盐原测距标",
+    "story": "测距员用两条平行道路校验信标误差。代理人若完成一段往返测试并承担零件费，就可以拿走一台控骰器。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sands_salt_calibration_calibrate",
+        "label": "完成往返校准",
+        "description": "支付 850 PM$、体力 -5，获得控骰器。",
+        "cash": -850,
+        "stamina": -5,
+        "item": "controller"
+      },
+      {
+        "id": "sands_salt_calibration_record",
+        "label": "整理测距日志",
+        "description": "获得 400 PM$。",
+        "cash": 400
+      }
+    ]
+  },
+  {
+    "id": "sands_mirage_gate",
+    "mapId": "starSands",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "蜃景中的中继门",
+    "story": "星砂的折射让一座旧中继门时隐时现。维修队找到了尚能使用的相位石，但需要重新供能并校准坐标。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sands_mirage_gate_restore",
+        "label": "资助中继校准",
+        "description": "支付 1800 PM$、体力 -8，获得传送石。",
+        "cash": -1800,
+        "stamina": -8,
+        "item": "teleportStone"
+      },
+      {
+        "id": "sands_mirage_gate_map",
+        "label": "提交中继门坐标",
+        "description": "获得 900 PM$。",
+        "cash": 900
+      }
+    ]
+  },
+  {
+    "id": "sands_weather_wreck",
+    "mapId": "starSands",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "埋在砂中的气象舱",
+    "story": "风蚀露出了一艘旧气象舱的外壳。舱内的控制模块仍然完好，勘察队愿让出它，换取修复经费和协助。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sands_weather_wreck_salvage",
+        "label": "修复气象模块",
+        "description": "支付 1300 PM$、体力 -10，获得天气控制器。",
+        "cash": -1300,
+        "stamina": -10,
+        "item": "weather"
+      },
+      {
+        "id": "sands_weather_wreck_report",
+        "label": "上交勘察报告",
+        "description": "获得 1100 PM$。",
+        "cash": 1100
+      }
+    ]
   }
 ];
