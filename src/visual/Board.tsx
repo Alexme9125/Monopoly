@@ -10,6 +10,8 @@ import { layoutStationMarkers } from './stationLayout';
 import { PropertyLevelGlyph, PropertyLevelIcon, propertyLevelName } from './PropertyLevel';
 import { SunderedBridges, SunderedTerrain } from './SunderedTerrain';
 import { NewRegionTerrain } from './NewRegionTerrain';
+import { BeaconDirectionCard, BeaconDirectionRoads } from './BeaconDirectionPreview';
+import { getNextStepOptions } from '../game/routing';
 
 interface BoardProps { map: MapData; state?: GameState; viewerId?: string; selectedNode?: number | null; onSelectNode?: (id: number) => void; onMovementComplete?: () => void; preview?: boolean; zoom?: number; playing?: boolean; stationSelection?: { originId: number; destinationIds: number[]; disabled?: boolean }; itemSelection?: { itemName: string; nodeIds: number[]; selectedNodeId?: number; disabled?: boolean }; }
 const hiddenWeather = new Set(['rain', 'storm', 'sand', 'sandstorm', 'mist', 'fog', 'haze', 'glitch', 'paradox']);
@@ -102,6 +104,10 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
  const svgRef=useRef<SVGSVGElement>(null);
  const [svgSize,setSvgSize]=useState({width:0,height:0});
  const [hovered,setHovered]=useState<{id:number;x:number;y:number}|null>(null);
+ const [directionSelection,setDirectionSelection]=useState<{playerId:string;pinned:boolean}|null>(null);
+ const directionCloseTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const directionCardHovered=useRef(false);
+ const directionSuppressedUntil=useRef(0);
  const [pan,setPan]=useState({x:0,y:0});
  const panRef=useRef(pan);
  panRef.current=pan;
@@ -115,6 +121,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
  const clearDragTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const moving=state?.movement;
  useEffect(()=>()=>{if(clearDragTimer.current!==null)clearTimeout(clearDragTimer.current);},[]);
+ useEffect(()=>()=>{if(directionCloseTimer.current!==null)clearTimeout(directionCloseTimer.current);},[]);
  useLayoutEffect(()=>{applyPan({x:0,y:0});setHovered(null);},[map.id,zoom]);
  useEffect(()=>{if(stationSelection){applyPan({x:0,y:0});setHovered(null);}},[stationSelection?.originId]);
  useEffect(()=>{
@@ -156,6 +163,55 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
  const viewportRef=useRef(cameraViewport);
  viewportRef.current=cameraViewport;
  const cameraEnabled=mobileCamera&&zoom>1&&!preview&&!stationSelection&&!itemSelection&&playing&&!!moment&&svgSize.width>0&&svgSize.height>0;
+ const directionEnabled=!preview&&!!state&&state.phase!=='gameover'&&!stationSelection&&!itemSelection&&!moment&&!(playing&&moving);
+ const directionResetKey=`${map.id}|${zoom}|${state?.day}|${state?.currentPlayerIndex}|${players.map(player=>`${player.id}:${player.position}:${player.previousPosition}:${player.routeNextPosition}:${player.confinement?.remaining??0}:${player.bankrupt}`).join(';')}`;
+ const directionPlayer=directionEnabled?players.find(player=>player.id===directionSelection?.playerId&&!player.bankrupt):undefined;
+ const directionCompanions=directionPlayer?players.filter(player=>!player.bankrupt&&player.position===directionPlayer.position):[];
+ const directionOptions=directionPlayer&&!directionPlayer.confinement?.remaining?getNextStepOptions(map,directionPlayer):[];
+ const directionSlot=directionPlayer?directionCompanions.findIndex(player=>player.id===directionPlayer.id):0;
+ const directionOffset=directionCompanions.length>1?(directionSlot-(directionCompanions.length-1)/2)*12:0;
+ const directionNode=directionPlayer?map.nodes[directionPlayer.position]:undefined;
+ const directionAnchor=directionNode?{
+  x:letterboxX+(((directionNode.x+directionOffset-750)*zoom+750+pan.x)-viewBox.x)*baseScale,
+  y:letterboxY+(((directionNode.y-500)*zoom+500+pan.y)-viewBox.y)*baseScale,
+ }:undefined;
+ const clearDirectionClose=()=>{if(directionCloseTimer.current!==null){clearTimeout(directionCloseTimer.current);directionCloseTimer.current=null;}};
+ const closeDirection=()=>{clearDirectionClose();directionCardHovered.current=false;setDirectionSelection(null);};
+ const scheduleDirectionClose=()=>{if(directionCardHovered.current)return;clearDirectionClose();directionCloseTimer.current=setTimeout(()=>{setDirectionSelection(current=>current&&!current.pinned?null:current);directionCloseTimer.current=null;},170);};
+ const previewDirection=(playerId:string)=>{
+  if(!directionEnabled||drag.current||dragged.current||Date.now()<directionSuppressedUntil.current)return;
+  clearDirectionClose();setHovered(null);
+  setDirectionSelection(current=>current?.pinned?current:{playerId,pinned:false});
+ };
+ const toggleDirection=(playerId:string)=>{
+  if(!directionEnabled||dragged.current||Date.now()<directionSuppressedUntil.current)return;
+  clearDirectionClose();setHovered(null);
+  setDirectionSelection(current=>current?.playerId===playerId&&current.pinned?null:{playerId,pinned:true});
+ };
+ useEffect(()=>{closeDirection();},[directionResetKey,directionEnabled]);
+ useEffect(()=>{
+  if(!directionSelection)return;
+  const onEscape=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();closeDirection();}};
+  const insideDirection=(target:EventTarget|null)=>{
+   if(!(target instanceof Element))return false;
+   const beacon=target.closest('.player-beacon');
+   if(beacon&&boardRef.current?.contains(beacon))return true;
+   const card=target.closest('.beacon-direction-card');
+   return !!card&&(boardRef.current?.contains(card)||card.parentElement===boardRef.current?.parentElement);
+  };
+  const onOutsidePointer=(event:globalThis.PointerEvent)=>{
+   if(insideDirection(event.target))return;
+   closeDirection();
+  };
+  const onFocusIn=(event:FocusEvent)=>{
+   if(insideDirection(event.target)){clearDirectionClose();return;}
+   setDirectionSelection(current=>current&&!current.pinned?null:current);
+  };
+  document.addEventListener('keydown',onEscape);
+  document.addEventListener('pointerdown',onOutsidePointer);
+  document.addEventListener('focusin',onFocusIn);
+  return()=>{document.removeEventListener('keydown',onEscape);document.removeEventListener('pointerdown',onOutsidePointer);document.removeEventListener('focusin',onFocusIn);};
+ },[directionSelection?.playerId]);
  useLayoutEffect(()=>{
   if(focusFrame.current!==null){cancelAnimationFrame(focusFrame.current);focusFrame.current=null;}
   if(!cameraEnabled||!moment){cameraPhase.current='idle';setCameraMode('idle');return;}
@@ -222,7 +278,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
  const feedbackNotice=state?.feedback&&state.notices?.some(notice=>notice.kind==='event'&&notice.playerId===state.feedback!.playerId&&notice.nodeId===state.feedback!.nodeId&&notice.id>state.feedback!.id);
  useEffect(()=>{if(itemSelection)setHovered(null);},[itemSelection]);
  const showHover=(nodeId:number,element:SVGGElement)=>{
-  if(preview||!state||moment||stationSelection||itemSelection&&!itemSelection.nodeIds.includes(nodeId)||dragged.current)return;
+  if(preview||!state||moment||directionPlayer||stationSelection||itemSelection&&!itemSelection.nodeIds.includes(nodeId)||dragged.current)return;
   const rect=element.getBoundingClientRect(),board=boardRef.current?.getBoundingClientRect();
   if(board)setHovered({id:nodeId,x:Math.max(12,Math.min(board.width-256,rect.x-board.x+rect.width/2-122)),y:Math.max(12,Math.min(board.height-230,rect.y-board.y+rect.height+10))});
  };
@@ -233,16 +289,16 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
   const dx=e.clientX-drag.current.x,dy=e.clientY-drag.current.y;
   if(Math.abs(dx)+Math.abs(dy)<=5&&!dragged.current)return;
   if(!dragged.current){
-   dragged.current=true;setHovered(null);
+   dragged.current=true;setHovered(null);closeDirection();directionSuppressedUntil.current=Date.now()+220;
    if(cameraEnabled){if(focusFrame.current!==null){cancelAnimationFrame(focusFrame.current);focusFrame.current=null;}cameraPhase.current='drag';setCameraMode('drag');}
   }
   const delta=screenDragToPan(dx,dy,cameraViewport);
   applyPan({x:drag.current.px+delta.x,y:drag.current.py+delta.y});
  };
- const handleRelease=()=>{if(!drag.current)return;const moved=dragged.current;drag.current=null;if(moved&&cameraEnabled){cameraPhase.current='follow';setCameraMode('follow');}if(moved){clearDragTimer.current=setTimeout(()=>{dragged.current=false;clearDragTimer.current=null;},0);}};
- const handleCancel=()=>{drag.current=null;dragged.current=false;if(clearDragTimer.current!==null){clearTimeout(clearDragTimer.current);clearDragTimer.current=null;}if(cameraEnabled&&cameraPhase.current==='drag'){cameraPhase.current='follow';setCameraMode('follow');}};
- return <div ref={boardRef} className={`prism-board ${preview?'is-preview':''} ${stationSelection?'is-station-selecting':''} ${itemSelection?'is-item-selecting':''} weather-${weatherClass} sky-${weather}`} data-playing={playing} data-movement={moving?.id} data-phase={moment?.stage} data-step-index={moment?.stepIndex} data-step-count={moment?.stepCount} data-segment={stepSegment} data-step-state={stepState} data-camera-mode={cameraEnabled?cameraMode:'idle'} data-camera-target={cameraEnabled?moment?.movement.playerId:undefined} data-camera-target-x={cameraEnabled?moment?.point.x.toFixed(1):undefined} data-camera-target-y={cameraEnabled?moment?.point.y.toFixed(1):undefined} data-camera-pan-x={pan.x.toFixed(1)} data-camera-pan-y={pan.y.toFixed(1)} data-presented-stages={presented.current.stages.join(",")} data-presented-movement={presented.current.id}>
-  <svg ref={svgRef} className="world-svg" viewBox={map.id==='valley'?'-90 -125 1680 1240':'40 15 1420 950'} role={preview?'img':'group'} aria-label={`${map.name}地图，${map.nodes.length}个地点${preview?'':stationSelection?'，在地图上点选目的车站，拖动平移':itemSelection?`，在地图上为${itemSelection.itemName}选择目标，拖动平移`:'，悬停或点击地块查看价格和租金，拖动平移'}`} onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleRelease} onPointerLeave={handleRelease} onPointerCancel={handleCancel}>
+ const handleRelease=()=>{if(!drag.current)return;const moved=dragged.current;drag.current=null;if(moved&&cameraEnabled){cameraPhase.current='follow';setCameraMode('follow');}if(moved){directionSuppressedUntil.current=Date.now()+220;clearDragTimer.current=setTimeout(()=>{dragged.current=false;clearDragTimer.current=null;},0);}};
+ const handleCancel=()=>{if(dragged.current){closeDirection();directionSuppressedUntil.current=Date.now()+220;}drag.current=null;dragged.current=false;if(clearDragTimer.current!==null){clearTimeout(clearDragTimer.current);clearDragTimer.current=null;}if(cameraEnabled&&cameraPhase.current==='drag'){cameraPhase.current='follow';setCameraMode('follow');}};
+ return <div ref={boardRef} className={`prism-board ${preview?'is-preview':''} ${stationSelection?'is-station-selecting':''} ${itemSelection?'is-item-selecting':''} weather-${weatherClass} sky-${weather}`} data-playing={playing} data-movement={moving?.id} data-phase={moment?.stage} data-step-index={moment?.stepIndex} data-step-count={moment?.stepCount} data-segment={stepSegment} data-step-state={stepState} data-camera-mode={cameraEnabled?cameraMode:'idle'} data-camera-target={cameraEnabled?moment?.movement.playerId:undefined} data-camera-target-x={cameraEnabled?moment?.point.x.toFixed(1):undefined} data-camera-target-y={cameraEnabled?moment?.point.y.toFixed(1):undefined} data-camera-pan-x={pan.x.toFixed(1)} data-camera-pan-y={pan.y.toFixed(1)} data-direction-player={directionPlayer?.id} data-direction-pinned={!!directionSelection?.pinned} data-direction-options={directionPlayer?directionOptions.join(','):undefined} data-presented-stages={presented.current.stages.join(",")} data-presented-movement={presented.current.id}>
+  <svg ref={svgRef} className="world-svg" viewBox={map.id==='valley'?'-90 -125 1680 1240':'40 15 1420 950'} role={preview?'img':'group'} aria-label={`${map.name}地图，${map.nodes.length}个地点${preview?'':stationSelection?'，在地图上点选目的车站，拖动平移':itemSelection?`，在地图上为${itemSelection.itemName}选择目标，拖动平移`:'，悬停或点击地块查看价格和租金；悬停、点选或聚焦信标查看下次前进方向，拖动平移'}`} onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleRelease} onPointerLeave={handleRelease} onPointerCancel={handleCancel}>
    <g transform={`translate(${750+pan.x} ${500+pan.y}) scale(${zoom}) translate(-750 -500)`}>
     <Terrain map={map} id={id} lots={lots}/>
     <g fill="none" strokeLinecap="round" strokeLinejoin="round"><path d={roadPath} stroke="#AEC1AD" strokeWidth="43" opacity=".5" transform="translate(0 3)"/><path d={roadPath} stroke="#FBF8E8" strokeWidth="40"/><path d={roadPath} stroke="#B4BBA2" strokeWidth="1.5" strokeDasharray="5 8"/></g>
@@ -262,7 +318,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
       const tileScale=lots[node.id]?(lots[node.id].bounds.right-lots[node.id].bounds.left)/46:1;
       const status=owner?`P${seat}${land?` · ${propertyLevelName(property!.level)}`:''}${property?.mortgaged?' · 抵押':''}`:purchasable?'待售':'公共';
       const shortName:Record<string,string>={hospital:'医院',prison:'监狱',sanatorium:'疗养',parking:'停车',power:'电厂',water:'水厂',telecom:'电信',station:'车站',shop:'商店',casino:'赌场',exchange:'交易所'};
-      return <g key={node.id} data-node-id={node.id} data-item-target={itemSelection?target:undefined} className={`map-node ${selected?'is-selected':''} ${target?'item-target-node':''}`} role={clickable?'button':undefined} tabIndex={clickable?0:undefined} aria-label={itemSelection&&target?`${selected?'已选目标':'可选目标'}：#${node.id} ${node.name}，使用${itemSelection.itemName}`:`#${node.id} ${node.name}，${owner?`${owner.name}持有，${status}`:status}`} pointerEvents={itemSelection&&!target?'none':undefined} onPointerEnter={e=>{if(e.pointerType!=='touch')showHover(node.id,e.currentTarget);}} onPointerLeave={()=>setHovered(null)} onFocus={e=>showHover(node.id,e.currentTarget)} onBlur={()=>setHovered(null)} onClick={()=>{if(!dragged.current&&clickable){setHovered(null);onSelectNode?.(node.id);}}} onKeyDown={e=>{if(clickable&&(e.key==='Enter'||e.key===' ')){e.preventDefault();setHovered(null);onSelectNode?.(node.id);}if(e.key==='Escape')setHovered(null);}}>
+      return <g key={node.id} data-node-id={node.id} data-item-target={itemSelection?target:undefined} className={`map-node ${selected?'is-selected':''} ${target?'item-target-node':''}`} role={clickable?'button':undefined} tabIndex={clickable?0:undefined} aria-label={itemSelection&&target?`${selected?'已选目标':'可选目标'}：#${node.id} ${node.name}，使用${itemSelection.itemName}`:`#${node.id} ${node.name}，${owner?`${owner.name}持有，${status}`:status}`} pointerEvents={itemSelection&&!target?'none':undefined} onPointerEnter={e=>{if(e.pointerType!=='touch')showHover(node.id,e.currentTarget);}} onPointerLeave={()=>setHovered(null)} onFocus={e=>showHover(node.id,e.currentTarget)} onBlur={()=>setHovered(null)} onClick={()=>{if(!dragged.current&&clickable){closeDirection();setHovered(null);onSelectNode?.(node.id);}}} onKeyDown={e=>{if(clickable&&(e.key==='Enter'||e.key===' ')){e.preventDefault();closeDirection();setHovered(null);onSelectNode?.(node.id);}if(e.key==='Escape')setHovered(null);}}>
        {itemSelection&&target&&<title>{`#${node.id} ${node.name} · ${itemSelection.itemName}${selected?' · 已选目标':' · 可选目标'}`}</title>}
        <circle cx={node.x} cy={node.y} r="21" fill="transparent"/>
        {selected&&!itemSelection&&<circle cx={node.x} cy={node.y} r="25" fill={color} fillOpacity=".15" stroke={color} strokeWidth="2" className="selection-ring"/>}
@@ -298,6 +354,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
     })}
     </g>
     {!hiddenWeather.has(weather)&&state?.encounters.map(n=>{const node=map.nodes[n];return node?<g key={`enc-${n}`} transform={`translate(${node.x+14} ${node.y-20})`} className="encounter-spark"><circle r="9" fill="#F7F0DB"/><path d="M0-6 2-2 6 0 2 2 0 6-2 2-6 0-2-2Z" fill="#BB9672"/></g>:null;})}
+    {directionPlayer&&<BeaconDirectionRoads map={map} player={directionPlayer} options={directionOptions} scale={baseScale*zoom}/>}
     {players.filter(p=>!p.bankrupt).map((p,i)=>{
       const node=map.nodes[p.position]??map.nodes[0],point=moment?.movement.playerId===p.id?moment.point:node;
       const neighbors=players.filter(a=>a.position===p.position&&!a.bankrupt),slot=neighbors.findIndex(a=>a.id===p.id);
@@ -310,7 +367,12 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
       const labelLeft=screenX+22+labelWidth>svgSize.width-8;
       const labelX=(labelLeft?-labelWidth-22:22)*labelScale;
       const labelY=(screenY<66?42:-50)*labelScale;
-      return <g key={p.id} data-player-id={p.id} data-phase={presenting?moment?.stage:undefined} data-step-index={presenting?moment?.stepIndex:undefined} data-step-count={presenting?moment?.stepCount:undefined} data-segment={presenting?stepSegment:undefined} data-step-state={presenting?stepState:undefined} data-transfer-phase={presenting?moment?.transferPhase:undefined} transform={`translate(${point.x+offset} ${point.y})`} className={`player-beacon ${active?'is-active':''}`} style={{'--beacon':p.color} as CSSProperties}>
+      return <g key={p.id} data-player-id={p.id} data-direction-selected={directionPlayer?.id===p.id} data-phase={presenting?moment?.stage:undefined} data-step-index={presenting?moment?.stepIndex:undefined} data-step-count={presenting?moment?.stepCount:undefined} data-segment={presenting?stepSegment:undefined} data-step-state={presenting?stepState:undefined} data-transfer-phase={presenting?moment?.transferPhase:undefined} transform={`translate(${point.x+offset} ${point.y})`} className={`player-beacon ${active?'is-active':''}`} style={{'--beacon':p.color} as CSSProperties} pointerEvents={directionEnabled?undefined:'none'} role={directionEnabled?'button':undefined} tabIndex={directionEnabled?0:undefined} aria-label={directionEnabled?`${p.name}，查看下次前进方向`:undefined} aria-pressed={directionEnabled?directionPlayer?.id===p.id&&!!directionSelection?.pinned:undefined}
+       onPointerEnter={e=>{if(e.pointerType!=='touch')previewDirection(p.id);}} onPointerLeave={scheduleDirectionClose}
+       onFocus={()=>previewDirection(p.id)} onBlur={scheduleDirectionClose}
+       onClick={e=>{if(!directionEnabled)return;e.preventDefault();e.stopPropagation();toggleDirection(p.id);}}
+       onKeyDown={e=>{if(!directionEnabled)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();toggleDirection(p.id);}else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeDirection();}}}>
+        {directionEnabled&&<circle className="beacon-hit-area" cy="-19" r={(mobileCamera?22:14)/Math.max(.05,baseScale*zoom)} fill="transparent" pointerEvents="all"/>}
         {presenting&&moment?.stage==='move'&&moment.segmentKind==='transfer'&&<circle className="transfer-portal" r="24" fill="none" stroke={p.color} strokeWidth="2" opacity=".7"/>}
         {presenting&&(moment?.stepState==='settled'||moment?.stage==='effect')&&<circle className="arrival-ring" r="26" data-node-id={moment.arrivedNodeId??p.position}/>}
         <ellipse cy="5" rx="16" ry="7" fill={p.color} opacity=".2"/>
@@ -357,7 +419,10 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
     })}
    </g>}
   </svg>
-  {hovered&&hoverNode&&!preview&&!moment&&!stationSelection&&(!itemSelection||itemSelection.nodeIds.includes(hovered.id))&&<div className="parcel-tooltip" role="tooltip" style={{left:hovered.x,top:hovered.y}}>
+  {directionPlayer&&directionAnchor&&svgSize.width>0&&svgSize.height>0&&<BeaconDirectionCard map={map} player={directionPlayer} companions={directionCompanions} options={directionOptions} anchor={directionAnchor} bounds={svgSize} portalTarget={boardRef.current?.parentElement}
+    onSelectPlayer={playerId=>{clearDirectionClose();setDirectionSelection({playerId,pinned:true});}} onClose={closeDirection}
+    onPointerEnter={()=>{directionCardHovered.current=true;clearDirectionClose();}} onPointerLeave={()=>{directionCardHovered.current=false;scheduleDirectionClose();}}/>}
+  {hovered&&hoverNode&&!preview&&!moment&&!directionPlayer&&!stationSelection&&(!itemSelection||itemSelection.nodeIds.includes(hovered.id))&&<div className="parcel-tooltip" role="tooltip" style={{left:hovered.x,top:hovered.y}}>
     <small>地点 {String(hoverNode.id).padStart(2,'0')} · {hoverOwner?hoverOwner.name:(hoverQuote?.price??0)>0?'待售地块':'公共设施'}</small>
     <strong>{hoverNode.name}</strong>
     {hoverQuote&&hoverQuote.price>0?<dl><div><dt>地价</dt><dd>PM$ {hoverQuote.price.toLocaleString()}</dd></div><div><dt>{hoverQuote.prospective?'购入后租金':'当前经过租金'}</dt><dd>PM$ {hoverQuote.rent.toLocaleString()}</dd></div></dl>:<p>{hoverNode.kind==='empty'?'空地 · 不可购买':hoverNode.kind==='coin'?'硬币路面 · 停留拾取零钱':hoverNode.kind==='event'?'事件路面 · 停留触发不期而遇':hoverNode.kind==='start'?'出发站 · 经过领取补给':'公共服务设施 · 不可购买'}</p>}

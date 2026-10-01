@@ -5,7 +5,8 @@
 客户端 localStorage 生成并持久化不易猜测的 clientId（crypto.randomUUID）。WebSocket 连接建立后先发送 hello；身份令牌只保存在自己的客户端，不在 room 广播其他人的 clientId。服务端持有权威 GameState，验证动作归属、回合、交易响应者，客户端不自改状态。客户端 playerId 为加入房间时分配的 seatId，在 start 的 players 顺序映射到 engine player.id，服务端 snapshot 返回自己的 youPlayerId。
 
 ```ts
-type RoomMember = {seatId:string; name:string; color:string; shape:Shape; ai:boolean; personality:Personality; ready:boolean; connected:boolean; host:boolean};
+type AILevel = 'gentle' | 'fierce';
+type RoomMember = {seatId:string; name:string; color:string; shape:Shape; ai:boolean; personality:Personality; aiLevel?:AILevel; ready:boolean; connected:boolean; host:boolean};
 type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;seasons:number;weatherMode:'standard'|'challenge';seed:number;propertyTrading?:boolean}; started:boolean; state:GameState|null; movementUntil?:number; youSeatId:string; youPlayerId:string|null; isHost:boolean};
 // client -> server
 {type:'hello',clientId:string}
@@ -15,7 +16,7 @@ type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;sea
 {type:'profile',profile:PlayerConfig}
 {type:'config',config:{mapId,seasons,weatherMode,seed,propertyTrading?}} // 仅房主、未开局
 {type:'ready',ready:boolean}
-{type:'addBot',profile:PlayerConfig} // 仅房主、<4席位
+{type:'addBot',profile:PlayerConfig} // 仅房主、<4席位；profile.aiLevel 可选，缺失为 gentle
 {type:'remove',seatId:string} // 仅房主、不可删除自己
 {type:'start'} // 仅房主，2–4席位、人类均ready，房主自动ready
 {type:'action',action:GameAction}

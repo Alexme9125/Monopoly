@@ -1,14 +1,16 @@
-import type { GameState, MapId, PlayerConfig, Shape } from './types';
+import type { AILevel, GameState, MapId, PlayerConfig, Shape } from './types';
 import { MAPS } from './maps';
-import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
+import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_STEPS, WEATHERS, getJourneyRewardSteps } from './data';
 import { findEligibleEvent, getEventPool } from './eventPool';
 import { normalizePlayerColors } from './colors';
 import { validShopData } from './shop';
 import { getRent } from './engine';
+import { migrateMapLayout } from './layoutMigration';
 
 const KEY = 'prism-days-save-v1';
 const MAP_IDS: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
 const SHAPES: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
+const AI_LEVELS: AILevel[] = ['gentle', 'fierce'];
 const STOCK_IDS = new Set(INITIAL_STOCKS.map(stock => stock.id));
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -20,7 +22,8 @@ function validPlayerConfig(value: unknown): value is PlayerConfig {
   return typeof value.name === 'string' && value.name.trim().length > 0 && value.name.length <= 32
     && typeof value.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(value.color)
     && SHAPES.includes(value.shape as Shape) && typeof value.ai === 'boolean'
-    && ['cautious', 'balanced', 'aggressive'].includes(String(value.personality));
+    && ['cautious', 'balanced', 'aggressive'].includes(String(value.personality))
+    && (value.aiLevel === undefined || AI_LEVELS.includes(value.aiLevel as AILevel));
 }
 
 function validSlot(value: unknown): boolean {
@@ -63,6 +66,7 @@ export function parseSave(raw: string): GameState {
   }
   if (config.mode === 'pve' && config.players.filter((p: PlayerConfig) => !p.ai).length !== 1) throw new Error('PVE 存档必须有一位真人玩家。');
   if (config.mode === 'pvp' && config.players.some((p: PlayerConfig) => p.ai)) throw new Error('PVP 存档不能包含电脑玩家。');
+  migrateMapLayout(state, config.mapId as MapId);
   const maxNode = MAPS[config.mapId as MapId].nodes.length;
   const eligibleEventIds = new Set(getEventPool(config.mapId as MapId).map(event => event.id));
   if (!Array.isArray(state.players) || state.players.length !== config.players.length
@@ -74,7 +78,9 @@ export function parseSave(raw: string): GameState {
       || (p.routeNextPosition !== undefined && p.routeNextPosition !== null
         && (!Number.isSafeInteger(p.routeNextPosition) || Number(p.routeNextPosition) < 0 || Number(p.routeNextPosition) >= maxNode
           || !MAPS[config.mapId as MapId].nodes[Number(p.position)]?.neighbors.includes(Number(p.routeNextPosition))))
-      || (p.travelProgress !== undefined && (!Number.isSafeInteger(p.travelProgress) || Number(p.travelProgress) < 0 || Number(p.travelProgress) >= JOURNEY_REWARD_STEPS))
+      // Forest saves from the old 72-step rule may still have residues up to 71; normalize them after validation.
+      || (p.travelProgress !== undefined && (!Number.isSafeInteger(p.travelProgress) || Number(p.travelProgress) < 0
+        || Number(p.travelProgress) >= (config.mapId === 'forest' ? JOURNEY_REWARD_STEPS : getJourneyRewardSteps(config.mapId as MapId))))
       || !Array.isArray(p.inventory) || !p.inventory.every(validSlot)
       || !Array.isArray(p.pawnedItems) || !p.pawnedItems.every((pawn: unknown) => record(pawn) && validSlot(pawn.slot) && Number.isFinite(pawn.principal) && Number(pawn.principal) >= 0)
       || !record(p.holdings) || Object.entries(p.holdings).some(([id, value]) => !STOCK_IDS.has(id) || !Number.isSafeInteger(value) || Number(value) < 0)
@@ -88,15 +94,21 @@ export function parseSave(raw: string): GameState {
       || typeof p.bankrupt !== 'boolean')) {
     throw new Error('存档中的玩家数据无效。');
   }
+  if (config.players.some((entry: PlayerConfig, index: number) =>
+    (entry.aiLevel ?? 'gentle') !== ((state.players as PlayerConfig[])[index].aiLevel ?? 'gentle'))) {
+    throw new Error('存档中的 AI 强度配置与玩家数据不一致。');
+  }
   const playerIds = new Set(state.players.map((p: { id: string }) => p.id));
   const notices = state.notices;
   if (notices !== undefined && (!Array.isArray(notices) || notices.length > 30
     || notices.some((item: unknown) => !record(item) || !Number.isSafeInteger(item.id) || Number(item.id) < 0 || Number(item.id) > Number(state.sequence)
-      || !Number.isSafeInteger(item.day) || Number(item.day) < 1 || !['rent', 'event', 'milestone', 'trade'].includes(String(item.kind))
+      || !Number.isSafeInteger(item.day) || Number(item.day) < 1 || !['rent', 'event', 'milestone', 'trade', 'lottery'].includes(String(item.kind))
       || typeof item.title !== 'string' || item.title.length > 200 || typeof item.body !== 'string' || item.body.length > 2000
       || !['good', 'bad', 'info'].includes(String(item.tone)) || !playerIds.has(String(item.playerId))
       || !Number.isSafeInteger(item.nodeId) || Number(item.nodeId) < 0 || Number(item.nodeId) >= maxNode
       || (item.amount !== undefined && !Number.isFinite(item.amount))
+      || (item.kind === 'lottery' && (!Number.isSafeInteger(item.amount) || Number(item.amount) < 100 || Number(item.amount) > 5000
+        || item.recipientId !== undefined))
       || (item.recipientId !== undefined && !playerIds.has(String(item.recipientId))))
     || notices.some((item: { id: number }, index: number) => index > 0 && item.id <= notices[index - 1].id))) {
     throw new Error('存档中的通知数据无效。');
@@ -197,6 +209,11 @@ export function parseSave(raw: string): GameState {
     || !['ready', 'decision', 'end', 'gameover'].includes(String(state.phase))) {
     throw new Error('存档中的对局数据无效。');
   }
+  const aiTurn = state.aiTurn;
+  if (aiTurn !== undefined && (!record(aiTurn) || typeof aiTurn.playerId !== 'string' || !playerIds.has(aiTurn.playerId)
+    || ![aiTurn.day, aiTurn.actions, aiTurn.attacks, aiTurn.purchases].every(value => Number.isSafeInteger(value) && Number(value) >= 0))) {
+    throw new Error('存档中的电脑回合预算无效。');
+  }
   // A saved path has already changed the logical position. Resume with the piece at its destination.
   const saved = state as unknown as GameState;
   const map = MAPS[saved.config.mapId];
@@ -206,15 +223,16 @@ export function parseSave(raw: string): GameState {
     const newWard = saved.config.mapId === 'lake' ? 4 : saved.config.mapId === 'coast' ? 68 : null;
     const relocated = player.confinement?.kind === 'sanatorium' && player.position === oldWard
       && newWard !== null && map.nodes[newWard]?.kind === 'sanatorium';
-    return { ...player, position: relocated ? newWard : player.position,
+    return { ...player, ...(player.ai ? { aiLevel: player.aiLevel ?? 'gentle' } : {}), position: relocated ? newWard : player.position,
       previousPosition: !relocated && player.previousPosition !== null && map.nodes[player.position].neighbors.includes(player.previousPosition)
         ? player.previousPosition : null,
       routeNextPosition: relocated ? null : player.routeNextPosition ?? null,
-      travelProgress: player.travelProgress ?? 0,
+      travelProgress: (player.travelProgress ?? 0) % getJourneyRewardSteps(saved.config.mapId),
     };
   });
   const normalizedConfig = { ...saved.config, propertyTrading: saved.config.propertyTrading ?? true,
-    players: saved.config.players.map((entry, index) => ({ ...entry, color: players[index].color })) };
+    players: saved.config.players.map((entry, index) => ({ ...entry,
+      ...(entry.ai ? { aiLevel: entry.aiLevel ?? 'gentle' } : {}), color: players[index].color })) };
   const publicEncounters = [...(saved.turnEncounters ?? [])];
   let pending = saved.pending;
   if (pending?.kind === 'station') {
@@ -273,7 +291,10 @@ export function parseSave(raw: string): GameState {
       pending = { ...pending, data: { ...pending.data, turnEncounterId: id } };
     }
   }
-  return { ...saved, config: normalizedConfig, players, propertyListings: saved.propertyListings ?? [], notices: saved.notices ?? [], turnEncounters: publicEncounters, pending,
+  const activeAiTurn = saved.aiTurn && players[saved.currentPlayerIndex].ai && saved.phase !== 'gameover'
+    && saved.aiTurn.playerId === players[saved.currentPlayerIndex].id && saved.aiTurn.day === saved.day ? saved.aiTurn : undefined;
+  return { ...saved, mapLayoutVersion: 2, config: normalizedConfig, players, propertyListings: saved.propertyListings ?? [], notices: saved.notices ?? [], turnEncounters: publicEncounters, pending,
+    aiTurn: activeAiTurn,
     controlledRoll: saved.controlledRoll ?? null, twinRoll: saved.twinRoll ?? false, movement: null, feedback: null };
 }
 

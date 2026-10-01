@@ -1,10 +1,11 @@
-import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_CASH, JOURNEY_REWARD_STEPS, WEATHERS } from './data';
+import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_CASH, JOURNEY_REWARD_STEPS, WEATHERS, getJourneyRewardSteps } from './data';
 import { findEligibleEvent, getEventWeights } from './eventPool';
 import { MAPS } from './maps';
 import { normalizePlayerColors } from './colors';
 import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
 import { weatherWeights } from './weather';
 import { getShopOffer, SHOP_ITEM_RARITY } from './shop';
+import { getStepOptions } from './routing';
 import { HOSTILE_ITEM_MOOD_LOSS, PROPERTY_RENT_MULTIPLIERS, RENT_MOOD_LOSS, ROADSIDE_CASH_MAX, ROADSIDE_CASH_MIN, UTILITY_RENT_BASE, UTILITY_RENT_CAP } from './economy';
 export { weatherWeights } from './weather';
 import type { CasinoResult, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, PropertyListing, Stock, TurnEncounter } from './types';
@@ -410,6 +411,7 @@ function openTurn(state: GameState) {
 
 function endTurn(state: GameState) {
   if (state.phase === 'gameover') return;
+  state.aiTurn = undefined;
   state.turnEncounters = [];
   state.controlledRoll = null;
   state.twinRoll = false;
@@ -429,15 +431,16 @@ export function createGame(config: GameConfig): GameState {
   if (!['standard', 'challenge'].includes(config.weatherMode)) throw new Error('Invalid weather mode');
   if (!Number.isSafeInteger(config.seed)) throw new Error('Invalid random seed');
   if (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean') throw new Error('Invalid property trading setting');
+  if (config.players.some(player => player.aiLevel !== undefined && !['gentle', 'fierce'].includes(player.aiLevel))) throw new Error('Invalid AI level');
   const start = MAPS[config.mapId].nodes.find(n => n.kind === 'start')?.id ?? MAPS[config.mapId].nodes[0].id;
   const seed = config.seed >>> 0;
-  const normalizedPlayers = normalizePlayerColors(config.players);
+  const normalizedPlayers = normalizePlayerColors(config.players.map(player => ({ ...player, ...(player.ai ? { aiLevel: player.aiLevel ?? 'gentle' } : {}) })));
   const players: Player[] = normalizedPlayers.map((p, index) => ({
     ...copy(p), id: `p${index + 1}`, cash: START_CASH, stamina: 100, mood: 100, position: start, previousPosition: null, routeNextPosition: null, travelProgress: 0,
     inventory: [], pawnedItems: [], capacity: 10, holdings: {}, stockCostBasis: {}, confinement: null, statuses: [], bankrupt: false,
   }));
   const stocks: Stock[] = copy(INITIAL_STOCKS).map(s => ({ ...s, history: s.history?.length ? s.history : [s.price], change: s.change ?? 0 }));
-  const state: GameState = { version: 1, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
+  const state: GameState = { version: 1, mapLayoutVersion: 2, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
     encounters: [], turnEncounters: [], stocks, logs: [], notices: [], phase: 'ready', pending: null,
     movement: null, feedback: null, seasonReport: null, rng: seed, sequence: 0, winnerId: null, lastMarketEvent: null, selectedDie: 6, controlledRoll: null, twinRoll: false };
   for (const player of state.players) { addItem(state, player, 'snack', 2); addItem(state, player, 'rent', 1); addItem(state, player, 'dice8', 1); }
@@ -464,15 +467,14 @@ function finishDecision(state: GameState, combineTransfer = false) {
 function moveStep(state: GameState, player: Player, path: number[]) {
   const here = nodeAt(state, player.position);
   if (!here?.neighbors.length) return;
-  let candidates = here.neighbors;
   const incoming = path.length > 1 ? path[path.length - 2] : player.previousPosition;
-  if (candidates.length > 1 && incoming !== null && here.neighbors.includes(incoming)) candidates = candidates.filter(n => n !== incoming);
   // A weather retreat may reverse the physical arrival edge. Resume once toward the road it came from,
   // then use ordinary no-U-turn routing through bends and intersections.
-  const resume = path.length === 1 && player.routeNextPosition != null && here.neighbors.includes(player.routeNextPosition)
-    ? player.routeNextPosition : null;
+  const candidates = getStepOptions(MAPS[state.config.mapId], player.position, incoming,
+    path.length === 1 ? player.routeNextPosition : null);
+  // Keep exactly one random draw even when a retreat fixes the direction.
   const randomExit = candidates[rand(state, 0, candidates.length - 1)];
-  const nextId = resume ?? randomExit;
+  const nextId = randomExit;
   player.routeNextPosition = null;
   player.previousPosition = player.position;
   player.position = nextId;
@@ -636,9 +638,35 @@ function damageableBuildings(state: GameState, player: Player): [string, Propert
 
 function eventChoiceScore(state: GameState, event: EventDef | undefined, choiceId: string): number {
   const option = event?.choices.find(choice => choice.id === choiceId);
-  if (!option) return 0;
+  if (!option) return Number.NEGATIVE_INFINITY;
   const player = current(state);
-  let score = (option.cash ?? 0) + (option.stamina ?? 0) * 20 + (option.mood ?? 0) * 15 + (option.item ? 300 : 0);
+  const cash = option.cash ?? 0;
+  const stamina = option.stamina ?? 0;
+  const mood = option.mood ?? 0;
+  const reserve = player.personality === 'cautious' ? 24_000 : player.personality === 'aggressive' ? 8_000 : 15_000;
+  // Value only restoration that can actually fit, and price scarce cash/health more highly.
+  const cashWeight = player.cash < reserve ? 1.55 : player.cash < reserve * 2 ? 1.18 : 1;
+  let score = cash * cashWeight;
+  if (cash < 0 && player.cash + cash < reserve) score += (player.cash + cash - reserve) * 0.16;
+  const staminaDelta = stamina > 0 ? Math.min(stamina, 100 - player.stamina) : stamina;
+  const moodDelta = mood > 0 ? Math.min(mood, 100 - player.mood) : mood;
+  score += staminaDelta * (player.stamina < 35 ? 55 : player.stamina < 65 ? 32 : 16);
+  score += moodDelta * (player.mood < 35 ? 60 : player.mood < 65 ? 34 : 16);
+  if (stamina < 0 && player.stamina + stamina <= 12) score -= player.stamina + stamina <= 0 ? 15_000 : 2200;
+  if (mood < 0 && player.mood + mood <= 12) score -= player.mood + mood <= 0 ? 15_000 : 2600;
+  if (option.item && canAdd(player, option.item)) {
+    const item = ITEMS[option.item];
+    const held = player.inventory.reduce((sum, slot) => sum + (slot.itemId === option.item ? slot.quantity : 0), 0);
+    const hostile = ['bomb', 'demolish', 'acquire', 'unluck', 'tax'].includes(option.item);
+    const utility = hostile && player.aiLevel !== 'fierce' ? 0.53 : 0.88;
+    score += (item?.price || 1200) * (held > 1 ? 0.58 : utility);
+  }
+  if (option.status) {
+    const [id] = option.status.split(':');
+    const active = player.statuses.some(status => status.id === id && status.remaining > 1);
+    score += id === 'unluck' ? active ? -350 : -900
+      : active ? 100 : id === 'luck' || id === 'umbrella' ? 750 : 0;
+  }
   if (option.confinement) {
     const immunity = option.confinement === 'prison'
       ? player.inventory.find(slot => !slot.wet && (slot.itemId === 'arrest' || slot.itemId === 'shield')) : undefined;
@@ -806,21 +834,23 @@ function glitchBacktrackMove(state: GameState, separate = false) {
 function glitchBacktrack(state: GameState, separate: boolean) { if (state.weatherId === 'glitch') glitchBacktrackMove(state, separate); }
 
 function awardJourneyProgress(state: GameState, player: Player, normalPath: number[]): number {
+  const steps = getJourneyRewardSteps(state.config.mapId);
+  // A live game created before the forest rule change may still carry 0..71.
   const previous = Number.isSafeInteger(player.travelProgress) && player.travelProgress >= 0 && player.travelProgress < JOURNEY_REWARD_STEPS
-    ? player.travelProgress : 0;
+    ? player.travelProgress % steps : 0;
   const normalSteps = Math.max(0, normalPath.length - 1);
   const total = previous + normalSteps;
-  const milestones = Math.floor(total / JOURNEY_REWARD_STEPS);
-  player.travelProgress = total % JOURNEY_REWARD_STEPS;
+  const milestones = Math.floor(total / steps);
+  player.travelProgress = total % steps;
   if (!milestones) return 0;
   const amount = milestones * JOURNEY_REWARD_CASH;
   credit(player, amount);
-  const lastThresholdStep = milestones * JOURNEY_REWARD_STEPS - previous;
-  const achievement = milestones === 1 ? `正常行进满 ${JOURNEY_REWARD_STEPS} 格` : `正常行进累计达成 ${milestones} 次 ${JOURNEY_REWARD_STEPS} 格`;
+  const lastThresholdStep = milestones * steps - previous;
+  const achievement = milestones === 1 ? `正常行进满 ${steps} 格` : `正常行进累计达成 ${milestones} 次 ${steps} 格`;
   notice(state, { kind: 'milestone', title: '行进奖励',
-    body: `${player.name} ${achievement}，获得 PM$ ${amount.toLocaleString('zh-CN')}；已累计下一轮 ${player.travelProgress}/${JOURNEY_REWARD_STEPS} 格。`,
+    body: `${player.name} ${achievement}，获得 PM$ ${amount.toLocaleString('zh-CN')}；已累计下一轮 ${player.travelProgress}/${steps} 格。`,
     tone: 'good', playerId: player.id, nodeId: normalPath[lastThresholdStep] ?? player.position, amount });
-  log(state, `${player.name} 达成 ${milestones} 次 ${JOURNEY_REWARD_STEPS} 格行进里程，获得 ${amount} PM。`, 'good');
+  log(state, `${player.name} 达成 ${milestones} 次 ${steps} 格行进里程，获得 ${amount} PM。`, 'good');
   return amount;
 }
 
@@ -1120,7 +1150,18 @@ function doUseItem(state: GameState, action: GameAction) {
   else if (id === 'tea') player.mood = clamp(player.mood + 20);
   else if (id === 'coffee') { player.stamina = clamp(player.stamina + 12); player.mood = clamp(player.mood + 8); }
   else if (id === 'restkit') { player.stamina = clamp(player.stamina + 25); player.mood = clamp(player.mood + 25); }
-  else if (id === 'lottery') credit(player, rand(state, 100, 5000));
+  else if (id === 'lottery') {
+    const amount = rand(state, 100, 5000);
+    consumeItem(player, slot.uid);
+    credit(player, amount);
+    const payout = amount.toLocaleString('zh-CN');
+    const body = `${player.name} 使用星海奖券，获得 ${payout} PM，奖金已到账。`;
+    log(state, body, 'good');
+    notice(state, { kind: 'lottery', title: '星海奖券开奖', body, tone: 'good', playerId: player.id,
+      nodeId: player.position, amount });
+    setFeedback(state, player, effect('event', '星海奖券开奖', 'good'), effect('cash', `+${payout} PM`, 'good'));
+    return true;
+  }
   else if (id === 'weather') addStatus(player, `weather:${action.weatherId!}`, 1);
   else if (id === 'teleport') { const from = player.position; player.previousPosition = null; player.routeNextPosition = null; player.position = node!.id;
     state.movement = { id: ++state.sequence, playerId: player.id, path: [from, node!.id], roll: 0, modifier: 0, dice: false,
@@ -1270,7 +1311,8 @@ function offerTrade(state: GameState, action: GameAction) {
   if (!tradingEnabled(state) || state.seasonReport || state.phase !== 'ready' && state.phase !== 'end' || !buyer || buyer.id === seller.id || buyer.bankrupt || !node || !prop || prop.ownerId !== seller.id || prop.mortgaged || !Number.isSafeInteger(price) || price! <= 0 || price! > MAX_PROPERTY_PRICE || buyer.cash < price!) return false;
   if (buyer.ai) {
     const multiplier = buyer.personality === 'cautious' ? 1.05 : buyer.personality === 'aggressive' ? 1.6 : 1.3;
-    if (price! <= assetValue(state, node.id, prop) * multiplier && Number.isSafeInteger(seller.cash + price!)) { buyer.cash -= price!; seller.cash += price!; prop.ownerId = buyer.id; removeListing(state, node.id); log(state, `${buyer.name} 接受交易，以 ${price} PM 买入 ${node.name}。`, 'good');
+    const canKeepReserve = buyer.aiLevel !== 'fierce' || buyer.cash - price! >= aiReserve(buyer, true) * 0.7;
+    if (canKeepReserve && price! <= assetValue(state, node.id, prop) * multiplier && Number.isSafeInteger(seller.cash + price!)) { buyer.cash -= price!; seller.cash += price!; prop.ownerId = buyer.id; removeListing(state, node.id); log(state, `${buyer.name} 接受交易，以 ${price} PM 买入 ${node.name}。`, 'good');
       notice(state, { kind: 'trade', title: '地产交易成交', body: `${buyer.name} 向 ${seller.name} 支付 ${price!.toLocaleString('zh-CN')} PM，购入 ${node.name}；产权已转移。`,
         tone: 'info', playerId: buyer.id, recipientId: seller.id, nodeId: node.id, amount: price! });
       setFeedback(state, seller, effect('building', `出售${node.name}`, 'good'), effect('cash', `+${price} PM`, 'good')); }
@@ -1284,18 +1326,84 @@ function offerTrade(state: GameState, action: GameAction) {
 
 function bestControlledRoll(state: GameState): number | null {
   const player = current(state);
+  // Sand retreat and glitch revisit earlier route edges; without a full public
+  // path tree, keep the controller rather than score the wrong landing tile.
+  if (['sand', 'sandstorm', 'glitch'].includes(state.weatherId)) return null;
+  const map = MAPS[state.config.mapId];
+  const weatherModifier = state.weatherId === 'hot' ? -1 : state.weatherId === 'heat' ? -2 : state.weatherId === 'scorch' ? -4 : 0;
+  const scoreLanding = (position: number) => {
+    const node = map.nodes[position];
+    const property = state.properties[position];
+    if (!node) return -3000;
+    if (node.kind === 'coin') return 150;
+    if (node.kind === 'hospital' || node.kind === 'prison') return -800;
+    if (isProperty(node)) {
+      if (property?.ownerId === player.id) return property.level < 4 && !isUtility(node) ? 200 : 0;
+      if (property) return -getRent(state, position) * (player.cash < 10_000 ? 1.5 : 1);
+      if (player.cash >= costOf(node) + 5000) return Math.min(3200, costOf(node) * 0.22);
+    }
+    return 0;
+  };
+  // Public topology only: propagate each legal junction branch with equal probability.
+  // Never sample future RNG or resolve hidden encounters while planning a controlled die.
+  const expected = (steps: number) => {
+    let fronts = new Map<string, { position: number; incoming: number | null; route: number | null; probability: number; startCash: number }>();
+    const initial = { position: player.position, incoming: player.previousPosition, route: player.routeNextPosition ?? null, probability: 1, startCash: 0 };
+    fronts.set(`${initial.position}:${initial.incoming}:${initial.route}`, initial);
+    for (let index = 0; index < steps; index++) {
+      const nextFronts = new Map<string, typeof initial>();
+      for (const front of fronts.values()) {
+        const options = getStepOptions(map, front.position, front.incoming, index === 0 ? front.route : null);
+        for (const target of options) {
+          const key = `${target}:${front.position}`;
+          const probability = front.probability / options.length;
+          const startCash = front.startCash / front.probability + (map.nodes[target].kind === 'start' ? 1200 : 0);
+          const earlier = nextFronts.get(key);
+          if (earlier) {
+            // Keep expected start income across merged routes rather than choosing one path.
+            earlier.startCash += startCash * probability;
+            earlier.probability += probability;
+          } else nextFronts.set(key, { position: target, incoming: front.position, route: null, probability, startCash: startCash * probability });
+        }
+      }
+      if (nextFronts.size === 0) break;
+      fronts = nextFronts;
+    }
+    const slide = state.weatherId === 'snow' ? 1 : state.weatherId === 'blizzard' || state.weatherId === 'glitch' ? 2
+      : state.weatherId === 'freezing' ? 4 : 0;
+    for (let index = 0; index < slide; index++) {
+      const nextFronts = new Map<string, typeof initial>();
+      for (const front of fronts.values()) {
+        const options = getStepOptions(map, front.position, front.incoming, steps === 0 && index === 0 ? front.route : null);
+        for (const target of options) {
+          const key = `${target}:${front.position}`;
+          const probability = front.probability / options.length;
+          const weightedStartCash = front.startCash / front.probability * probability;
+          const earlier = nextFronts.get(key);
+          if (earlier) { earlier.probability += probability; earlier.startCash += weightedStartCash; }
+          else nextFronts.set(key, { position: target, incoming: front.position, route: null, probability, startCash: weightedStartCash });
+        }
+      }
+      if (nextFronts.size === 0) break;
+      fronts = nextFronts;
+    }
+    let outcome = 0;
+    for (const front of fronts.values()) {
+      const landing = state.weatherId === 'gale' && front.incoming != null ? front.incoming : front.position;
+      outcome += front.probability * scoreLanding(landing) + front.startCash;
+    }
+    return outcome;
+  };
   const prospects = Array.from({ length: 6 }, (_, index) => {
     const value = index + 1;
-    const probe = copy(state);
-    probe.controlledRoll = value;
-    const rolled = act(probe, { type: 'roll' });
-    const landed = rolled.players[rolled.currentPlayerIndex];
-    const node = nodeAt(rolled, landed.position);
-    const property = node && rolled.properties[node.id];
-    let score = landed.cash - player.cash + (landed.stamina - player.stamina) * 25 + (landed.mood - player.mood) * 15;
-    if (node && isProperty(node) && !property && landed.cash >= costOf(node)) score += Math.min(4000, costOf(node) * 0.35);
-    if (node && property?.ownerId !== player.id) score -= getRent(rolled, node.id);
-    return { value, score };
+    const steps = Math.max(0, value + weatherModifier);
+    const journey = Math.floor(((player.travelProgress ?? 0) + steps) / getJourneyRewardSteps(state.config.mapId)) * JOURNEY_REWARD_CASH;
+    const scorchHarm = state.weatherId === 'scorch' && !player.statuses.some(status => status.id === 'umbrella' && status.remaining > 0)
+      ? state.config.weatherMode === 'challenge' ? steps * 3 : Math.min(18, steps * 3) : 0;
+    const healthCost = Math.min(scorchHarm, player.stamina) * (player.stamina < 40 ? 65 : 28)
+      + Math.min(scorchHarm, player.mood) * (player.mood < 40 ? 65 : 28)
+      + (scorchHarm >= player.stamina || scorchHarm >= player.mood ? 5000 : 0);
+    return { value, score: expected(steps) + journey - healthCost - (2 + Math.floor((value - 1) * 3 / 6)) * 28 };
   });
   const best = prospects.reduce((winner, option) => option.score > winner.score ? option : winner);
   const average = prospects.reduce((sum, option) => sum + option.score, 0) / prospects.length;
@@ -1347,57 +1455,222 @@ export function act(state: GameState, action: GameAction, actorId?: string): Gam
   return valid ? draft : state;
 }
 
+function aiReserve(player: Player, fierce: boolean): number {
+  const base = player.personality === 'cautious' ? 34_000 : player.personality === 'aggressive' ? 9_000 : 20_000;
+  return fierce ? base : Math.ceil(base * 1.15);
+}
+
+function aiInventoryCount(player: Player, itemId: string): number {
+  return player.inventory.reduce((count, slot) => count + (slot.itemId === itemId ? slot.quantity : 0), 0);
+}
+
+function aiStockAction(state: GameState, player: Player, fierce: boolean): GameAction | null {
+  const reserve = aiReserve(player, fierce);
+  const held = state.stocks.map(stock => ({ stock, quantity: player.holdings[stock.id] ?? 0 }))
+    .filter(entry => entry.quantity > 0);
+  const momentum = (stock: Stock) => {
+    const history = stock.history ?? [];
+    const previous = history[Math.max(0, history.length - 4)] ?? stock.price;
+    return previous > 0 ? stock.price / previous - 1 : 0;
+  };
+  const reference = (stock: Stock) => INITIAL_STOCKS.find(entry => entry.id === stock.id)?.price ?? stock.price;
+  const exit = held.find(({ stock }) => player.cash < reserve * 0.55
+    || stock.price > reference(stock) * 1.3 && momentum(stock) < -0.035);
+  if (exit) return { type: 'stockTrade', stockId: exit.stock.id,
+    quantity: -(player.cash < reserve * 0.55 ? exit.quantity : Math.max(1, Math.ceil(exit.quantity / 2))) };
+  const invested = held.reduce((sum, { stock, quantity }) => sum + stock.price * quantity, 0);
+  const totalAssets = Math.max(1, getNetWorth(state, player.id));
+  if (player.cash < reserve + 5000 || invested / totalAssets > (fierce ? 0.22 : 0.10)) return null;
+  const candidates = state.stocks.map(stock => {
+    const relative = reference(stock) / stock.price - 1;
+    const trend = momentum(stock);
+    return { stock, score: relative * 0.7 + trend * 0.3 };
+  }).sort((a, b) => b.score - a.score);
+  const best = candidates[0];
+  if (!best || best.score < (held.length ? fierce ? 0.015 : 0.04 : -0.005)) return null;
+  const budget = Math.min(player.cash - reserve, fierce ? 12_000 : 5000);
+  const quantity = Math.min(1_000_000, Math.floor(budget / (best.stock.price * 1.003)));
+  return quantity > 0 && quoteStockTrade(best.stock.price, quantity).total <= player.cash - reserve
+    ? { type: 'stockTrade', stockId: best.stock.id, quantity } : null;
+}
+
+function aiShopChoice(state: GameState, player: Player, fierce: boolean, choices: Prompt['choices'], purchases: number): string | null {
+  if (purchases >= (fierce ? 2 : 1)) return null;
+  const enemies = state.players.filter(enemy => enemy.id !== player.id && !enemy.bankrupt);
+  const enemyBuildings = Object.entries(state.properties).filter(([id, property]) => enemies.some(enemy => enemy.id === property.ownerId)
+    && nodeAt(state, Number(id))?.kind === 'land' && property.level > 0 && property.level < 4);
+  const ownedRepairable = Object.entries(state.properties).some(([id, property]) => property.ownerId === player.id
+    && nodeAt(state, Number(id))?.kind === 'land' && property.level < 4 && !property.mortgaged);
+  const valuableEnemy = enemies.some(enemy => Object.entries(state.properties).some(([, property]) => property.ownerId === enemy.id));
+  const canAcquire = enemyBuildings.some(([id]) => player.cash - (getAcquisitionPrice(state, Number(id)) ?? Infinity) >= aiReserve(player, true));
+  const wanted = fierce ? [
+    ...(player.stamina < 70 && player.mood < 70 ? ['restkit', 'coffee'] : []),
+    ...(player.stamina < 65 ? ['feast', 'snack'] : []),
+    ...(player.mood < 65 ? ['tea'] : []),
+    ...(ownedRepairable ? ['repair'] : []),
+    ...(enemyBuildings.some(([id]) => getRent(state, Number(id)) >= 1200) ? ['demolish'] : []),
+    ...(valuableEnemy && enemies.some(enemy => !enemy.confinement) ? ['bomb'] : []),
+    ...(canAcquire ? ['acquire'] : []),
+    ...(valuableEnemy && enemies.some(enemy => !enemy.statuses.some(status => status.id === 'unluck')) ? ['unluck'] : []),
+    ...(enemies.some(enemy => enemy.cash >= 1800) && player.personality !== 'cautious' ? ['tax'] : []),
+    ...(aiInventoryCount(player, 'shield') === 0 ? ['shield'] : []),
+    ...(aiInventoryCount(player, 'rent') === 0 || aiInventoryCount(player, 'rent') < 2
+      && Object.entries(state.properties).some(([id, property]) => property.ownerId !== player.id && getRent(state, Number(id)) >= 1200) ? ['rent'] : []),
+    ...(player.inventory.some(slot => slot.wet && ITEMS[slot.itemId]?.price >= 800) ? ['dry'] : []),
+    ...(!player.statuses.some(status => status.id === 'umbrella') && ['frost', 'rain', 'heat', 'wind', 'disaster'].includes(WEATHERS[state.weatherId]?.family) ? ['umbrella'] : []),
+    ...(player.travelProgress >= getJourneyRewardSteps(state.config.mapId) - 6 ? ['controller'] : []),
+    ...(aiInventoryCount(player, 'twinDish') === 0 ? ['twinDish'] : []),
+    ...(player.personality === 'aggressive' ? ['dice20', 'dice12'] : ['dice12']),
+    ...(aiInventoryCount(player, 'dice8') === 0 ? ['dice8'] : []),
+  ] : [
+    ...(player.stamina < 60 && player.mood < 60 ? ['restkit', 'coffee'] : []),
+    ...(player.stamina < 55 ? ['snack', 'feast'] : []),
+    ...(player.mood < 55 ? ['tea'] : []),
+    ...(aiInventoryCount(player, 'dice8') === 0 ? ['dice8'] : []),
+  ];
+  const reserve = aiReserve(player, fierce);
+  for (const id of wanted) {
+    const choice = choices.find(entry => entry.id === `buy:${id}` && !entry.disabled);
+    const desiredCount = ['snack', 'tea', 'feast', 'coffee'].includes(id) ? 2 : id === 'rent' ? 2 : 1;
+    if (choice && canAdd(player, id) && player.cash >= ITEMS[id].price + reserve * (fierce ? 0.55 : 0.8)
+      && aiInventoryCount(player, id) < desiredCount) return choice.id;
+  }
+  return null;
+}
+
+function aiAttackAction(state: GameState, player: Player): GameAction | null {
+  const risk = player.personality === 'cautious' ? 1.7 : player.personality === 'aggressive' ? 0.7 : 1;
+  const reserve = aiReserve(player, true);
+  const candidates: { action: GameAction; score: number }[] = [];
+  for (const slot of player.inventory) {
+    if (!['bomb', 'tax', 'unluck', 'demolish', 'acquire'].includes(slot.itemId) || !canUseItem(state, player.id, slot.uid)) continue;
+    if (slot.itemId === 'demolish' || slot.itemId === 'acquire') {
+      for (const node of MAPS[state.config.mapId].nodes) {
+        if (!canTargetItem(state, player.id, slot.uid, { nodeId: node.id })) continue;
+        const property = state.properties[node.id];
+        const threat = Math.max(0, getRent(state, node.id));
+        const price = slot.itemId === 'acquire' ? getAcquisitionPrice(state, node.id) ?? 0 : 0;
+        if (slot.itemId === 'acquire' && player.cash - price < reserve) continue;
+        const score = slot.itemId === 'acquire' ? threat * 3 + assetValue(state, node.id, property) - price
+          : threat * 2.2 + costOf(node) * 0.2;
+        candidates.push({ action: { type: 'useItem', itemUid: slot.uid, nodeId: node.id }, score });
+      }
+    } else for (const enemy of state.players) {
+      if (!canTargetItem(state, player.id, slot.uid, { targetId: enemy.id })) continue;
+      if (slot.itemId === 'bomb' && enemy.confinement) continue;
+      if (slot.itemId === 'unluck' && enemy.statuses.some(status => status.id === 'unluck' && status.remaining > 0)) continue;
+      if (slot.itemId === 'tax' && enemy.cash <= 0) continue;
+      const threat = Object.entries(state.properties).filter(([, property]) => property.ownerId === enemy.id)
+        .reduce((sum, [id]) => sum + getRent(state, Number(id)), 0);
+      const score = (slot.itemId === 'bomb' ? threat * 2.2 : slot.itemId === 'tax' ? Math.min(1800, enemy.cash)
+        : 600 + threat * 0.35) + Math.max(0, getNetWorth(state, enemy.id) - getNetWorth(state, player.id)) * 0.012;
+      candidates.push({ action: { type: 'useItem', itemUid: slot.uid, targetId: enemy.id }, score });
+    }
+  }
+  const best = candidates.sort((a, b) => b.score - a.score)[0];
+  return best && best.score >= 1500 * risk ? best.action : null;
+}
+
+function aiStationChoice(state: GameState, player: Player, available: Prompt['choices']): string | null {
+  const map = MAPS[state.config.mapId];
+  const score = (position: number) => {
+    const visited = new Set<number>([position]);
+    let frontier = [position], value = 0;
+    for (let depth = 1; depth <= 3; depth++) {
+      const next: number[] = [];
+      for (const id of frontier) for (const neighbor of map.nodes[id].neighbors) if (!visited.has(neighbor)) {
+        visited.add(neighbor); next.push(neighbor);
+        const node = map.nodes[neighbor];
+        if (isProperty(node) && !state.properties[neighbor] && player.cash > costOf(node) + aiReserve(player, true)) value += costOf(node) * 0.22 / depth;
+        if (state.properties[neighbor]?.ownerId === player.id && state.properties[neighbor].level < 4) value += 350 / depth;
+        if (node.kind === 'shop' && player.stamina < 65) value += 450 / depth;
+      }
+      frontier = next;
+    }
+    return value;
+  };
+  const currentScore = score(player.position);
+  const destinations = available.filter(choice => choice.id.startsWith('station:'))
+    .map(choice => ({ choice, value: score(Number(choice.id.slice(8))) }));
+  const best = destinations.sort((a, b) => b.value - a.value)[0];
+  return best && best.value > currentScore + 350 ? best.choice.id : null;
+}
+
+function aiSafeDice(state: GameState, player: Player, face: number, count: number): boolean {
+  if (state.weatherId !== 'scorch' || player.statuses.some(status => status.id === 'umbrella' && status.remaining > 0)) return true;
+  const longestRollSteps = Math.max(0, face * count - 4);
+  const harm = state.config.weatherMode === 'challenge' ? longestRollSteps * 3 : Math.min(18, longestRollSteps * 3);
+  const buffer = player.personality === 'cautious' ? 14 : player.personality === 'aggressive' ? 4 : 8;
+  return player.stamina > harm + 4 + buffer && player.mood > harm + 1 + buffer;
+}
+
 export function runAI(state: GameState): GameState {
   const player = current(state);
   if (!player?.ai || state.phase === 'gameover') return state;
+  const fierce = player.aiLevel === 'fierce';
+  const budget = state.aiTurn?.playerId === player.id && state.aiTurn.day === state.day ? state.aiTurn
+    : { playerId: player.id, day: state.day, actions: 0, attacks: 0, purchases: 0 };
+  const step = (action: GameAction): GameState => {
+    const next = act(state, action);
+    if (next === state) return state;
+    if (action.type === 'endTurn' || next.currentPlayerIndex !== state.currentPlayerIndex || next.day !== state.day) {
+      next.aiTurn = undefined;
+      return next;
+    }
+    const item = action.type === 'useItem' ? player.inventory.find(slot => slot.uid === action.itemUid)?.itemId : undefined;
+    next.aiTurn = { ...budget, actions: budget.actions + 1,
+      attacks: budget.attacks + (item && ['bomb', 'tax', 'unluck', 'demolish', 'acquire'].includes(item) ? 1 : 0),
+      purchases: budget.purchases + (action.type === 'choose' && action.choiceId?.startsWith('buy:') || action.type === 'buyListing' ? 1 : 0) };
+    return next;
+  };
   if (state.phase === 'decision') {
     const prompt = state.pending;
     if (!prompt) return state;
     if (prompt.kind === 'exchange') {
-      const reserve = player.personality === 'cautious' ? 40_000 : player.personality === 'aggressive' ? 12_000 : 25_000;
-      if (prompt.data?.traded) return act(state, { type: 'choose', choiceId: 'leave' });
-      const held = state.stocks.find(s => (player.holdings[s.id] ?? 0) > 0);
-      if (held && (player.cash < reserve || held.change < (player.personality === 'cautious' ? -3 : -5))) {
-        return act(state, { type: 'stockTrade', stockId: held.id, quantity: -(player.holdings[held.id] ?? 0) });
+      if (!prompt.data?.traded) {
+        const trade = aiStockAction(state, player, fierce);
+        if (trade) {
+          const result = step(trade);
+          if (result !== state) return result;
+        }
       }
-      const stock = state.stocks.reduce((best, s) => s.change > best.change ? s : best, state.stocks[0]);
-      if (stock && !Object.values(player.holdings).some(n => n > 0) && player.cash > reserve + quoteStockTrade(stock.price, 5).total) {
-        return act(state, { type: 'stockTrade', stockId: stock.id, quantity: 5 });
-      }
-      return act(state, { type: 'choose', choiceId: 'leave' });
+      return step({ type: 'choose', choiceId: 'leave' });
     }
     const available = prompt.choices.filter(c => !c.disabled);
+    if (!available.length) return state;
     let choice = available.find(c => c.id === 'leave')?.id ?? available[0]?.id;
     if (prompt.kind === 'rent') {
       const amount = Number(prompt.data?.amount);
       const hasCard = player.inventory.some(slot => slot.itemId === 'rent' && !slot.wet);
       choice = hasCard && (amount >= ITEMS.rent.price || player.cash - amount < 500) ? 'use_card' : 'pay';
     } else if (prompt.kind === 'land' || prompt.kind === 'upgrade') {
-      const reserve = player.personality === 'cautious' ? 30_000 : player.personality === 'aggressive' ? 7_000 : 17_000;
+      const reserve = aiReserve(player, fierce);
+      const node = nodeAt(state, Number(prompt.data?.nodeId));
       const action = available.find(c => c.id === 'buy' || c.id === 'upgrade');
-      if (action && player.cash > reserve + (Number(nodeAt(state, Number(prompt.data?.nodeId))?.price) || 0)) choice = action.id;
-    } else if (prompt.kind === 'event') choice = available.reduce((best, item) => {
+      const cost = node ? action?.id === 'upgrade' ? Math.ceil(costOf(node) * 0.75) : costOf(node) : Infinity;
+      if (action && player.cash >= cost + reserve * (fierce ? 0.65 : 1)) choice = action.id;
+      else if (prompt.kind === 'upgrade' && player.stamina < 45 && player.cash >= 100) choice = available.find(c => c.id === 'meal')?.id ?? choice;
+    } else if (prompt.kind === 'event') {
       const event = findEligibleEvent(state.config.mapId, String(prompt.data?.eventId ?? ''));
-      return eventChoiceScore(state, event, item.id) > eventChoiceScore(state, event, best.id) ? item : best;
-    }, available[0]).id;
+      choice = available.reduce((best, item) => eventChoiceScore(state, event, item.id) > eventChoiceScore(state, event, best.id) ? item : best, available[0]).id;
+    }
     else if (prompt.kind === 'trade') choice = 'reject';
     else if (prompt.kind === 'debt') choice = available.find(c => c.id.startsWith('sellstock:'))?.id
       ?? available.find(c => c.id.startsWith('pawn:'))?.id
       ?? available.find(c => c.id.startsWith('mortgage:'))?.id ?? 'bankrupt';
-    else if (prompt.kind === 'upgrade' && player.stamina < 40) choice = available.find(c => c.id === 'meal')?.id ?? choice;
     else if (prompt.kind === 'meal' && player.stamina < 60) choice = 'meal';
-    else if (prompt.kind === 'station' && player.cash > 10_000) choice = available.find(c => c.id.startsWith('station:'))?.id ?? choice;
+    else if (prompt.kind === 'station' && player.cash > aiReserve(player, fierce)) choice = fierce
+      ? aiStationChoice(state, player, available) ?? choice : available.find(c => c.id.startsWith('station:'))?.id ?? choice;
     else if (prompt.kind === 'casino' && player.personality === 'aggressive' && !prompt.data?.played && player.cash > 15_000) choice = available.find(c => c.id === 'red')?.id ?? choice;
-    else if (prompt.kind === 'shop' && player.cash > 20_000 && player.inventory.length < player.capacity) {
-      const preferred = available.find(c => c.id.startsWith('buy:') && ['snack', 'restkit', 'dice8'].includes(c.id.slice(4)) && !player.inventory.some(i => i.itemId === c.id.slice(4)));
-      if (preferred) choice = preferred.id;
-    }
+    else if (prompt.kind === 'shop') choice = aiShopChoice(state, player, fierce, available, budget.purchases) ?? choice;
     if (!choice) return state;
-    return act(state, { type: 'choose', choiceId: choice });
+    const result = step({ type: 'choose', choiceId: choice });
+    return result === state && choice !== 'leave' && available.some(entry => entry.id === 'leave')
+      ? step({ type: 'choose', choiceId: 'leave' }) : result;
   }
-  if (state.phase === 'end') return act(state, { type: 'endTurn' });
-  if (tradingEnabled(state) && state.phase === 'ready' && !state.pending && !state.seasonReport) {
-    const reserve = player.personality === 'cautious' ? 40_000 : player.personality === 'balanced' ? 25_000 : 12_000;
+  if (state.phase === 'end') return step({ type: 'endTurn' });
+  if (tradingEnabled(state) && state.phase === 'ready' && !state.pending && !state.seasonReport && budget.actions < 7) {
+    const reserve = aiReserve(player, fierce);
     const willing = player.personality === 'cautious' ? 0.95 : player.personality === 'balanced' ? 1.1 : 1.3;
     const boughtToday = (state.notices ?? []).some(entry => entry.kind === 'trade' && entry.playerId === player.id && entry.day === state.day);
     if (!boughtToday) {
@@ -1407,7 +1680,7 @@ export function runAI(state: GameState): GameState {
           && listing.price <= assetValue(state, listing.nodeId, property) * willing && player.cash - listing.price >= reserve;
       }).sort((a, b) => a.price / assetValue(state, a.nodeId, state.properties[a.nodeId])
         - b.price / assetValue(state, b.nodeId, state.properties[b.nodeId]));
-      if (worthBuying.length) return act(state, { type: 'buyListing', listingId: worthBuying[0].id });
+      if (worthBuying.length) return step({ type: 'buyListing', listingId: worthBuying[0].id });
     }
     const lowCash = player.personality === 'cautious' ? 18_000 : player.personality === 'balanced' ? 12_000 : 7_000;
     const alreadyListed = (state.propertyListings ?? []).some(listing => listing.sellerId === player.id && listing.listedDay === state.day);
@@ -1420,38 +1693,75 @@ export function runAI(state: GameState): GameState {
       if (id && property) {
         const ask = player.personality === 'cautious' ? 1.25 : player.personality === 'balanced' ? 1.15 : 1.08;
         const price = Math.min(MAX_PROPERTY_PRICE, Math.max(1, Math.ceil(assetValue(state, Number(id), property) * ask)));
-        return act(state, { type: 'listProperty', nodeId: Number(id), price });
+        return step({ type: 'listProperty', nodeId: Number(id), price });
       }
     }
   }
-  if (player.stamina < 25 || player.mood < 25) {
-    const wanted = player.stamina < 25 && player.mood < 25 ? ['restkit', 'coffee', 'feast', 'snack', 'tea']
-      : player.stamina < 25 ? ['feast', 'snack', 'restkit', 'coffee'] : ['tea', 'restkit', 'coffee'];
+  const low = fierce ? 33 : 25;
+  if (player.stamina < low || player.mood < low) {
+    const wanted = player.stamina < low && player.mood < low ? ['restkit', 'coffee', 'feast', 'snack', 'tea']
+      : player.stamina < low ? ['feast', 'snack', 'restkit', 'coffee'] : ['tea', 'restkit', 'coffee'];
     const usable = wanted.map(id => player.inventory.find(s => s.itemId === id && canUseItem(state, player.id, s.uid))).find(Boolean);
-    if (usable) return act(state, { type: 'useItem', itemUid: usable.uid });
-    return act(state, { type: 'rest' });
+    if (usable && budget.actions < 8) return step({ type: 'useItem', itemUid: usable.uid });
+    return step({ type: 'rest' });
   }
-  if (state.selectedDie === 6 && !state.twinRoll && state.controlledRoll == null && player.stamina >= 45) {
+  if (fierce && budget.actions < 8) {
+    const reserve = aiReserve(player, true);
+    const mortgaged = Object.entries(state.properties).filter(([id, property]) => property.ownerId === player.id && property.mortgaged
+      && player.cash - Math.ceil(assetValue(state, Number(id), property) * 0.6) >= reserve)
+      .sort(([a, first], [b, second]) => assetValue(state, Number(b), second) - assetValue(state, Number(a), first));
+    if (mortgaged.length) return step({ type: 'redeem', nodeId: Number(mortgaged[0][0]) });
+    const pawned = player.pawnedItems.find(entry => player.cash - Math.ceil(entry.principal * 1.2) >= reserve
+      && canAdd(player, entry.slot.itemId));
+    if (pawned) return step({ type: 'redeemItem', itemUid: pawned.slot.uid });
+    if (budget.attacks < 1 && state.weatherId !== 'paradox') {
+      const attack = aiAttackAction(state, player);
+      if (attack) return step(attack);
+    }
+    const dry = player.inventory.find(slot => slot.itemId === 'dry' && canUseItem(state, player.id, slot.uid));
+    if (dry && player.inventory.some(slot => slot.wet && ITEMS[slot.itemId]?.price >= 800)) return step({ type: 'useItem', itemUid: dry.uid });
+    const repair = player.inventory.find(slot => slot.itemId === 'repair' && canUseItem(state, player.id, slot.uid));
+    if (repair) {
+      const target = Object.entries(state.properties).filter(([id, property]) => property.ownerId === player.id
+        && property.level < 4 && canTargetItem(state, player.id, repair.uid, { nodeId: Number(id) }))
+        .sort(([a], [b]) => costOf(nodeAt(state, Number(b))!) - costOf(nodeAt(state, Number(a))!))[0];
+      if (target) return step({ type: 'useItem', itemUid: repair.uid, nodeId: Number(target[0]) });
+    }
+    const bag = player.inventory.find(slot => slot.itemId === 'bag' && canUseItem(state, player.id, slot.uid));
+    if (bag && player.capacity - player.inventory.length <= 2) return step({ type: 'useItem', itemUid: bag.uid });
+    const umbrella = player.inventory.find(slot => slot.itemId === 'umbrella' && canUseItem(state, player.id, slot.uid));
+    if (umbrella && !player.statuses.some(status => status.id === 'umbrella')
+      && ['frost', 'rain', 'heat', 'wind', 'disaster'].includes(WEATHERS[state.weatherId]?.family)) return step({ type: 'useItem', itemUid: umbrella.uid });
+    const luck = player.inventory.find(slot => slot.itemId === 'luck' && canUseItem(state, player.id, slot.uid));
+    if (luck && !player.statuses.some(status => status.id === 'luck')) return step({ type: 'useItem', itemUid: luck.uid });
+  }
+  if (budget.actions < 8 && state.selectedDie === 6 && !state.twinRoll && state.controlledRoll == null && player.stamina >= 45) {
     const stone = player.inventory.find(slot => slot.itemId === 'teleportStone' && canUseItem(state, player.id, slot.uid));
     if (stone) {
-      const reserve = player.personality === 'cautious' ? 35_000 : player.personality === 'balanced' ? 20_000 : 10_000;
-      const target = MAPS[state.config.mapId].nodes.filter(node => node.kind === 'land' && !state.properties[node.id]
-        && node.id !== player.position && player.cash >= costOf(node) + reserve)
+      const reserve = aiReserve(player, fierce);
+      const target = MAPS[state.config.mapId].nodes.filter(node => node.kind === 'land' && node.id !== player.position
+        && (!state.properties[node.id] && player.cash >= costOf(node) + reserve
+          || fierce && state.properties[node.id]?.ownerId === player.id && state.properties[node.id].level < 4))
         .sort((a, b) => costOf(b) - costOf(a))[0];
       if (target && canTargetItem(state, player.id, stone.uid, { nodeId: target.id })) {
-        return act(state, { type: 'useItem', itemUid: stone.uid, nodeId: target.id });
+        return step({ type: 'useItem', itemUid: stone.uid, nodeId: target.id });
       }
     }
   }
-  if (state.controlledRoll != null) return act(state, { type: 'roll' });
+  if (!aiSafeDice(state, player, state.selectedDie, state.twinRoll ? 2 : 1)) {
+    const umbrella = player.inventory.find(slot => slot.itemId === 'umbrella' && canUseItem(state, player.id, slot.uid));
+    return umbrella && budget.actions < 8 ? step({ type: 'useItem', itemUid: umbrella.uid }) : step({ type: 'rest' });
+  }
+  if (state.controlledRoll != null || budget.actions >= 8) return step({ type: 'roll' });
   const controller = player.inventory.find(slot => slot.itemId === 'controller' && canUseItem(state, player.id, slot.uid));
   if (controller) {
     const diceValue = bestControlledRoll(state);
-    if (diceValue !== null) return act(state, { type: 'useItem', itemUid: controller.uid, diceValue });
+    if (diceValue !== null) return step({ type: 'useItem', itemUid: controller.uid, diceValue });
   }
-  const die = player.inventory.find(s => s.itemId === 'dice8' && canUseItem(state, player.id, s.uid));
-  if (die && state.selectedDie === 6 && player.personality === 'aggressive') return act(state, { type: 'useItem', itemUid: die.uid });
+  const die = player.inventory.find(s => /^dice(8|12|20|100)$/.test(s.itemId) && canUseItem(state, player.id, s.uid)
+    && aiSafeDice(state, player, Number(s.itemId.slice(4)), state.twinRoll ? 2 : 1));
+  if (die && state.selectedDie === 6 && (fierce || player.personality === 'aggressive')) return step({ type: 'useItem', itemUid: die.uid });
   const twin = player.inventory.find(slot => slot.itemId === 'twinDish' && canUseItem(state, player.id, slot.uid));
-  if (twin && player.stamina >= 45) return act(state, { type: 'useItem', itemUid: twin.uid });
-  return act(state, { type: 'roll' });
+  if (twin && player.stamina >= 45 && aiSafeDice(state, player, state.selectedDie, 2)) return step({ type: 'useItem', itemUid: twin.uid });
+  return step({ type: 'roll' });
 }

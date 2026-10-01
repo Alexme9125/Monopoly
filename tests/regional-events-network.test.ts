@@ -3,7 +3,9 @@ import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { expect, it } from 'vitest';
 import { createRoomServer } from '../server/index';
+import { act, createGame } from '../src/game/engine';
 import { findEligibleEvent } from '../src/game/eventPool';
+import type { GameConfig } from '../src/game/types';
 
 type Wire = { type: string; room?: any; message?: string };
 
@@ -53,13 +55,18 @@ const hostProfile = { name: '星河', color: '#D55B48', shape: 'circle', ai: fal
 const guestProfile = { name: '云岚', color: '#277DA8', shape: 'diamond', ai: false, personality: 'cautious' };
 
 it('shares a lake DLC encounter, restricts selection, and retains the result until endTurn', async () => {
+  // This opening roll selects the lake DLC encounter after the facility redistribution.
+  const seed = 78;
+  const preview: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
+    players: [hostProfile, guestProfile] as GameConfig['players'] };
+  expect(act(createGame(preview), { type: 'roll' }).pending?.data?.eventId).toBe('lake_ferry_queue');
   const server = await createRoomServer({ port: 0, host: '127.0.0.1' });
   const clients: Client[] = [];
   try {
     const host = await Client.connect(server.port); clients.push(host);
     const guest = await Client.connect(server.port); clients.push(guest);
     let since = host.messages.length;
-    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: 43 } });
+    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed } });
     const created = await host.wait(message => message.type === 'room' && message.room?.members.length === 1, since);
     const code = created.room.code;
     since = guest.messages.length;

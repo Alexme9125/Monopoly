@@ -113,21 +113,26 @@ describe('four-season acceptance simulation', () => {
 });
 
 describe('journey reward acceptance', () => {
-  it('imports a near-milestone save and awards one normal step before an empty landing', () => {
+  it('imports a near-milestone save and awards one normal step before a property decision', () => {
     const state = parseSave(readFileSync(new URL('./fixtures/qa-journey.json', import.meta.url), 'utf8'));
     expect(state.config.mode).toBe('pve');
     expect(state).toMatchObject({ phase: 'ready', pending: null, weatherId: 'clear', currentPlayerIndex: 0 });
-    expect(state.players[0]).toMatchObject({ cash: 100_000, travelProgress: JOURNEY_REWARD_STEPS - 1 });
+    expect(state.players[0]).toMatchObject({ position: 16, previousPosition: null, cash: 100_000,
+      travelProgress: JOURNEY_REWARD_STEPS - 1 });
     const next = act(state, { type: 'roll' });
-    expect(next.movement).toMatchObject({ roll: 1, segments: [{ kind: 'normal', path: [2, 3] }] });
-    expect(MAPS.lake.nodes[next.players[0].position].kind).toBe('empty');
-    expect(next.pending).toBeNull();
+    expect(next.movement).toMatchObject({ roll: 1, segments: [{ kind: 'normal', path: [16, 15] }] });
+    expect(MAPS.lake.nodes[next.players[0].position].kind).toBe('land');
+    expect(next.pending).toMatchObject({ kind: 'land', data: { nodeId: 15 } });
     expect(next.players[0].travelProgress).toBe(0);
     expect(next.players[0].cash).toBe(100_000 + JOURNEY_REWARD_CASH);
     expect((next.notices ?? []).filter(notice => notice.kind === 'milestone')).toMatchObject([
-      { playerId: 'p1', nodeId: 3, amount: JOURNEY_REWARD_CASH },
+      { playerId: 'p1', nodeId: 15, amount: JOURNEY_REWARD_CASH },
     ]);
     expect(next.movement?.effects?.some(effect => effect.kind === 'cash' && effect.label.includes('行进奖励'))).toBe(true);
+    const declined = act(next, { type: 'choose', choiceId: 'leave' });
+    expect(declined.players[0].cash).toBe(next.players[0].cash);
+    expect(declined.properties[15]).toBeUndefined();
+    expect(declined.players[0].travelProgress).toBe(0);
   });
 
   it('gives an AI the same single reward through runAI and ignores a weather slide', () => {
@@ -221,7 +226,13 @@ describe('road direction and station travel acceptance', () => {
     const retreated = act(state, { type: 'roll' });
     expect(retreated.movement?.segments?.map(segment => segment.path)).toEqual([[8, 9, 10, 11, 12], [12, 11, 10]]);
     expect(retreated.players[0]).toMatchObject({ position: 10, previousPosition: 11, routeNextPosition: 11 });
-    let next = act(retreated, { type: 'endTurn' });
+    expect(MAPS.valley.nodes[10].kind).toBe('telecom');
+    expect(retreated.pending).toMatchObject({ kind: 'land', data: { nodeId: 10 } });
+    const declined = act(retreated, { type: 'choose', choiceId: 'leave' });
+    expect(declined.phase).toBe('end');
+    expect(declined.players[0].cash).toBe(retreated.players[0].cash);
+    expect(declined.players[0].routeNextPosition).toBe(11);
+    let next = act(declined, { type: 'endTurn' });
     next = act(next, { type: 'endTurn' });
     expect(next.currentPlayerIndex).toBe(0);
     next.weatherId = 'clear'; next.weatherHistory = ['clear']; next.rng = 1972;

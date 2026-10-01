@@ -1,4 +1,5 @@
 import type { MapData, MapId, MapNode, TileKind } from './types';
+import { FACILITY_LAYOUT_SWAPS } from './facilityLayout';
 
 type Point = readonly [number, number];
 type MapTheme = { id: MapId; name: string; subtitle: string; description: string; accent: string; districts: readonly string[]; seed: number };
@@ -173,6 +174,25 @@ function spreadStations(nodes: MapNode[], theme: MapTheme) {
   }
 }
 
+function spreadFacilities(nodes: MapNode[], theme: MapTheme) {
+  for (const [facilityId, roadsideId] of FACILITY_LAYOUT_SWAPS[theme.id] ?? []) {
+    const facility = nodes[facilityId], roadside = nodes[roadsideId];
+    if (!facility || !roadside || !['empty', 'coin', 'event'].includes(roadside.kind)
+      || !['hospital', 'prison', 'sanatorium', 'parking', 'shop', 'exchange', 'casino', 'power', 'water', 'telecom'].includes(facility.kind)) {
+      throw new Error(`Invalid ${theme.id} facility layout at ${facilityId}/${roadsideId}`);
+    }
+    const previousKind = facility.kind;
+    const previousPrice = facility.price;
+    facility.kind = roadside.kind;
+    facility.name = `${facility.district}·${scenicNames[facility.id % scenicNames.length]}${facility.kind === 'empty' ? '空地' : facility.kind === 'coin' ? '星币驿' : '奇遇角'}${facility.id}号`;
+    delete facility.price;
+    roadside.kind = previousKind;
+    roadside.name = `${roadside.district}·${facilityNames[previousKind]}${roadside.id}号`;
+    if (previousPrice === undefined) delete roadside.price;
+    else roadside.price = previousPrice;
+  }
+}
+
 function shuffled(ids: number[], seed: number): number[] {
   const result = [...ids];
   let state = seed >>> 0;
@@ -223,6 +243,7 @@ function populate(theme: MapTheme, paths: { points: Point[]; loop?: boolean }[])
     node.neighbors.sort((a, b) => a - b);
   }
   spreadStations(nodes, theme);
+  spreadFacilities(nodes, theme);
   return { id: theme.id, name: theme.name, subtitle: theme.subtitle, description: theme.description, width: 1500, height: 1000, nodes, accent: theme.accent };
 }
 

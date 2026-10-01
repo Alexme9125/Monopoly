@@ -8,10 +8,10 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { act, createGame, runAI } from '../src/game/engine';
 import { getMovementTimeline } from '../src/game/presentation';
 import { assignPlayerColor } from '../src/game/colors';
-import type { GameAction, GameState, MapId, Personality, PlayerConfig, Shape } from '../src/game/types';
+import type { AILevel, GameAction, GameState, MapId, Personality, PlayerConfig, Shape } from '../src/game/types';
 
 type RoomConfig = { mapId: MapId; seasons: number; weatherMode: 'standard' | 'challenge'; seed: number; propertyTrading?: boolean };
-type Member = { seatId: string; clientId: string | null; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; ready: boolean; connected: boolean; host: boolean };
+type Member = { seatId: string; clientId: string | null; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; ready: boolean; connected: boolean; host: boolean };
 type Room = { code: string; members: Member[]; config: RoomConfig; started: boolean; state: GameState | null; sockets: Map<string, WebSocket>; timer: ReturnType<typeof setTimeout> | null; movementUntil: number; lastMovementId: number | null; touched: number };
 type Session = { clientId: string | null; roomCode: string | null; seatId: string | null; received: number[] };
 type Message = Record<string, unknown>;
@@ -36,8 +36,10 @@ function validClientId(value: unknown): value is string { return typeof value ==
 function profile(value: unknown, ai: boolean): PlayerConfig | null {
   if (!record(value) || typeof value.name !== 'string' || !value.name.trim() || value.name.trim().length > 24
     || typeof value.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(value.color)
-    || !shapes.includes(value.shape as Shape) || !personalities.includes(value.personality as Personality)) return null;
-  return { name: value.name.trim(), color: value.color, shape: value.shape as Shape, personality: value.personality as Personality, ai };
+    || !shapes.includes(value.shape as Shape) || !personalities.includes(value.personality as Personality)
+    || (value.aiLevel !== undefined && value.aiLevel !== 'gentle' && value.aiLevel !== 'fierce')) return null;
+  return { name: value.name.trim(), color: value.color, shape: value.shape as Shape, personality: value.personality as Personality,
+    ai, ...(ai ? { aiLevel: (value.aiLevel ?? 'gentle') as AILevel } : {}) };
 }
 function config(value: unknown): RoomConfig | null {
   if (!record(value) || !mapIds.includes(value.mapId as MapId) || ![0, 4, 8, 16].includes(value.seasons as number)
@@ -250,6 +252,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
       if (room.members.length >= 4) return error(socket, '房间已满。');
       const p = profile(message.profile, false);
       if (!p) return error(socket, '玩家资料无效。');
+      if (room.members.some(seat => seat.name === p.name)) return error(socket, '房间内已有同名玩家。');
       const member: Member = { ...p, color: assignPlayerColor(p.color, room.members.map(seat => seat.color)), seatId: randomUUID(), clientId: session.clientId, ready: false, connected: true, host: false };
       room.members.push(member);
       claim(socket, room, member);
@@ -267,6 +270,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
       if (room.started) return error(socket, '对局已经开始。');
       const p = profile(message.profile, false);
       if (!p) return error(socket, '玩家资料无效。');
+      if (room.members.some(seat => seat !== member && seat.name === p.name)) return error(socket, '房间内已有同名玩家。');
       Object.assign(member, p, { color: assignPlayerColor(p.color, room.members.filter(seat => seat !== member).map(seat => seat.color)) });
       broadcast(room);
       return;
@@ -290,6 +294,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
       if (room.members.length >= 4) return error(socket, '房间已满。');
       const p = profile(message.profile, true);
       if (!p) return error(socket, '电脑玩家资料无效。');
+      if (room.members.some(seat => seat.name === p.name)) return error(socket, '房间内已有同名玩家。');
       room.members.push({ ...p, color: assignPlayerColor(p.color, room.members.map(seat => seat.color)), seatId: randomUUID(), clientId: null, ready: true, connected: true, host: false });
       broadcast(room);
       return;
@@ -315,7 +320,8 @@ export async function createRoomServer(options: { port?: number; host?: string; 
       if (room.members.length < 2 || room.members.length > 4) return error(socket, '开局需要 2–4 个席位。');
       if (room.members.some(m => !m.ai && (!m.ready || !m.connected))) return error(socket, '请等待所有真人玩家准备并保持在线。');
       try {
-        room.state = createGame({ ...room.config, mode: 'pvp', players: room.members.map(m => ({ name: m.name, color: m.color, shape: m.shape, ai: m.ai, personality: m.personality })) });
+        room.state = createGame({ ...room.config, mode: 'pvp', players: room.members.map(m => ({ name: m.name, color: m.color, shape: m.shape, ai: m.ai, personality: m.personality,
+          ...(m.ai ? { aiLevel: m.aiLevel ?? 'gentle' } : {}) })) });
       } catch { return error(socket, '对局设置无法创建。'); }
       room.started = true;
       broadcast(room);

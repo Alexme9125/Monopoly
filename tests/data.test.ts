@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { AI_PRESETS, EVENTS, INITIAL_STOCKS, ITEMS, WEATHERS } from '../src/game/data';
 import { MAPS } from '../src/game/maps';
+import { relocateFacilityNode } from '../src/game/facilityLayout';
 import type { MapId, MapNode, TileKind } from '../src/game/types';
 
 const allKinds: TileKind[] = ['start', 'land', 'empty', 'coin', 'event', 'hospital', 'prison', 'sanatorium', 'parking', 'power', 'water', 'telecom', 'station', 'shop', 'casino', 'exchange'];
@@ -85,8 +86,10 @@ describe('map road networks', () => {
     expect(properties).toHaveLength(propertyCount);
     expect(nodes.filter(node => facilityKinds.has(node.kind))).toHaveLength(facilityCount);
     expect(properties.reduce((sum, node) => sum + (node.price ?? 0), 0)).toBe(totalPrice);
-    // Compact baseline from the pre-relocation map: property id, kind, and price must not move.
-    const listing = properties.map(node => `${node.id}:${node.kind}:${node.price}`).join('|');
+    // Compare economic identity at its old content ID: land stays put, while
+    // utilities keep kind and price when their facility moves to a new site.
+    const listing = properties.map(node => `${relocateFacilityNode(mapId, node.id)}:${node.kind}:${node.price}`)
+      .sort((a, b) => Number(a.split(':')[0]) - Number(b.split(':')[0])).join('|');
     expect(createHash('sha256').update(listing).digest('hex')).toBe(propertyFingerprint);
     const roads = JSON.stringify(nodes.map(node => [node.id, node.x, node.y, node.neighbors]));
     expect(createHash('sha256').update(roads).digest('hex')).toBe(roadFingerprint);
