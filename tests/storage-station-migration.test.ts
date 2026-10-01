@@ -54,12 +54,15 @@ describe('pre-relocation facility saves', () => {
     for (const [mapId, origin, oldDestinations] of [
       ['lake', 4, [13, 33, 57]],
       ['coast', 68, [43, 44, 54]],
+      ['coast', 43, [14, 33, 45, 59]],
+      ['coast', 44, [14, 33, 45, 59]],
       ['valley', 22, [20, 24, 44, 54]],
       ['sundered', 14, [16, 47, 70, 78]],
       ['sundered', 47, [14, 16, 70, 78]],
       ['sundered', 70, [14, 16, 47, 78]],
     ] as const) {
       const old = savedStation(mapId, origin, [...oldDestinations]);
+      delete old.mapLayoutVersion;
       expect(MAPS[mapId].nodes[origin].kind).not.toBe('station');
       const resumed = parseSave(JSON.stringify(old));
       expect(resumed.pending).toMatchObject({ kind: 'station', title: '车站已迁址', data: { nodeId: origin },
@@ -158,9 +161,9 @@ describe('pre-relocation facility saves', () => {
       expect(again.pending).toEqual(resumed.pending);
     }
     const live = game('lake');
-    live.phase = 'decision'; live.players[0].position = 73;
+    live.phase = 'decision'; live.players[0].position = 70;
     live.pending = { kind: 'exchange', title: '证券交易所', body: '交易', choices: [{ id: 'leave', label: '离开' }] };
-    expect(MAPS.lake.nodes[73].kind).toBe('exchange');
+    expect(MAPS.lake.nodes[70].kind).toBe('exchange');
     expect(parseSave(JSON.stringify(live)).pending).toEqual(live.pending);
   });
 });

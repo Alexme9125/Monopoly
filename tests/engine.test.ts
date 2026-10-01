@@ -91,13 +91,13 @@ describe('pure deterministic engine', () => {
   it('keeps both glitch landings public and records a legacy event prompt when chosen', () => {
     const state = game();
     state.weatherId = 'glitch'; state.rng = oneStepRng;
-    state.players[0].position = 59; state.players[0].previousPosition = 58;
+    state.players[0].position = 4; state.players[0].previousPosition = 3;
     state.encounters = MAPS.lake.nodes.filter(node => node.kind === 'empty').map(node => node.id);
     const first = act(state, { type: 'roll' });
-    expect(first.turnEncounters?.[0]).toMatchObject({ nodeId: 62, eventId: first.pending?.data?.eventId });
+    expect(first.turnEncounters?.[0]).toMatchObject({ nodeId: 7, eventId: first.pending?.data?.eventId });
     const firstChoice = first.pending!.choices.find(entry => !entry.disabled)!;
     const second = act(first, { type: 'choose', choiceId: firstChoice.id });
-    expect(second.turnEncounters?.map(entry => entry.nodeId)).toEqual([62, 14]);
+    expect(second.turnEncounters?.map(entry => entry.nodeId)).toEqual([7, 3]);
     expect(second.turnEncounters?.[0].selectedChoiceId).toBe(firstChoice.id);
     expect(second.turnEncounters?.[1]).toMatchObject({ eventId: second.pending?.data?.eventId });
     expect(second.turnEncounters?.[1].selectedChoiceId).toBeUndefined();
@@ -274,24 +274,24 @@ describe('pure deterministic engine', () => {
 
   it('continues through bends across turns and chooses only real non-return exits at T and cross roads', () => {
     const valley = createGame({ ...config, mapId: 'valley' });
-    const bend = MAPS.valley.nodes[9];
-    expect(bend.neighbors).toEqual([8, 10]);
-    expect(MAPS.valley.nodes[10].kind).toBe('empty');
+    const bend = MAPS.valley.nodes[15];
+    expect(bend.neighbors).toEqual([14, 16]);
+    expect(MAPS.valley.nodes[16].kind).toBe('coin');
     valley.encounters = [];
     valley.weatherId = 'clear';
     valley.rng = oneStepRng;
     valley.players[0].position = bend.id;
-    valley.players[0].previousPosition = 8;
+    valley.players[0].previousPosition = 14;
     const first = act(valley, { type: 'roll' });
     expect(first.movement?.roll).toBe(1);
-    expect(first.movement?.segments?.[0].path).toEqual([9, 10]);
-    expect(first.players[0].previousPosition).toBe(9);
+    expect(first.movement?.segments?.[0].path).toEqual([15, 16]);
+    expect(first.players[0].previousPosition).toBe(15);
     const otherTurn = act(first, { type: 'endTurn' });
     const nextDay = act(otherTurn, { type: 'endTurn' });
     expect(nextDay.currentPlayerIndex).toBe(0);
     nextDay.weatherId = 'clear'; nextDay.rng = oneStepRng; nextDay.encounters = [];
     const second = act(nextDay, { type: 'roll' });
-    expect(second.movement?.segments?.[0].path).toEqual([10, 11]);
+    expect(second.movement?.segments?.[0].path).toEqual([16, 17]);
 
     const checks = [
       { nodeId: 6, incoming: 80, degree: 3 }, // Enter the T from its branch.

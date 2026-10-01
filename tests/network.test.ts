@@ -229,10 +229,15 @@ describe('authoritative room server', () => {
   }, 30_000);
 
   it('shares the current turn encounter and its selected result with both PVP clients', async () => {
+    // This opening roll produces a choice event after the facility redistribution.
+    const seed = 25;
+    const preview: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
+      players: [hostProfile, guestProfile] as GameConfig['players'] };
+    expect(act(createGame(preview), { type: 'roll' }).pending?.data?.eventId).toBe('archive');
     const host = await Client.connect(server.port); clients.push(host);
     const guest = await Client.connect(server.port); clients.push(guest);
     let since = host.messages.length;
-    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: 43 } });
+    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed } });
     const created = await host.wait(message => message.type === 'room' && message.room.members.length === 1, since);
     const code = created.room.code;
     since = guest.messages.length;

@@ -1,6 +1,6 @@
-import type { GameAction, GameConfig, GameState, MapId, PlayerConfig, Shape, Personality } from './types';
+import type { AILevel, GameAction, GameConfig, GameState, MapId, PlayerConfig, Shape, Personality } from './types';
 
-export interface RoomMember { seatId: string; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; ready: boolean; connected: boolean; host: boolean }
+export interface RoomMember { seatId: string; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; ready: boolean; connected: boolean; host: boolean }
 export interface RoomSnapshot {
   code: string;
   members: RoomMember[];

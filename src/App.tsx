@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, BarChart3, BookOpen, BriefcaseBusiness, ChevronDown, Download, Gavel, Home, Minus, Package, Plus, RotateCcw, Settings2, Upload, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BarChart3, BookOpen, BriefcaseBusiness, ChevronDown, Download, Gavel, Home, Minus, Package, Pencil, Plus, RotateCcw, Settings2, Upload, Volume2, VolumeX, X } from 'lucide-react';
 import Board from './visual/Board';
 import { CalendarBadge, WeatherButton, WeatherEffects, WeatherIcon } from './visual/EnvironmentBadge';
 import { getWeatherCopy } from './visual/weatherCopy';
@@ -15,15 +15,17 @@ import RentDecision from './components/RentDecision';
 import StationTravelPanel from './components/StationTravelPanel';
 import FloorKey from './components/FloorKey';
 import EventIdentity from './components/EventIdentity';
+import { AILevelControl, JourneyLengthControl, ShapePicker, WeatherRuleControl } from './components/SetupControls';
 import { act, canTargetItem, canUseItem, createGame, getCurrentPlayer, getNetWorth, getRent, getTileRentPreview, runAI } from './game/engine';
 import { normalizePlayerColors, PLAYER_COLORS } from './game/colors';
-import { ITEMS, WEATHERS, AI_PRESETS, JOURNEY_REWARD_STEPS, JOURNEY_REWARD_CASH } from './game/data';
+import { ITEMS, WEATHERS, AI_PRESETS, JOURNEY_REWARD_CASH, getJourneyRewardSteps } from './game/data';
 import { PROPERTY_RENT_MULTIPLIERS, UTILITY_RENT_BASE, UTILITY_RENT_CAP, ROADSIDE_CASH_MIN, ROADSIDE_CASH_MAX, RENT_MOOD_LOSS, HOSTILE_ITEM_MOOD_LOSS } from './game/economy';
 import { MAPS } from './game/maps';
+import { AI_LEVEL_NAMES, PERSONALITY_NAMES, getAIProfileLabel, getAIStyleDescription } from './game/aiProfiles';
 import { clearSave, exportGame, loadSave, parseSave, saveGame } from './game/storage';
 import { RoomClient, savedRoomCode, type NetworkEvent, type RoomSnapshot } from './game/network';
 import { getMovementTimeline } from './game/presentation';
-import type { GameAction, GameConfig, GameState, InventorySlot, MapData, MapId, Player, PlayerConfig, Shape } from './game/types';
+import type { AILevel, GameAction, GameConfig, GameState, InventorySlot, MapData, MapId, Player, PlayerConfig, Shape } from './game/types';
 
 const MAP_ORDER: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
 const MAP_CARD_NOTE: Record<MapId, string> = {
@@ -40,8 +42,6 @@ const MAP_WEATHER_NOTE: Partial<Record<MapId, string>> = {
   forest: '森林天气 · 晴好更常见，极端天气更少',
   starSands: '沙洲天气 · 炎热干旱，冬季无霜雪或酷暑',
 };
-const SHAPES: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
-const SHAPE_NAMES: Record<Shape, string> = { diamond: '菱形', circle: '圆形', hexagon: '六边形', triangle: '三角形' };
 const money = (value: number) => `PM$ ${Math.round(value).toLocaleString('zh-CN')}`;
 const endOfGame = (state: GameState) => state.phase === 'gameover';
 
@@ -59,27 +59,28 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (color: str
   return <div className="player-color-picker" role="group" aria-label="信标颜色">{PLAYER_COLORS.map(option => <button key={option.id} type="button" className="color-swatch" style={{ '--swatch': option.color } as CSSProperties} aria-label={option.name} aria-pressed={value === option.color} title={option.name} onClick={() => onChange(option.color)}><span className="swatch-color" aria-hidden="true" /><span>{option.name}</span></button>)}</div>;
 }
 
-function Landing({ save, onResume, onStart, onOnline, onGuide }: { save: GameState | null; onResume: () => void; onStart: (config: GameConfig) => void; onOnline: (kind: 'create' | 'join', profile: PlayerConfig, config: Pick<GameConfig, 'mapId' | 'seasons' | 'weatherMode' | 'seed' | 'propertyTrading'>, code?: string) => void; onGuide: () => void }) {
+function Landing({ save, onResume, onStart, onOnline, onGuide }: { save: GameState | null; onResume: () => void; onStart: (config: GameConfig) => void; onOnline: (kind: 'create' | 'join', profile: PlayerConfig, config: Pick<GameConfig, 'mapId' | 'seasons' | 'weatherMode' | 'seed' | 'propertyTrading'>, code?: string) => void; onGuide: (mapId: MapId) => void }) {
   const [mapId, setMapId] = useState<MapId>('lake');
   const [mode, setMode] = useState<'pve' | 'pvp'>('pve');
   const [humanName, setHumanName] = useState('旅行家');
   const [humanShape, setHumanShape] = useState<Shape>('diamond');
   const [humanColor, setHumanColor] = useState<string>(PLAYER_COLORS[0].color);
   const [chosenAI, setChosenAI] = useState<number[]>([0, 1]);
+  const [aiLevel, setAILevel] = useState<AILevel>('gentle');
   const [onlineIntent, setOnlineIntent] = useState<'create' | 'join'>('create');
   const [roomCode, setRoomCode] = useState('');
   const [seasons, setSeasons] = useState(8);
-  const [weatherMode, setWeatherMode] = useState<GameConfig['weatherMode']>('standard');
+  const [weatherMode, setWeatherMode] = useState<GameConfig['weatherMode']>('challenge');
   const [propertyTrading, setPropertyTrading] = useState(true);
   const [seed, setSeed] = useState('');
   const [error, setError] = useState('');
   const map = MAPS[mapId];
   const humanProfile = { name: humanName.trim(), color: humanColor, shape: humanShape, ai: false, personality: 'balanced' as const };
-  const proposedPlayers = normalizePlayerColors([humanProfile, ...chosenAI.map(index => AI_PRESETS[index])]);
+  const proposedPlayers = normalizePlayerColors([humanProfile, ...chosenAI.map(index => ({ ...AI_PRESETS[index], aiLevel }))]);
   const availableAI = AI_PRESETS.map((ai, index) => {
     const selectedAt = chosenAI.indexOf(index);
-    const color = selectedAt >= 0 ? proposedPlayers[selectedAt + 1].color : normalizePlayerColors([humanProfile, ...chosenAI.map(chosen => AI_PRESETS[chosen]), ai]).at(-1)!.color;
-    return { ...ai, color, index };
+    const color = selectedAt >= 0 ? proposedPlayers[selectedAt + 1].color : normalizePlayerColors([humanProfile, ...chosenAI.map(chosen => ({ ...AI_PRESETS[chosen], aiLevel })), { ...ai, aiLevel }]).at(-1)!.color;
+    return { ...ai, aiLevel, color, index };
   });
   const start = () => {
     const players = proposedPlayers;
@@ -94,7 +95,7 @@ function Landing({ save, onResume, onStart, onOnline, onGuide }: { save: GameSta
     } else onStart({ mapId, mode, players, seasons, weatherMode, propertyTrading, seed: parsedSeed });
   };
   return <div className="app landing" data-map={mapId}>
-    <header className="landing-topbar"><div className="brand"><span className="brand-gem">◆</span><span><strong>棱镜假日</strong><small>PRISM DAYS</small></span></div><nav className="top-links"><button onClick={onGuide}>玩法指南</button>{save && <button onClick={onResume}>继续旅程 <ArrowRight size={15} /></button>}</nav></header>
+    <header className="landing-topbar"><div className="brand"><span className="brand-gem">◆</span><span><strong>棱镜假日</strong><small>PRISM DAYS</small></span></div><nav className="top-links"><button onClick={() => onGuide(mapId)}>玩法指南</button>{save && <button onClick={onResume}>继续旅程 <ArrowRight size={15} /></button>}</nav></header>
     <main className="landing-layout">
       <section className="intro"><h1>大富翁·棱镜假日</h1><p className="intro-copy">选择地图与旅伴。单人模式可与电脑对局；联网模式可创建房间或输入房间码加入好友。</p>
         <div className="section-kicker">01 / 选择目的地</div><div className="map-options">{MAP_ORDER.map((id, index) => { const option = MAPS[id]; return <button key={id} className={`map-option ${mapId === id ? 'selected' : ''}`} disabled={mode === 'pvp' && onlineIntent === 'join'} title={mode === 'pvp' && onlineIntent === 'join' ? '加入房间时由房主决定地图' : undefined} onClick={() => setMapId(id)} aria-pressed={mapId === id}><span className="map-number">0{index + 1}</span><span className="map-option-main"><span className="map-option-heading"><strong>{option.name}</strong><small className="map-node-count">{option.nodes.length} 格</small></span><small className="map-option-subtitle">{option.subtitle}</small><small className="map-option-events">含 10 条地区事件</small><small className="map-weather-note">{MAP_CARD_NOTE[id]}</small></span></button>; })}</div>
@@ -103,16 +104,16 @@ function Landing({ save, onResume, onStart, onOnline, onGuide }: { save: GameSta
     </main>
     <section className="setup-panel"><div className="setup-heading"><div><div className="section-kicker">02 / 选择旅伴</div><h2>设置对局</h2></div><p>选择单人或联网模式。</p></div>
       <div className="setup-main"><div className="segmented"><button className={mode === 'pve' ? 'active' : ''} onClick={() => setMode('pve')}>与代理人同行</button><button className={mode === 'pvp' ? 'active' : ''} onClick={() => setMode('pvp')}>联网好友</button></div>
-        {mode === 'pve' ? <div className="opponent-picker"><div className="setup-caption">邀请代理人 · {chosenAI.length}/3</div><div className="chip-grid">{availableAI.map(ai => <button key={ai.index} className={`chip ai-chip ${chosenAI.includes(ai.index) ? 'selected' : ''}`} disabled={chosenAI.length >= 3 && !chosenAI.includes(ai.index)} onClick={() => setChosenAI(existing => existing.includes(ai.index) ? existing.length > 1 ? existing.filter(i => i !== ai.index) : existing : existing.length < 3 ? [...existing, ai.index] : existing)} aria-pressed={chosenAI.includes(ai.index)}><Marker shape={ai.shape} color={ai.color} size={20} /><span>{ai.name}</span><small>{ai.personality === 'cautious' ? '稳健' : ai.personality === 'aggressive' ? '冒险' : '灵活'}</small></button>)}</div></div> : <div className="online-picker"><div className="setup-caption">与好友共享一个房间{onlineIntent === 'join' ? ' · 地图和规则由房主决定' : ''}</div><div className="segmented"><button className={onlineIntent === 'create' ? 'active' : ''} onClick={() => setOnlineIntent('create')}>创建房间</button><button className={onlineIntent === 'join' ? 'active' : ''} onClick={() => setOnlineIntent('join')}>输入房间码</button></div>{onlineIntent === 'join' && <Field label="6 位房间码"><input value={roomCode} maxLength={6} autoCapitalize="characters" placeholder="例如 A7F3K9" onChange={event => setRoomCode(event.target.value.toUpperCase())} /></Field>}</div>}
+        {mode === 'pve' ? <div className="opponent-picker"><AILevelControl value={aiLevel} onChange={setAILevel} /><div className="setup-caption">邀请代理人 · {AI_LEVEL_NAMES[aiLevel]} · {chosenAI.length}/3</div><div className="chip-grid">{availableAI.map(ai => <button key={ai.index} className={`chip ai-chip ${chosenAI.includes(ai.index) ? 'selected' : ''}`} disabled={chosenAI.length >= 3 && !chosenAI.includes(ai.index)} onClick={() => setChosenAI(existing => existing.includes(ai.index) ? existing.length > 1 ? existing.filter(i => i !== ai.index) : existing : existing.length < 3 ? [...existing, ai.index] : existing)} aria-pressed={chosenAI.includes(ai.index)}><Marker shape={ai.shape} color={ai.color} size={20} /><span className="ai-chip-main"><strong>{ai.name}</strong><small>{PERSONALITY_NAMES[ai.personality]}</small></span><span className="ai-chip-style">{getAIStyleDescription(aiLevel, ai.personality)}</span></button>)}</div></div> : <div className="online-picker"><div className="setup-caption">与好友共享一个房间{onlineIntent === 'join' ? ' · 地图和规则由房主决定' : ''}</div><div className="segmented"><button className={onlineIntent === 'create' ? 'active' : ''} onClick={() => setOnlineIntent('create')}>创建房间</button><button className={onlineIntent === 'join' ? 'active' : ''} onClick={() => setOnlineIntent('join')}>输入房间码</button></div>{onlineIntent === 'join' && <Field label="6 位房间码"><input value={roomCode} maxLength={6} autoCapitalize="characters" placeholder="例如 A7F3K9" onChange={event => setRoomCode(event.target.value.toUpperCase())} /></Field>}</div>}
       </div>
-      <details className="setup-details" open><summary>信标与规则 <ChevronDown size={16} /></summary><div className="setup-details-body"><div className="setup-fields"><Field label="你的名字"><input maxLength={16} value={humanName} onChange={event => setHumanName(event.target.value)} /></Field><Field label="信标形状"><select value={humanShape} onChange={event => setHumanShape(event.target.value as Shape)}>{SHAPES.map(shape => <option key={shape} value={shape}>{SHAPE_NAMES[shape]}</option>)}</select></Field><div className="field"><span>信标颜色</span><ColorPicker value={humanColor} onChange={setHumanColor} /></div></div>{(mode === 'pve' || onlineIntent === 'create') && <div className="setup-fields"><Field label="旅程长度"><select value={seasons} onChange={event => setSeasons(Number(event.target.value))}><option value={4}>1 年 · 4 季</option><option value={8}>2 年 · 8 季</option><option value={16}>4 年 · 16 季</option><option value={0}>直到只剩一位玩家</option></select></Field><Field label="天气规则"><select value={weatherMode} onChange={event => setWeatherMode(event.target.value as GameConfig['weatherMode'])}><option value="standard">标准天气</option><option value="challenge">挑战天气</option></select></Field><Field label="随机种子（可选）"><input type="number" min={0} step={1} value={seed} placeholder="自动生成" onChange={event => setSeed(event.target.value)} /></Field></div>}
+      <details className="setup-details" open><summary>信标与规则 <ChevronDown size={16} /></summary><div className="setup-details-body"><div className="setup-profile-fields"><Field label="你的名字"><input maxLength={16} value={humanName} onChange={event => setHumanName(event.target.value)} /></Field><ShapePicker value={humanShape} onChange={setHumanShape} /><div className="field"><span>信标颜色</span><ColorPicker value={humanColor} onChange={setHumanColor} /></div></div>{(mode === 'pve' || onlineIntent === 'create') && <div className="setup-rule-fields"><JourneyLengthControl value={seasons} onChange={setSeasons} /><WeatherRuleControl value={weatherMode} onChange={setWeatherMode} /><Field label="随机种子（可选）"><input type="number" min={0} step={1} value={seed} placeholder="自动生成" onChange={event => setSeed(event.target.value)} /></Field></div>}
         {(mode === 'pve' || onlineIntent === 'create') && <label className="property-trading-switch"><input type="checkbox" role="switch" checked={propertyTrading} onChange={event => setPropertyTrading(event.target.checked)} /><span><strong>自由房产交易</strong><small>开启后可在拍卖行挂牌或购买其他玩家的地产，一口价即时交割。</small></span></label>}</div></details>
       {error && <p className="form-error" role="alert">{error}</p>}<div className="setup-footer"><button className="launch-button" onClick={start}>{mode === 'pve' ? '开始游戏' : onlineIntent === 'create' ? '创建好友房间' : '加入好友房间'} <ArrowRight size={20} /></button></div>
     </section>
   </div>;
 }
 
-function Guide() { return <div className="guide-content"><p>掷骰走过六张地图之一，在湖畔、海岸、山谷、山道、森林或荒滩积累你的产业。旅程结束时，总资产最高者获胜；选择不限季数时，直到只剩一位未破产的玩家。</p><div className="guide-grid"><div><h3>一回合怎么走</h3><p>轮到你时掷骰，棋子沿道路逐格前进。每次掷骰基础消耗 2–4 点体力：普通六面骰掷出 1–2 点扣 2、3–4 点扣 3、5–6 点扣 4；大面数骰子也最多扣 4 点，天气和事件的额外影响另算。停下后处理土地、随机事件或设施。完成决定后结束回合；也可以休息来恢复状态。正常掷骰每累计行进 {JOURNEY_REWARD_STEPS} 格获 {money(JOURNEY_REWARD_CASH)}，余数保留；天气额外位移、传送和乘车不计入。路边拾得零钱为 {ROADSIDE_CASH_MIN}～{ROADSIDE_CASH_MAX} PM。</p></div><div><h3>土地与租金</h3><p>停在可购地块上才能购买。拥有的地产可升级、抵押、赎回或出售；其他玩家停在你的地块时支付租金：普通地产 0～4 层分别收地价的 {PROPERTY_RENT_MULTIPLIERS.map(rate => `${Math.round(rate * 100)}%`).join(" / ")}。若持有干燥的免租卡，付租前可选择使用卡片使本次实付为零，或保留卡片直接支付；实际支付正数租金会损失至多 {RENT_MOOD_LOSS} 点心情，免租不损失。现金不足仍可支付并进入偿债，心情耗尽会前往疗养院。公共设施第 n 处同类设施的租金为 {UTILITY_RENT_BASE} × 3^(n−1) PM，最高 {money(UTILITY_RENT_CAP)}。抵押地产暂不收租。</p></div><div><h3>天气与道具</h3><p>每天的天气会影响旅途。自然天气遵循季节与地区：多数地区夏季偏热多雨、不会下雪，冬季偏冷多雪、没有雨天；始初森林较温和，星砂荒滩有独立的干热气候，冬季也不出现霜雪或酷暑。各季仍有晴好天气；天气控制器可主动制造反季天气。背包有容量限制，道具可以使用、抵押或赎回；定向道具需要选择目标。控骰器可在行动前指定普通六面骰原始点数 1～6；双生培养皿让下一次独立投掷两枚当前骰子并合计点数，可叠加多面骰，但不能与控骰器并用。天气只修正合计点数一次，额外位移另行结算；休息会取消已准备的骰具效果。传送石可在地图上点选任意其他地点，直接传送并结算落点，本回合不再掷骰；已准备的骰具效果随之作废。换乘券只能选择其他车站。需要地图目标的道具会进入地图选择模式，取消不会消耗，产权类道具还须再次确认。传送爆弹、霉运星签、税务审计函、拆迁许可和强制收购契约成功命中后，受害人心情损失 {HOSTILE_ITEM_MOOD_LOSS} 点；星盾卡挡下则不损失。灾难天气从第 22 天起出现。</p></div><div><h3>市场与交易</h3><p>只能停在交易所时买卖股票。若开局开启自由房产交易，可随时查看拍卖行，在行动间隙将未抵押的地产挂牌，或按一口价购买其他玩家的地产；成交即时交割。关闭此规则时无法挂牌或购买。资产面板会显示你的股票与地产；现金和总资产不同。</p></div></div><p className="guide-note">标准天气适合熟悉旅途；挑战天气会出现更强烈的天气变化。设置中的随机种子可重现同一局起点。</p></div>; }
+function Guide({ mapId }: { mapId: MapId }) { return <div className="guide-content"><p>掷骰走过六张地图之一，在湖畔、海岸、山谷、山道、森林或荒滩积累你的产业。旅程结束时，总资产最高者获胜；选择不限季数时，直到只剩一位未破产的玩家。</p><div className="guide-grid"><div><h3>一回合怎么走</h3><p>轮到你时掷骰，棋子沿道路逐格前进。每次掷骰基础消耗 2–4 点体力：普通六面骰掷出 1–2 点扣 2、3–4 点扣 3、5–6 点扣 4；大面数骰子也最多扣 4 点，天气和事件的额外影响另算。停下后处理土地、随机事件或设施。完成决定后结束回合；也可以休息来恢复状态。正常掷骰每累计行进 {getJourneyRewardSteps(mapId)} 格获 {money(JOURNEY_REWARD_CASH)}，余数保留；始初森林为 {getJourneyRewardSteps('forest')} 格，其他地图为 {getJourneyRewardSteps('lake')} 格。天气额外位移、传送和乘车不计入。路边拾得零钱为 {ROADSIDE_CASH_MIN}～{ROADSIDE_CASH_MAX} PM。</p></div><div><h3>土地与租金</h3><p>停在可购地块上才能购买。拥有的地产可升级、抵押、赎回或出售；其他玩家停在你的地块时支付租金：普通地产 0～4 层分别收地价的 {PROPERTY_RENT_MULTIPLIERS.map(rate => `${Math.round(rate * 100)}%`).join(" / ")}。若持有干燥的免租卡，付租前可选择使用卡片使本次实付为零，或保留卡片直接支付；实际支付正数租金会损失至多 {RENT_MOOD_LOSS} 点心情，免租不损失。现金不足仍可支付并进入偿债，心情耗尽会前往疗养院。公共设施第 n 处同类设施的租金为 {UTILITY_RENT_BASE} × 3^(n−1) PM，最高 {money(UTILITY_RENT_CAP)}。抵押地产暂不收租。</p></div><div><h3>天气与道具</h3><p>每天的天气会影响旅途。自然天气遵循季节与地区：多数地区夏季偏热多雨、不会下雪，冬季偏冷多雪、没有雨天；始初森林较温和，星砂荒滩有独立的干热气候，冬季也不出现霜雪或酷暑。各季仍有晴好天气；天气控制器可主动制造反季天气。背包有容量限制，道具可以使用、抵押或赎回；定向道具需要选择目标。控骰器可在行动前指定普通六面骰原始点数 1～6；双生培养皿让下一次独立投掷两枚当前骰子并合计点数，可叠加多面骰，但不能与控骰器并用。天气只修正合计点数一次，额外位移另行结算；休息会取消已准备的骰具效果。传送石可在地图上点选任意其他地点，直接传送并结算落点，本回合不再掷骰；已准备的骰具效果随之作废。换乘券只能选择其他车站。需要地图目标的道具会进入地图选择模式，取消不会消耗，产权类道具还须再次确认。传送爆弹、霉运星签、税务审计函、拆迁许可和强制收购契约成功命中后，受害人心情损失 {HOSTILE_ITEM_MOOD_LOSS} 点；星盾卡挡下则不损失。灾难天气从第 22 天起出现。</p></div><div><h3>市场与交易</h3><p>只能停在交易所时买卖股票。若开局开启自由房产交易，可随时查看拍卖行，在行动间隙将未抵押的地产挂牌，或按一口价购买其他玩家的地产；成交即时交割。关闭此规则时无法挂牌或购买。资产面板会显示你的股票与地产；现金和总资产不同。</p></div><div><h3>代理人风格</h3><p>具名代理人有谨慎、平衡、激进三种人格，并可选择温和或凌厉强度。单人模式对所选代理人统一设置强度；好友房间可为每位新加入的代理人分别设置。温和保持原有对局习惯，凌厉的经营和对抗更积极。</p></div></div><p className="guide-note">挑战天气保留原本完整的天气效果；标准天气带来更温和的天气体验。设置中的随机种子可重现同一局起点。</p></div>; }
 
 function Assets({ state, player, onAction, onOpenAuction }: { state: GameState; player: Player; onAction: (action: GameAction) => void; onOpenAuction: () => void }) {
   const map = MAPS[state.config.mapId];
@@ -120,7 +121,7 @@ function Assets({ state, player, onAction, onOpenAuction }: { state: GameState; 
   const canManage = (state.phase === 'ready' || state.phase === 'end') && getCurrentPlayer(state).id === player.id;
   const travelProgress = player.travelProgress ?? 0;
   return <div className="assets-panel"><div className="asset-summary"><div><small>现金</small><strong>{money(player.cash)}</strong></div><div><small>总资产</small><strong>{money(getNetWorth(state, player.id))}</strong></div><div><small>地产</small><strong>{owned.length} 处</strong></div></div>
-    <div className="panel-row journey-reward-row"><div><strong>行进奖励</strong><small>正常行进 {travelProgress} / {JOURNEY_REWARD_STEPS} 格</small></div><div><strong>再走 {JOURNEY_REWARD_STEPS - travelProgress} 格</strong><small>可获 {money(JOURNEY_REWARD_CASH)}</small></div></div>
+    <div className="panel-row journey-reward-row"><div><strong>行进奖励</strong><small>正常行进 {travelProgress} / {getJourneyRewardSteps(state.config.mapId)} 格</small></div><div><strong>再走 {getJourneyRewardSteps(state.config.mapId) - travelProgress} 格</strong><small>可获 {money(JOURNEY_REWARD_CASH)}</small></div></div>
     <h3>我的地产</h3>{owned.length ? <div className="panel-list">{owned.map(([id, property]) => { const node = map.nodes[Number(id)]; const base = node?.price || 0; const invested = base + (['power', 'water', 'telecom'].includes(node?.kind || '') ? 0 : Math.floor(base * 0.75 * property.level)); const mortgageValue = Math.floor(invested * 0.5); const redeemCost = Math.ceil(invested * 0.6); const saleValue = Math.floor(invested * 0.7); return <div className="panel-row asset-row" key={id}><div><strong>{node?.name || `地块 ${id}`}</strong><small>等级 {property.level} · {property.mortgaged ? '已抵押，暂停收租' : `租金 ${money(getRent(state, Number(id)))}`}</small><small className="asset-estimate">{property.mortgaged ? `赎回需 ${money(redeemCost)}` : `抵押可得 ${money(mortgageValue)} · 卖给银行 ${money(saleValue)}`}</small></div><div className="row-actions">{property.mortgaged ? <button disabled={!canManage || player.cash < redeemCost} title={player.cash < redeemCost ? '资金不足' : undefined} onClick={() => onAction({ type: 'redeem', nodeId: Number(id) })}>赎回</button> : <button disabled={!canManage} onClick={() => onAction({ type: 'mortgage', nodeId: Number(id) })}>抵押</button>}<button disabled={!canManage || property.mortgaged || property.level >= 4} title={property.level >= 4 ? '地标不可出售' : property.mortgaged ? '请先赎回地产' : undefined} onClick={() => onAction({ type: 'sellAsset', nodeId: Number(id) })}>出售</button>{state.config.propertyTrading !== false && <button disabled={property.mortgaged} title={property.mortgaged ? '请先赎回地产' : '在拍卖行设定一口价'} onClick={onOpenAuction}>拍卖行挂牌</button>}</div></div>; })}</div> : <p className="empty-state">还没有地产。走到无人拥有的可购地块时，你可以选择购买。</p>}
     {state.config.propertyTrading === false && <p className="guide-note">本局未启用自由房产交易；你仍可按规则将地产出售给银行。</p>}
     <h3>股票持仓</h3>{state.stocks.some(stock => player.holdings[stock.id] > 0) ? <div className="panel-list">{state.stocks.filter(stock => player.holdings[stock.id] > 0).map(stock => <div className="panel-row" key={stock.id}><div><strong>{stock.name}</strong><small>{stock.code} · {player.holdings[stock.id]} 股</small></div><strong>{money(player.holdings[stock.id] * stock.price)}</strong></div>)}</div> : <p className="empty-state">暂无股票。停在交易所时可买卖。</p>}
@@ -131,7 +132,7 @@ function Ranking({ state }: { state: GameState }) {
   const ordered = [...state.players].sort((a, b) => getNetWorth(state, b.id) - getNetWorth(state, a.id));
   return <div className="ranking-list">{ordered.map((player, index) => <div className="panel-row ranking-row" key={player.id}>
     <span className="rank-number">{String(index + 1).padStart(2, '0')}</span><Marker shape={player.shape} color={player.color} />
-    <span className="ranking-name"><strong>{player.name}</strong><small>{player.bankrupt ? '已破产' : player.ai ? '代理人' : '玩家'}</small><small>现金 {money(player.cash)} · 体力 {player.stamina} · 心情 {player.mood}</small><small className="ranking-statuses"><StatusLabel player={player} /></small></span>
+    <span className="ranking-name"><strong>{player.name}</strong><small>{`${player.bankrupt ? '已破产 · ' : ''}${player.ai ? `代理人 · ${getAIProfileLabel(player)}` : '玩家'}`}</small><small>现金 {money(player.cash)} · 体力 {player.stamina} · 心情 {player.mood}</small><small className="ranking-statuses"><StatusLabel player={player} /></small></span>
     <strong>{money(getNetWorth(state, player.id))}</strong>
   </div>)}</div>;
 }
@@ -165,13 +166,55 @@ function TileInfo({ state, nodeId, viewerId }: { state: GameState; nodeId: numbe
 
 function ConfirmNewGame({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) { return <Modal title="开启另一段旅程？" onClose={onCancel}><p>当前进度会由新对局覆盖。你可以先在设置里导出存档。</p><div className="modal-actions"><Button secondary onClick={onCancel}>继续这局</Button><Button onClick={onConfirm}>返回首页</Button></div></Modal>; }
 
-function RoomLobby({ room, connected, onReady, onConfig, onAddBot, onRemove, onStart, onLeave }: { room: RoomSnapshot; connected: boolean; onReady: (ready: boolean) => void; onConfig: (config: RoomSnapshot['config']) => void; onAddBot: (profile: PlayerConfig) => void; onRemove: (seatId: string) => void; onStart: () => void; onLeave: () => void }) {
+function RoomLobby({ room, connected, profileError, onReady, onProfile, onConfig, onAddBot, onRemove, onStart, onLeave }: { room: RoomSnapshot; connected: boolean; profileError: string; onReady: (ready: boolean) => void; onProfile: (profile: PlayerConfig) => void; onConfig: (config: RoomSnapshot['config']) => void; onAddBot: (profile: PlayerConfig) => void; onRemove: (seatId: string) => void; onStart: () => void; onLeave: () => void }) {
   const self = room.members.find(member => member.seatId === room.youSeatId);
   const [botIndex, setBotIndex] = useState(0);
   const [botPersonality, setBotPersonality] = useState<PlayerConfig['personality']>('balanced');
+  const [botLevel, setBotLevel] = useState<AILevel>('gentle');
   const [copyStatus, setCopyStatus] = useState<'copied' | 'failed' | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [renamePendingName, setRenamePendingName] = useState<string | null>(null);
+  const [renameError, setRenameError] = useState('');
+  const renameButton = useRef<HTMLButtonElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
+  useEffect(() => {
+    if (renamePendingName && self?.name === renamePendingName) {
+      setRenamePendingName(null);
+      setRenameError('');
+      setEditingName(false);
+      requestAnimationFrame(() => renameButton.current?.focus());
+    }
+  }, [renamePendingName, self?.name]);
+  useEffect(() => {
+    if (renamePendingName && profileError) {
+      setRenamePendingName(null);
+      setRenameError(profileError);
+    }
+  }, [renamePendingName, profileError]);
+  useEffect(() => {
+    if (renamePendingName && !connected) {
+      setRenamePendingName(null);
+      setRenameError('连接中断，请重新连接后再保存。');
+    }
+  }, [renamePendingName, connected]);
+  const finishNameEdit = () => {
+    setEditingName(false);
+    setRenamePendingName(null);
+    setRenameError('');
+    requestAnimationFrame(() => renameButton.current?.focus());
+  };
+  const saveName = () => {
+    if (!self || !connected || renamePendingName) return;
+    const nextName = nameDraft.trim();
+    if (!nextName) { setRenameError('名字不能为空。'); return; }
+    if (room.members.some(member => member.seatId !== self.seatId && member.name.trim().toLocaleLowerCase() === nextName.toLocaleLowerCase())) { setRenameError('这个名字已有旅伴使用，请换一个。'); return; }
+    if (nextName === self.name) { finishNameEdit(); return; }
+    setRenameError('');
+    setRenamePendingName(nextName);
+    onProfile({ name: nextName, color: self.color, shape: self.shape, ai: false, personality: self.personality });
+  };
   const humansReady = room.members.filter(member => !member.ai && !member.host).every(member => member.ready);
   const canStart = room.isHost && room.members.length >= 2 && humansReady && connected;
   const copyCode = async () => {
@@ -180,10 +223,9 @@ function RoomLobby({ room, connected, onReady, onConfig, onAddBot, onRemove, onS
     if (copyTimer.current) clearTimeout(copyTimer.current);
     copyTimer.current = setTimeout(() => setCopyStatus(null), 2000);
   };
-  return <div className="app room-lobby"><header className="landing-topbar"><div className="brand"><span className="brand-gem">◆</span><span><strong>棱镜假日</strong><small>PRISM DAYS</small></span></div><button className="text-button" onClick={onLeave}><ArrowLeft size={16} /> 离开房间</button></header><main className="lobby-layout"><div className="lobby-intro"><div className="eyebrow">好友房间 / PRIVATE JOURNEY</div><h1>旅伴已就位，<br />故事即将开始。</h1><p>把房间码发给好友，等大家准备好，再一起启程。</p><div className="room-code"><small>房间码</small><strong>{room.code}</strong><button onClick={copyCode}>{copyStatus === 'copied' ? '已复制' : '复制房间码'}</button></div>{copyStatus === 'failed' && <p className="copy-feedback" role="status">请手动复制房间码</p>}<p className="connection-status" role="status">{connected ? '● 已连接' : '○ 连接中断，正在尝试重连'}</p></div><div className="lobby-panel"><div className="section-kicker">同行名单 · {room.members.length}/4</div><div className="panel-list">{room.members.map(member => <div className="panel-row lobby-member" key={member.seatId}><Marker shape={member.shape} color={member.color} /><div><strong>{member.name}{member.seatId === room.youSeatId ? ' · 你' : ''}</strong><small>{member.host ? '房主' : member.ai ? `代理人 · ${member.personality === 'aggressive' ? '冒险' : member.personality === 'cautious' ? '稳健' : '灵活'}` : member.ready ? '已准备' : '等待准备'}{!member.connected && !member.ai ? ' · 离线' : ''}</small><small>信标 · {PLAYER_COLORS.find(option => option.color.toLowerCase() === member.color.toLowerCase())?.name ?? '专属颜色'}</small></div>{room.isHost && member.seatId !== room.youSeatId && <button className="icon-button" aria-label={`移除${member.name}`} onClick={() => onRemove(member.seatId)}><X size={16} /></button>}</div>)}</div><p className="color-hint">房间统一分配信标颜色；若颜色相同，会自动改用空闲颜色。</p>
-      {room.isHost && room.members.length < 4 && <div className="lobby-bots"><h3>补一位代理人</h3><div className="setup-fields"><Field label="代理人"><select value={botIndex} onChange={event => setBotIndex(Number(event.target.value))}>{AI_PRESETS.map((bot, index) => <option value={index} key={index}>{bot.name}</option>)}</select></Field><Field label="性格"><select value={botPersonality} onChange={event => setBotPersonality(event.target.value as PlayerConfig['personality'])}><option value="cautious">稳健</option><option value="balanced">灵活</option><option value="aggressive">冒险</option></select></Field></div><Button secondary onClick={() => onAddBot({ ...AI_PRESETS[botIndex], personality: botPersonality })}>加入代理人</Button></div>}
-      {room.isHost && <div className="lobby-rules"><h3>本局规则</h3><div className="setup-fields"><Field label="目的地"><select value={room.config.mapId} onChange={event => onConfig({ ...room.config, mapId: event.target.value as MapId })}>{MAP_ORDER.map(id => <option value={id} key={id}>{MAPS[id].name}</option>)}</select></Field><Field label="旅程长度"><select value={room.config.seasons} onChange={event => onConfig({ ...room.config, seasons: Number(event.target.value) })}><option value={4}>1 年 · 4 季</option><option value={8}>2 年 · 8 季</option><option value={16}>4 年 · 16 季</option><option value={0}>破产模式</option></select></Field><Field label="天气"><select value={room.config.weatherMode} onChange={event => onConfig({ ...room.config, weatherMode: event.target.value as GameConfig['weatherMode'] })}><option value="standard">标准</option><option value="challenge">挑战</option></select></Field></div><label className="property-trading-switch"><input type="checkbox" role="switch" checked={room.config.propertyTrading !== false} onChange={event => onConfig({ ...room.config, propertyTrading: event.target.checked })} /><span><strong>自由房产交易</strong><small>开启后可在拍卖行挂牌与购买地产。</small></span></label></div>}
-      {!room.isHost && <div className="lobby-rules"><h3>本局规则</h3><div className="panel-list"><div className="panel-row"><span>目的地</span><strong>{MAPS[room.config.mapId].name}</strong></div><div className="panel-row"><span>旅程长度</span><strong>{room.config.seasons === 0 ? '破产模式' : `${room.config.seasons / 4} 年 · ${room.config.seasons} 季`}</strong></div><div className="panel-row"><span>天气</span><strong>{room.config.weatherMode === 'standard' ? '标准' : '挑战'}</strong></div><div className="panel-row"><span>自由房产交易</span><strong>{room.config.propertyTrading !== false ? '开启 · 可用拍卖行' : '关闭'}</strong></div></div></div>}
+  return <div className="app room-lobby"><header className="landing-topbar"><div className="brand"><span className="brand-gem">◆</span><span><strong>棱镜假日</strong><small>PRISM DAYS</small></span></div><button className="text-button" onClick={onLeave}><ArrowLeft size={16} /> 离开房间</button></header><main className="lobby-layout"><div className="lobby-intro"><div className="eyebrow">好友房间 / PRIVATE JOURNEY</div><h1>旅伴已就位，<br />故事即将开始。</h1><p>把房间码发给好友，等大家准备好，再一起启程。</p><div className="room-code"><small>房间码</small><strong>{room.code}</strong><button onClick={copyCode}>{copyStatus === 'copied' ? '已复制' : '复制房间码'}</button></div>{copyStatus === 'failed' && <p className="copy-feedback" role="status">请手动复制房间码</p>}<p className="connection-status" role="status">{connected ? '● 已连接' : '○ 连接中断，正在尝试重连'}</p></div><div className="lobby-panel"><div className="section-kicker">同行名单 · {room.members.length}/4</div><div className="panel-list">{room.members.map(member => <div className="panel-row lobby-member" key={member.seatId}><Marker shape={member.shape} color={member.color} /><div>{member.seatId === room.youSeatId && editingName ? <form className="lobby-name-editor" onSubmit={event => { event.preventDefault(); saveName(); }} onKeyDown={event => { if (event.key === 'Escape' && !renamePendingName) { event.preventDefault(); finishNameEdit(); } }}><label className="field"><span>修改我的名字</span><input autoFocus maxLength={16} value={nameDraft} disabled={!connected || !!renamePendingName} onChange={event => { setNameDraft(event.target.value); setRenameError(''); }} /></label><div className="lobby-name-actions"><button type="submit" disabled={!connected || !!renamePendingName}>{renamePendingName ? '保存中…' : '保存'}</button><button type="button" disabled={!!renamePendingName} onClick={finishNameEdit}>取消</button></div>{renameError && <small className="lobby-rename-error" role="alert">{renameError}</small>}{!member.host && <small>改名不会改变准备状态。</small>}</form> : <strong>{member.name}{member.seatId === room.youSeatId ? ' · 你' : ''}</strong>}<small>{member.host ? '房主' : member.ai ? `代理人 · ${getAIProfileLabel(member)}` : member.ready ? '已准备' : '等待准备'}{!member.connected && !member.ai ? ' · 离线' : ''}</small><small>信标 · {PLAYER_COLORS.find(option => option.color.toLowerCase() === member.color.toLowerCase())?.name ?? '专属颜色'}</small></div>{member.seatId === room.youSeatId && !editingName && <button ref={renameButton} className="icon-button lobby-rename-button" type="button" aria-label="修改我的名字" title="修改我的名字" disabled={!connected} onClick={() => { setNameDraft(member.name); setRenameError(''); setEditingName(true); }}><Pencil size={16} /></button>}{room.isHost && member.seatId !== room.youSeatId && <button className="icon-button" aria-label={`移除${member.name}`} onClick={() => onRemove(member.seatId)}><X size={16} /></button>}</div>)}</div><p className="color-hint">房间统一分配信标颜色；若颜色相同，会自动改用空闲颜色。</p>
+      {room.isHost && room.members.length < 4 && <div className="lobby-bots"><h3>补一位代理人</h3><div className="setup-fields"><Field label="代理人"><select value={botIndex} onChange={event => setBotIndex(Number(event.target.value))}>{AI_PRESETS.map((bot, index) => <option value={index} key={index}>{bot.name}</option>)}</select></Field><Field label="性格"><select value={botPersonality} onChange={event => setBotPersonality(event.target.value as PlayerConfig['personality'])}>{(Object.keys(PERSONALITY_NAMES) as PlayerConfig['personality'][]).map(personality => <option value={personality} key={personality}>{PERSONALITY_NAMES[personality]}</option>)}</select></Field></div><AILevelControl value={botLevel} onChange={setBotLevel} label="这位代理人的强度" /><p className="ai-bot-style">{getAIProfileLabel({ aiLevel: botLevel, personality: botPersonality })} · {getAIStyleDescription(botLevel, botPersonality)}</p><Button secondary onClick={() => onAddBot({ ...AI_PRESETS[botIndex], personality: botPersonality, aiLevel: botLevel })}>加入代理人</Button></div>}
+      <div className="lobby-rules"><h3>本局规则</h3><div className="lobby-rule-controls"><Field label="目的地"><select value={room.config.mapId} disabled={!room.isHost || !connected} onChange={event => onConfig({ ...room.config, mapId: event.target.value as MapId })}>{MAP_ORDER.map(id => <option value={id} key={id}>{MAPS[id].name}</option>)}</select></Field><JourneyLengthControl value={room.config.seasons} onChange={seasons => onConfig({ ...room.config, seasons })} disabled={!room.isHost || !connected} /><WeatherRuleControl value={room.config.weatherMode} onChange={weatherMode => onConfig({ ...room.config, weatherMode })} disabled={!room.isHost || !connected} /></div><label className="property-trading-switch"><input type="checkbox" role="switch" checked={room.config.propertyTrading !== false} disabled={!room.isHost || !connected} onChange={event => onConfig({ ...room.config, propertyTrading: event.target.checked })} /><span><strong>自由房产交易</strong><small>{room.config.propertyTrading !== false ? '已开启 · 可在拍卖行挂牌与购买地产。' : '已关闭 · 本局不能自由买卖地产。'}</small></span></label></div>
       <div className="lobby-actions">{room.isHost ? <Button disabled={!canStart} onClick={onStart}>开始旅程 <ArrowRight size={17} /></Button> : <Button disabled={!connected} onClick={() => onReady(!self?.ready)}>{self?.ready ? '取消准备' : '我已准备'}</Button>}{!canStart && room.isHost && <small>需要至少 2 位旅伴，且所有真人已准备。</small>}</div>
     </div></main></div>;
 }
@@ -352,8 +394,8 @@ export function GameView({ state, viewerId, isOnline, connected, busy, playingMo
       {panel === 'assets' && <Assets state={state} player={viewer} onAction={doAction} onOpenAuction={() => setPanel('auction')} />}
       {panel === 'auction' && state.config.propertyTrading !== false && <AuctionHouse state={state} player={viewer} canTrade={canMarket} onAction={doMarketAction} onClose={() => setPanel(null)} />}
       {panel === 'ranking' && <Ranking state={state} />}
-      {panel === 'weather' && <div className="weather-detail"><div className="weather-icon"><WeatherIcon weatherId={state.weatherId} size={48} /></div><h3>{weather?.name}</h3><p className="weather-detail-intro">{weatherCopy.intro}</p>{MAP_WEATHER_NOTE[state.config.mapId] && <p className="weather-map-note">{MAP_WEATHER_NOTE[state.config.mapId]}</p>}<div className="weather-detail-effects"><h4>今日规则</h4>{weatherCopy.effects.map((effect, index) => <p key={`${index}:${effect}`}>{effect}</p>)}</div>{weatherCopy.protection && <p className="weather-detail-protection">{weatherCopy.protection}</p>}<p className="guide-note">{state.config.weatherMode === 'standard' ? '标准天气降低了极端天气的出现概率；普通雨天只影响怕水道具，骄阳单次额外伤害每项最多 18 点。' : '挑战天气提高了极端天气的出现概率，但仍保持低概率并遵循季节；雨天可影响所有类型道具，骄阳额外伤害不设上限。'}灾难天气从第 22 天起才可能出现。</p></div>}
-      {panel === 'guide' && <Guide />}
+      {panel === 'weather' && <div className="weather-detail"><div className="weather-icon"><WeatherIcon weatherId={state.weatherId} size={48} /></div><h3>{weather?.name}</h3><p className="weather-detail-intro">{weatherCopy.intro}</p>{MAP_WEATHER_NOTE[state.config.mapId] && <p className="weather-map-note">{MAP_WEATHER_NOTE[state.config.mapId]}</p>}<div className="weather-detail-effects"><h4>今日规则</h4>{weatherCopy.effects.map((effect, index) => <p key={`${index}:${effect}`}>{effect}</p>)}</div>{weatherCopy.protection && <p className="weather-detail-protection">{weatherCopy.protection}</p>}<p className="guide-note">{state.config.weatherMode === 'standard' ? '标准天气更温和：降低极端天气的出现概率；普通雨天只影响怕水道具，骄阳单次额外伤害每项最多 18 点。' : '挑战天气保留原本完整效果：极端天气仍保持低概率并遵循季节；雨天可影响所有类型道具，骄阳额外伤害不设上限。'}灾难天气从第 22 天起才可能出现。</p></div>}
+      {panel === 'guide' && <Guide mapId={state.config.mapId} />}
       {panel === 'logs' && <div className="log-list">{state.logs.slice().reverse().map(log => <div className={`panel-row log-${log.tone}`} key={log.id}><small>第 {log.day} 天</small><span>{log.text}</span></div>)}</div>}
       {panel === 'settings' && <div className="settings-panel"><p>地图：{map.name} · {state.config.seasons ? `${state.config.seasons} 季` : '破产模式'} · {state.config.weatherMode === 'standard' ? '标准天气' : '挑战天气'}</p><p>随机种子：{state.config.seed}</p><p>自由房产交易：{state.config.propertyTrading !== false ? '开启，可使用拍卖行挂牌和购买地产' : '关闭，本局不可自由买卖地产'}</p>{isOnline ? <p>房间码：{savedRoomCode() || '—'}。离开后可用同一设备与房间码重新加入。离开不会替你行动。</p> : <p>对局会自动保存在这台设备上。也可以导出 JSON 文件，稍后导入继续。</p>}<div className="settings-actions">{!isOnline && <><Button secondary onClick={() => exportGame(state)}><Download size={16} /> 导出存档</Button><Button secondary onClick={() => importRef.current?.click()}><Upload size={16} /> 导入存档</Button><input ref={importRef} type="file" accept="application/json,.json" hidden onChange={readFile} /></>}<Button secondary onClick={() => setConfirmExit(true)}><Home size={16} /> {isOnline ? '离开房间' : '返回首页'}</Button></div></div>}
     </Modal>}
@@ -372,6 +414,7 @@ export default function App() {
   const [playingMovement, setPlayingMovement] = useState(false);
   const [gameEpoch, setGameEpoch] = useState(0);
   const [dialog, setDialog] = useState<'guide' | 'new' | null>(null);
+  const [guideMapId, setGuideMapId] = useState<MapId>('lake');
   const [error, setError] = useState('');
   const networkRef = useRef<RoomClient | null>(null);
   const lastMovementRef = useRef<number | null>(null);
@@ -481,11 +524,11 @@ export default function App() {
     else movementReleaseRef.current = setTimeout(() => setBusy(false), remaining);
   };
   return <>
-    {room && !room.started ? <RoomLobby room={room} connected={connected} onReady={ready => networkRef.current?.ready(ready)} onConfig={config => networkRef.current?.config(config)} onAddBot={profile => networkRef.current?.addBot(profile)} onRemove={seatId => networkRef.current?.remove(seatId)} onStart={() => networkRef.current?.start()} onLeave={leave} />
-      : activeState && viewerId ? <GameView key={`${room?.code ?? 'local'}-${gameEpoch}`} state={activeState} viewerId={viewerId} isOnline={!!room} connected={!!room ? connected : true} busy={busy} playingMovement={busy && playingMovement} onMovementComplete={movementComplete} onAction={onAction} onLeave={leave} onGuide={() => setDialog('guide')} onImport={onImport} />
+    {room && !room.started ? <RoomLobby room={room} connected={connected} profileError={error} onProfile={profile => { setError(''); networkRef.current?.profile(profile); }} onReady={ready => networkRef.current?.ready(ready)} onConfig={config => networkRef.current?.config(config)} onAddBot={profile => networkRef.current?.addBot(profile)} onRemove={seatId => networkRef.current?.remove(seatId)} onStart={() => networkRef.current?.start()} onLeave={leave} />
+      : activeState && viewerId ? <GameView key={`${room?.code ?? 'local'}-${gameEpoch}`} state={activeState} viewerId={viewerId} isOnline={!!room} connected={!!room ? connected : true} busy={busy} playingMovement={busy && playingMovement} onMovementComplete={movementComplete} onAction={onAction} onLeave={leave} onGuide={() => { setGuideMapId(activeState.config.mapId); setDialog('guide'); }} onImport={onImport} />
       : networkIntent ? <div className="app connecting-screen"><div className="brand"><span className="brand-gem">◆</span><span><strong>棱镜假日</strong><small>PRISM DAYS</small></span></div><h1>正在连接旅伴…</h1><p>房间将自动同步到这台设备。</p><Button secondary onClick={leave}>返回首页</Button></div>
-      : <Landing save={savedState} onResume={resumeLocal} onStart={startLocal} onOnline={startOnline} onGuide={() => setDialog('guide')} />}
-    {dialog === 'guide' && <Modal title="玩法指南" onClose={() => setDialog(null)}><Guide /></Modal>}
+      : <Landing save={savedState} onResume={resumeLocal} onStart={startLocal} onOnline={startOnline} onGuide={mapId => { setGuideMapId(mapId); setDialog('guide'); }} />}
+    {dialog === 'guide' && <Modal title="玩法指南" onClose={() => setDialog(null)}><Guide mapId={guideMapId} /></Modal>}
     {dialog === 'new' && <ConfirmNewGame onConfirm={() => { leave(); setDialog(null); }} onCancel={() => setDialog(null)} />}
     {error && <div className="global-toast" role="alert"><span>{error}</span><button aria-label="关闭提示" onClick={() => setError('')}><X size={16} /></button></div>}
   </>;

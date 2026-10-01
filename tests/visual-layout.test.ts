@@ -59,7 +59,7 @@ describe('browser acceptance fixtures', () => {
     expect(state.properties[60]).toMatchObject({ ownerId: 'p2', level: 2, mortgaged: true });
     expect([0, 1, 2, 3, 4].every(level => Object.values(state.properties).some(property => property.level === level))).toBe(true);
     expect([1, 31, 44].every(id => state.properties[id] && ['power', 'water', 'telecom'].includes(MAPS.lake.nodes[id].kind))).toBe(true);
-    expect([6, 27, 59].every(id => !state.properties[id] && ['power', 'water', 'telecom'].includes(MAPS.lake.nodes[id].kind))).toBe(true);
+    expect([6, 79, 59].every(id => !state.properties[id] && ['power', 'water', 'telecom'].includes(MAPS.lake.nodes[id].kind))).toBe(true);
     expect(canUseItem(state, 'p1', 'qa-weather-controller')).toBe(true);
   });
 });
