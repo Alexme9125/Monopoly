@@ -1462,6 +1462,21 @@ function aiReserve(player: Player, fierce: boolean): number {
   return fierce ? base : Math.ceil(base * 1.15);
 }
 
+function aiCasinoChoice(state: GameState, player: Player, available: Prompt['choices'], fierce: boolean): string | null {
+  const prompt = state.pending;
+  if (!prompt || prompt.data?.played || prompt.casinoResult || state.weatherId === 'paradox') return null;
+  if (fierce) {
+    const remainingSlots = player.personality === 'cautious' ? 2 : player.personality === 'balanced' ? 1 : 0;
+    if (available.some(choice => choice.id === 'slots')
+      && player.capacity - stackSlots(player) >= remainingSlots + 1
+      && player.cash - SLOTS_STAKE >= aiReserve(player, true)) return 'slots';
+  }
+  if (player.personality === 'aggressive' && player.cash > 15_000
+    && player.cash - 500 >= aiReserve(player, fierce)
+    && available.some(choice => choice.id === 'red')) return 'red';
+  return null;
+}
+
 function aiInventoryCount(player: Player, itemId: string): number {
   return player.inventory.reduce((count, slot) => count + (slot.itemId === itemId ? slot.quantity : 0), 0);
 }
@@ -1663,7 +1678,7 @@ export function runAI(state: GameState): GameState {
     else if (prompt.kind === 'meal' && player.stamina < 60) choice = 'meal';
     else if (prompt.kind === 'station' && player.cash > aiReserve(player, fierce)) choice = fierce
       ? aiStationChoice(state, player, available) ?? choice : available.find(c => c.id.startsWith('station:'))?.id ?? choice;
-    else if (prompt.kind === 'casino' && player.personality === 'aggressive' && !prompt.data?.played && player.cash > 15_000) choice = available.find(c => c.id === 'red')?.id ?? choice;
+    else if (prompt.kind === 'casino') choice = aiCasinoChoice(state, player, available, fierce) ?? choice;
     else if (prompt.kind === 'shop') choice = aiShopChoice(state, player, fierce, available, budget.purchases) ?? choice;
     if (!choice) return state;
     const result = step({ type: 'choose', choiceId: choice });
