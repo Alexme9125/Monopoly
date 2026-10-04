@@ -9,7 +9,6 @@ import { migrateMapLayout } from './layoutMigration';
 import { RENT_LEVELS } from './economy';
 
 const KEY = 'prism-days-save-v1';
-const MAP_IDS: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
 const SHAPES: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
 const AI_LEVELS: AILevel[] = ['gentle', 'fierce'];
 const STOCK_IDS = new Set(INITIAL_STOCKS.map(stock => stock.id));
@@ -57,7 +56,7 @@ export function parseSave(raw: string): GameState {
   try { state = JSON.parse(raw); } catch { throw new Error('存档不是有效的 JSON 文件。'); }
   if (!record(state) || state.version !== 1 || !record(state.config)) throw new Error('存档版本或游戏设置无效。');
   const config = state.config;
-  if (!MAP_IDS.includes(config.mapId as MapId) || !['pve', 'pvp'].includes(String(config.mode))
+  if (typeof config.mapId !== 'string' || !Object.hasOwn(MAPS, config.mapId) || !['pve', 'pvp'].includes(String(config.mode))
     || !Array.isArray(config.players) || config.players.length < 2 || config.players.length > 4
     || !config.players.every(validPlayerConfig) || !Number.isSafeInteger(config.seed)
     || ![0, 4, 8, 16].includes(Number(config.seasons))

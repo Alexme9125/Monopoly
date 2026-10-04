@@ -36,7 +36,8 @@ function besideWater(map: MapData, bounds: Rect): boolean {
     : map.id === 'coast' ? [{ x: 450, y: 320, rx: 150, ry: 94 }, { x: 1050, y: 660, rx: 150, ry: 87 }]
       : map.id === 'sundered' ? [{ x: 390, y: 285, rx: 115, ry: 70 }]
         : map.id === 'forest' ? [{ x: 440, y: 598, rx: 101, ry: 57 }]
-          : map.id === 'starSands' ? []
+          : map.id === 'starSands' || map.id === 'ashCanyon' ? []
+            : map.id === 'peachHaven' ? [{ x: 960, y: 675, rx: 158, ry: 71 }, { x: 300, y: 505, rx: 42, ry: 92 }]
             : [{ x: 480, y: 465, rx: 59, ry: 66 }, { x: 1020, y: 565, rx: 56, ry: 65 }];
   return ponds.some(pond => {
     const nearestX = Math.max(bounds.left, Math.min(pond.x, bounds.right));

@@ -10,6 +10,7 @@ import { layoutStationMarkers } from './stationLayout';
 import { PropertyLevelGlyph, PropertyLevelIcon, propertyLevelName } from './PropertyLevel';
 import { SunderedBridges, SunderedTerrain } from './SunderedTerrain';
 import { NewRegionTerrain } from './NewRegionTerrain';
+import { CanyonHavenCrossings, CanyonHavenTerrain } from './CanyonHavenTerrain';
 import { BeaconDirectionCard, BeaconDirectionRoads } from './BeaconDirectionPreview';
 import { getNextStepOptions } from '../game/routing';
 
@@ -42,7 +43,7 @@ function lakeInside(x:number,y:number) { return ((x-876)/208)**2+((y-490)/142)**
 function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) {
  const island=map.id==='valley'?'M42-85Q-35-85-35-5V990Q-35 1080 60 1080H1440Q1545 1080 1545 990V5Q1545-85 1440-85Z':'M161 137Q195 79 304 91L1218 91Q1347 107 1366 187L1385 739Q1404 859 1290 896L279 919Q139 894 130 801L113 258Q108 165 161 137Z';
  const trees=useMemo(()=>{
-  if (map.id === 'sundered' || map.id === 'forest' || map.id === 'starSands') return [];
+  if (map.id === 'sundered' || map.id === 'forest' || map.id === 'starSands' || map.id === 'ashCanyon' || map.id === 'peachHaven') return [];
   const edges=map.nodes.flatMap(n=>n.neighbors.filter(i=>i>n.id).map(i=>[n,map.nodes[i]] as const));
   return Array.from({length:310},(_,i)=>({x:125+pseudo(i,3)*1250,y:95+pseudo(i,7)*810,s:.5+pseudo(i,11)*.35,v:i%4})).filter(t=>{
    if(map.id==='lake'&&lakeInside(t.x,t.y))return false;
@@ -53,6 +54,7 @@ function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) 
   }).sort((a,b)=>a.y-b.y);
  },[map,lots]);
  if (map.id === 'forest' || map.id === 'starSands') return <NewRegionTerrain map={map} lots={lots} id={id}/>;
+ if (map.id === 'ashCanyon' || map.id === 'peachHaven') return <CanyonHavenTerrain map={map} lots={lots} id={id}/>;
  return <>
   <defs>
    <linearGradient id={`${id}-water`} x1="0" y1="0" x2=".7" y2="1"><stop stopColor="#B9DDE0"/><stop offset="1" stopColor="#82B8C5"/></linearGradient>
@@ -303,6 +305,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
     <Terrain map={map} id={id} lots={lots}/>
     <g fill="none" strokeLinecap="round" strokeLinejoin="round"><path d={roadPath} stroke="#AEC1AD" strokeWidth="43" opacity=".5" transform="translate(0 3)"/><path d={roadPath} stroke="#FBF8E8" strokeWidth="40"/><path d={roadPath} stroke="#B4BBA2" strokeWidth="1.5" strokeDasharray="5 8"/></g>
     {map.id==='sundered'&&<SunderedBridges/>}
+    <CanyonHavenCrossings map={map}/>
     <g>
     {map.nodes.map(node=>{
       const property=state?.properties[node.id],owner=players.find(p=>p.id===property?.ownerId),pos=lots[node.id]??node,kind=node.kind;

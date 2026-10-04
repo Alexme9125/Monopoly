@@ -60,6 +60,7 @@ npm audit --audit-level=moderate
 - [详细设计](docs/DESIGN.md)
 - [租金负担档位](docs/RENT_LEVELS.md)
 - [始初森林与星砂荒滩](docs/FOREST_STAR_SANDS.md)
+- [灰烬峡谷与远境桃源](docs/ASH_CANYON_PEACH_HAVEN.md)
 - [道具、事件与天气概率内容册](docs/CONTENT.md)
 - [春秋天气概率与长期抽样报告](docs/WEATHER_BALANCE.md)
 - [首版验收记录](docs/ACCEPTANCE.md)

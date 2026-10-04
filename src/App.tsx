@@ -27,7 +27,7 @@ import { RoomClient, savedRoomCode, type NetworkEvent, type RoomConfig, type Roo
 import { getMovementTimeline } from './game/presentation';
 import type { AILevel, GameAction, GameConfig, GameState, InventorySlot, MapData, MapId, Player, PlayerConfig, RentLevel, Shape } from './game/types';
 
-const MAP_ORDER: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
+const MAP_ORDER: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven'];
 const MAP_CARD_NOTE: Record<MapId, string> = {
   lake: '湖岸气候 · 四季常态',
   coast: '海湾气候 · 四季常态',
@@ -35,12 +35,16 @@ const MAP_CARD_NOTE: Record<MapId, string> = {
   sundered: '高山气候 · 风寒雨雪',
   forest: '温和气候 · 高价地产',
   starSands: '炎热干旱 · 双环沙洲',
+  ashCanyon: '峡谷气候 · 风寒多变',
+  peachHaven: '湖岸气候 · 桃溪田园',
 };
 const MAP_WEATHER_NOTE: Partial<Record<MapId, string>> = {
   valley: '山地天气 · 风寒雨雾略多',
   sundered: '高山天气 · 风寒雨雪较多',
   forest: '森林天气 · 晴好更常见，极端天气更少',
   starSands: '沙洲天气 · 炎热干旱，冬季无霜雪或酷暑',
+  ashCanyon: '峡谷天气 · 比怡人山谷更严苛，比破碎山道温和',
+  peachHaven: '桃源天气 · 与棱镜湖畔相同，四季分明',
 };
 const money = (value: number) => `PM$ ${Math.round(value).toLocaleString('zh-CN')}`;
 const endOfGame = (state: GameState) => state.phase === 'gameover';
@@ -98,7 +102,7 @@ function Landing({ save, onResume, onStart, onOnline, onGuide }: { save: GameSta
   return <div className="app landing" data-map={mapId}>
     <header className="landing-topbar"><div className="brand"><span className="brand-gem">◆</span><span><strong>棱镜假日</strong><small>PRISM DAYS</small></span></div><nav className="top-links"><button onClick={() => onGuide(mapId, rentLevel, seasons)}>玩法指南</button>{save && <button onClick={onResume}>继续旅程 <ArrowRight size={15} /></button>}</nav></header>
     <main className="landing-layout">
-      <section className="intro"><h1>大富翁·棱镜假日</h1><p className="intro-copy">选择地图与旅伴。单人模式可与电脑对局；联网模式可创建房间或输入房间码加入好友。</p>
+      <section className="intro"><h1>大富翁·棱镜假日</h1>
         <div className="section-kicker">01 / 选择目的地</div><div className="map-options">{MAP_ORDER.map((id, index) => { const option = MAPS[id]; return <button key={id} className={`map-option ${mapId === id ? 'selected' : ''}`} disabled={mode === 'pvp' && onlineIntent === 'join'} title={mode === 'pvp' && onlineIntent === 'join' ? '加入房间时由房主决定地图' : undefined} onClick={() => setMapId(id)} aria-pressed={mapId === id}><span className="map-number">0{index + 1}</span><span className="map-option-main"><span className="map-option-heading"><strong>{option.name}</strong><small className="map-node-count">{option.nodes.length} 格</small></span><small className="map-option-subtitle">{option.subtitle}</small><small className="map-option-events">含 10 条地区事件</small><small className="map-weather-note">{MAP_CARD_NOTE[id]}</small></span></button>; })}</div>
       </section>
       <section className="world-preview" aria-label={`${map.name}地图预览`}><Board map={map} preview /><div className="preview-label"><span>地图预览</span><strong>{map.name}</strong><small>{map.nodes.length} 个地点</small></div></section>
@@ -114,7 +118,7 @@ function Landing({ save, onResume, onStart, onOnline, onGuide }: { save: GameSta
   </div>;
 }
 
-function Guide({ mapId, rentLevel, seasons }: { mapId: MapId; rentLevel: RentLevel; seasons: number }) { return <div className="guide-content"><p>掷骰走过六张地图之一，在湖畔、海岸、山谷、山道、森林或荒滩积累你的产业。旅程结束时，总资产最高者获胜；选择不限季数时，直到只剩一位未破产的玩家。</p><div className="guide-grid"><div><h3>一回合怎么走</h3><p>轮到你时掷骰，棋子沿道路逐格前进。每次掷骰基础消耗 2–4 点体力：普通六面骰掷出 1–2 点扣 2、3–4 点扣 3、5–6 点扣 4；大面数骰子也最多扣 4 点，天气和事件的额外影响另算。停下后处理土地、随机事件或设施。完成决定后结束回合；也可以休息来恢复状态。正常掷骰每累计行进 {getJourneyRewardSteps(mapId)} 格获 {money(JOURNEY_REWARD_CASH)}，余数保留；始初森林为 {getJourneyRewardSteps('forest')} 格，其他地图为 {getJourneyRewardSteps('lake')} 格。天气额外位移、传送和乘车不计入。路边拾得零钱为 {ROADSIDE_CASH_MIN}～{ROADSIDE_CASH_MAX} PM。</p></div><div><h3>土地与租金</h3><p>停在可购地块上才能购买。拥有的地产可升级、抵押、赎回或出售；其他玩家停在你的地块时支付租金。当前租金负担：{RENT_LEVEL_NAMES[rentLevel]}。普通地产 0～4 层分别收地价的 {getPropertyRentMultipliers(rentLevel).map(rate => `${Math.round(rate * 100)}%`).join(" / ")}。若持有干燥的免租卡，付租前可选择使用卡片使本次实付为零，或保留卡片直接支付；实际支付正数租金会损失至多 {RENT_MOOD_LOSS} 点心情，免租不损失。现金不足仍可支付并进入偿债，心情耗尽会前往疗养院。公共设施不受租金档位影响，第 n 处同类设施的租金为 {UTILITY_RENT_BASE} × 3^(n−1) PM，最高 {money(UTILITY_RENT_CAP)}。抵押地产暂不收租。</p><p>新局开局资金规则：始初森林搭配沉重负担时，每位玩家初始资金为 {money(getStartingCash({ mapId: 'forest', rentLevel: 'heavy' }))}；其他组合为 {money(BASE_STARTING_CASH)}。</p>{seasons === 0 && rentLevel === 'relaxed' && <p className="guide-note">轻松租金搭配破产模式不推荐：对局可能长期循环，难以结束。</p>}</div><div><h3>天气与道具</h3><p>每天的天气会影响旅途。自然天气遵循季节与地区：多数地区夏季偏热多雨、不会下雪，冬季偏冷多雪、没有雨天；始初森林较温和，星砂荒滩有独立的干热气候，冬季也不出现霜雪或酷暑。各季仍有晴好天气；天气控制器可主动制造反季天气。背包有容量限制，道具可以使用、抵押或赎回；定向道具需要选择目标。控骰器可在行动前指定普通六面骰原始点数 1～6；双生培养皿让下一次独立投掷两枚当前骰子并合计点数，可叠加多面骰，但不能与控骰器并用。天气只修正合计点数一次，额外位移另行结算；休息会取消已准备的骰具效果。传送石可在地图上点选任意其他地点，直接传送并结算落点，本回合不再掷骰；已准备的骰具效果随之作废。换乘券只能选择其他车站。需要地图目标的道具会进入地图选择模式，取消不会消耗，产权类道具还须再次确认。传送爆弹、霉运星签、税务审计函、拆迁许可和强制收购契约成功命中后，受害人心情损失 {HOSTILE_ITEM_MOOD_LOSS} 点；星盾卡挡下则不损失。灾难天气从第 22 天起出现。</p></div><div><h3>市场与交易</h3><p>只能停在交易所时买卖股票。若开局开启自由房产交易，可随时查看拍卖行，在行动间隙将未抵押的地产挂牌，或按一口价购买其他玩家的地产；成交即时交割。关闭此规则时无法挂牌或购买。资产面板会显示你的股票与地产；现金和总资产不同。</p></div><div><h3>代理人风格</h3><p>具名代理人有谨慎、平衡、激进三种人格，并可选择温和或凌厉强度。单人模式对所选代理人统一设置强度；好友房间可为每位新加入的代理人分别设置。温和保持原有对局习惯，凌厉的经营和对抗更积极。</p></div></div><p className="guide-note">挑战天气保留原本完整的天气效果；标准天气带来更温和的天气体验。设置中的随机种子可重现同一局起点。</p></div>; }
+function Guide({ mapId, rentLevel, seasons }: { mapId: MapId; rentLevel: RentLevel; seasons: number }) { return <div className="guide-content"><p>掷骰走过八张地图之一，在湖畔、海岸、山谷、山道、森林、荒滩、峡谷或桃源积累你的产业。旅程结束时，总资产最高者获胜；选择不限季数时，直到只剩一位未破产的玩家。</p><div className="guide-grid"><div><h3>一回合怎么走</h3><p>轮到你时掷骰，棋子沿道路逐格前进。每次掷骰基础消耗 2–4 点体力：普通六面骰掷出 1–2 点扣 2、3–4 点扣 3、5–6 点扣 4；大面数骰子也最多扣 4 点，天气和事件的额外影响另算。停下后处理土地、随机事件或设施。完成决定后结束回合；也可以休息来恢复状态。正常掷骰每累计行进 {getJourneyRewardSteps(mapId)} 格获 {money(JOURNEY_REWARD_CASH)}，余数保留；始初森林为 {getJourneyRewardSteps('forest')} 格，其他地图为 {getJourneyRewardSteps('lake')} 格。天气额外位移、传送和乘车不计入。路边拾得零钱为 {ROADSIDE_CASH_MIN}～{ROADSIDE_CASH_MAX} PM。</p></div><div><h3>土地与租金</h3><p>停在可购地块上才能购买。拥有的地产可升级、抵押、赎回或出售；其他玩家停在你的地块时支付租金。当前租金负担：{RENT_LEVEL_NAMES[rentLevel]}。普通地产 0～4 层分别收地价的 {getPropertyRentMultipliers(rentLevel).map(rate => `${Math.round(rate * 100)}%`).join(" / ")}。若持有干燥的免租卡，付租前可选择使用卡片使本次实付为零，或保留卡片直接支付；实际支付正数租金会损失至多 {RENT_MOOD_LOSS} 点心情，免租不损失。现金不足仍可支付并进入偿债，心情耗尽会前往疗养院。公共设施不受租金档位影响，第 n 处同类设施的租金为 {UTILITY_RENT_BASE} × 3^(n−1) PM，最高 {money(UTILITY_RENT_CAP)}。抵押地产暂不收租。</p><p>新局开局资金规则：始初森林搭配沉重负担时，每位玩家初始资金为 {money(getStartingCash({ mapId: 'forest', rentLevel: 'heavy' }))}；其他组合为 {money(BASE_STARTING_CASH)}。</p>{seasons === 0 && rentLevel === 'relaxed' && <p className="guide-note">轻松租金搭配破产模式不推荐：对局可能长期循环，难以结束。</p>}</div><div><h3>天气与道具</h3><p>每天的天气会影响旅途。自然天气遵循季节与地区：多数地区夏季偏热多雨、不会下雪，冬季偏冷多雪、没有雨天；始初森林较温和，星砂荒滩有独立的干热气候，冬季也不出现霜雪或酷暑。各季仍有晴好天气；天气控制器可主动制造反季天气。背包有容量限制，道具可以使用、抵押或赎回；定向道具需要选择目标。控骰器可在行动前指定普通六面骰原始点数 1～6；双生培养皿让下一次独立投掷两枚当前骰子并合计点数，可叠加多面骰，但不能与控骰器并用。天气只修正合计点数一次，额外位移另行结算；休息会取消已准备的骰具效果。传送石可在地图上点选任意其他地点，直接传送并结算落点，本回合不再掷骰；已准备的骰具效果随之作废。换乘券只能选择其他车站。需要地图目标的道具会进入地图选择模式，取消不会消耗，产权类道具还须再次确认。传送爆弹、霉运星签、税务审计函、拆迁许可和强制收购契约成功命中后，受害人心情损失 {HOSTILE_ITEM_MOOD_LOSS} 点；星盾卡挡下则不损失。灾难天气从第 22 天起出现。</p></div><div><h3>市场与交易</h3><p>只能停在交易所时买卖股票。若开局开启自由房产交易，可随时查看拍卖行，在行动间隙将未抵押的地产挂牌，或按一口价购买其他玩家的地产；成交即时交割。关闭此规则时无法挂牌或购买。资产面板会显示你的股票与地产；现金和总资产不同。</p></div><div><h3>代理人风格</h3><p>具名代理人有谨慎、平衡、激进三种人格，并可选择温和或凌厉强度。单人模式对所选代理人统一设置强度；好友房间可为每位新加入的代理人分别设置。温和保持原有对局习惯，凌厉的经营和对抗更积极。</p></div></div><p className="guide-note">挑战天气保留原本完整的天气效果；标准天气带来更温和的天气体验。设置中的随机种子可重现同一局起点。</p></div>; }
 
 function Assets({ state, player, onAction, onOpenAuction }: { state: GameState; player: Player; onAction: (action: GameAction) => void; onOpenAuction: () => void }) {
   const map = MAPS[state.config.mapId];

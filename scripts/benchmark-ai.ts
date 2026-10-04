@@ -1,10 +1,11 @@
-// Reproducible AI acceptance: six maps, three matched styles, four seeds, both seat orders.
+// Reproducible AI acceptance: every available map, three matched styles, four seeds, both seat orders.
 // Run: node --import tsx scripts/benchmark-ai.ts [--long]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { act, createGame, runAI, getNetWorth } from '../src/game/engine.ts';
 import { AI_PRESETS } from '../src/game/data.ts';
-import type { AILevel, MapId, Personality } from '../src/game/types.ts';
-const maps:MapId[]=['lake','coast','valley','sundered','forest','starSands'];
+import { MAPS } from '../src/game/maps.ts';
+import type { AILevel, Personality } from '../src/game/types.ts';
+const maps = Object.values(MAPS).map(map => map.id);
 const personas:Personality[]=['cautious','balanced','aggressive'];
 const seeds=[1978,31027,60185,981523];
 const rows:any[]=[];
