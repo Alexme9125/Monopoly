@@ -8,9 +8,9 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { act, createGame, runAI } from '../src/game/engine';
 import { getMovementTimeline } from '../src/game/presentation';
 import { assignPlayerColor } from '../src/game/colors';
-import type { AILevel, GameAction, GameState, MapId, Personality, PlayerConfig, Shape } from '../src/game/types';
+import type { AILevel, GameAction, GameState, MapId, Personality, PlayerConfig, RentLevel, Shape } from '../src/game/types';
 
-type RoomConfig = { mapId: MapId; seasons: number; weatherMode: 'standard' | 'challenge'; seed: number; propertyTrading?: boolean };
+type RoomConfig = { mapId: MapId; seasons: number; weatherMode: 'standard' | 'challenge'; seed: number; propertyTrading?: boolean; rentLevel: RentLevel };
 type Member = { seatId: string; clientId: string | null; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; ready: boolean; connected: boolean; host: boolean };
 type Room = { code: string; members: Member[]; config: RoomConfig; started: boolean; state: GameState | null; sockets: Map<string, WebSocket>; timer: ReturnType<typeof setTimeout> | null; movementUntil: number; lastMovementId: number | null; touched: number };
 type Session = { clientId: string | null; roomCode: string | null; seatId: string | null; received: number[] };
@@ -25,6 +25,7 @@ const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const mapIds: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
 const shapes: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
 const personalities: Personality[] = ['cautious', 'balanced', 'aggressive'];
+const rentLevels: RentLevel[] = ['relaxed', 'standard', 'heavy'];
 const actionTypes: GameAction['type'][] = ['roll', 'rest', 'endTurn', 'choose', 'useItem', 'discardItem', 'stockTrade', 'offerTrade', 'listProperty', 'cancelListing', 'buyListing', 'mortgage', 'redeem', 'sellAsset', 'pawnItem', 'redeemItem', 'dismissSeason'];
 const listingActions = new Set<GameAction['type']>(['listProperty', 'cancelListing', 'buyListing']);
 
@@ -45,9 +46,10 @@ function config(value: unknown): RoomConfig | null {
   if (!record(value) || !mapIds.includes(value.mapId as MapId) || ![0, 4, 8, 16].includes(value.seasons as number)
     || !['standard', 'challenge'].includes(value.weatherMode as string) || !Number.isSafeInteger(value.seed)
     || (value.seed as number) < 0 || (value.seed as number) > 0xffff_ffff
-    || (value.propertyTrading !== undefined && typeof value.propertyTrading !== 'boolean')) return null;
+    || (value.propertyTrading !== undefined && typeof value.propertyTrading !== 'boolean')
+    || (value.rentLevel !== undefined && !rentLevels.includes(value.rentLevel as RentLevel))) return null;
   return { mapId: value.mapId as MapId, seasons: value.seasons as number, weatherMode: value.weatherMode as RoomConfig['weatherMode'], seed: value.seed as number,
-    propertyTrading: value.propertyTrading ?? true };
+    propertyTrading: value.propertyTrading ?? true, rentLevel: (value.rentLevel ?? 'standard') as RentLevel };
 }
 function action(value: unknown): GameAction | null {
   if (!record(value) || !actionTypes.includes(value.type as GameAction['type']) || value.actorId !== undefined) return null;

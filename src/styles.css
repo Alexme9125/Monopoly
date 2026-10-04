@@ -928,6 +928,26 @@
 .weather-rule-capsule>button{display:flex;align-items:center;justify-content:center;gap:7px;flex:1;min-width:0;border:1px solid transparent;background:transparent;border-radius:23px;padding:8px 10px;color:#879c83;font-size:12px;white-space:nowrap}
 .weather-rule-capsule>button[aria-pressed=true]{background:#fffff8;border-color:#ccd9c6;color:#3d6250;box-shadow:0 2px 6px #3b593510}
 .weather-rule-note{margin:7px 0 0;font-size:10px;line-height:1.6;color:#8a9d80}
+.setup-rule-fields>.rent-burden-control{grid-column:1/-1}
+.rent-burden-control{--rent-ink:#3d6250;--rent-border:#ccd9c6}
+.rent-burden-control[data-level=relaxed]{--rent-ink:#5e7d54;--rent-border:#c4d5ba}
+.rent-burden-control[data-level=heavy]{--rent-ink:#8b663f;--rent-border:#d8c8b2}
+.rent-burden-capsule{display:flex;gap:3px;width:100%;min-height:46px;padding:4px;border:1px solid #dce6d5;border-radius:30px;background:#e9f0e3}
+.rent-burden-capsule>button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1;min-width:0;min-height:36px;padding:8px 10px;border:1px solid transparent;border-radius:23px;background:transparent;color:#879c83;font-size:12px;line-height:1.5;white-space:nowrap}
+.rent-burden-capsule>button>svg{flex-shrink:0}
+.rent-burden-capsule>button[aria-pressed=true]{border-color:var(--rent-border);background:#fffff8;color:var(--rent-ink);box-shadow:0 2px 6px #3b593510}
+.rent-burden-capsule>button:focus-visible{outline-offset:-2px}
+.rent-burden-note{margin:7px 0 0;color:#8a9d80;font-size:10px;line-height:1.7;overflow-wrap:anywhere}
+.rent-combination-note{display:grid;grid-template-columns:18px minmax(0,1fr);gap:9px;margin-top:11px;padding:12px;border:1px solid;border-radius:12px}
+.rent-combination-note>svg{margin-top:1px}
+.rent-combination-note strong{display:block;font-size:12px;font-weight:600;line-height:1.5}
+.rent-combination-note p{margin:4px 0 0;font-size:11px;line-height:1.75;overflow-wrap:anywhere}
+.rent-combination-note--bonus{color:#406449;border-color:#c8d9c2;background:#eef5ea}
+.rent-combination-note--bonus p{color:#667c5f}
+.rent-combination-note--warning{color:#805d32;border-color:#dec99f;background:#fbf5e8}
+.rent-combination-note--warning p{color:#856c4a}
+.rent-starting-cash{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
+@media(max-width:520px){.rent-burden-capsule>button{min-height:38px}}
 .setup-control[data-disabled=true] button:disabled{opacity:1;cursor:default}
 .journey-control[data-disabled=true] .journey-rail input:disabled{opacity:1;cursor:default}
 .lobby-rules .lobby-rule-controls{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;margin-top:18px}
