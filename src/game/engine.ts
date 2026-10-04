@@ -6,11 +6,10 @@ import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
 import { weatherWeights } from './weather';
 import { getShopOffer, SHOP_ITEM_RARITY } from './shop';
 import { getStepOptions } from './routing';
-import { HOSTILE_ITEM_MOOD_LOSS, PROPERTY_RENT_MULTIPLIERS, RENT_MOOD_LOSS, ROADSIDE_CASH_MAX, ROADSIDE_CASH_MIN, UTILITY_RENT_BASE, UTILITY_RENT_CAP } from './economy';
+import { getPropertyRentMultipliers, getStartingCash, HOSTILE_ITEM_MOOD_LOSS, RENT_LEVELS, RENT_MOOD_LOSS, ROADSIDE_CASH_MAX, ROADSIDE_CASH_MIN, UTILITY_RENT_BASE, UTILITY_RENT_CAP } from './economy';
 export { weatherWeights } from './weather';
 import type { CasinoResult, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, PropertyListing, Stock, TurnEncounter } from './types';
 
-const START_CASH = 100_000;
 const UTILITY_KINDS = new Set(['power', 'water', 'telecom']);
 const PROPERTY_KINDS = new Set(['land', 'power', 'water', 'telecom']);
 const WIND = new Set(['breeze', 'gale', 'sand', 'sandstorm']);
@@ -240,7 +239,7 @@ export function getRent(state: GameState, nodeId: number): number {
     const count = Object.entries(state.properties).filter(([id, p]) => p.ownerId === prop.ownerId && !p.mortgaged && !!nodeAt(state, Number(id)) && isUtility(nodeAt(state, Number(id))!)).length;
     return Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** Math.max(0, count - 1));
   }
-  return Math.ceil(costOf(node) * PROPERTY_RENT_MULTIPLIERS[clamp(prop.level, 0, 4)]);
+  return Math.ceil(costOf(node) * getPropertyRentMultipliers(state.config.rentLevel)[clamp(prop.level, 0, 4)]);
 }
 
 export function getTileRentPreview(state: GameState, nodeId: number, playerId?: string): {
@@ -267,7 +266,7 @@ export function getTileRentPreview(state: GameState, nodeId: number, playerId?: 
     const heldNode = nodeAt(state, Number(id));
     return holding.ownerId === viewer.id && !holding.mortgaged && !!heldNode && isUtility(heldNode);
   }).length : 0;
-  const rent = blocked || suspended ? 0 : isUtility(node) ? Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** ownedUtilities) : Math.ceil(price * PROPERTY_RENT_MULTIPLIERS[0]);
+  const rent = blocked || suspended ? 0 : isUtility(node) ? Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** ownedUtilities) : Math.ceil(price * getPropertyRentMultipliers(state.config.rentLevel)[0]);
   const reason = blocked ? '奇异悖论期间不可购买或收租' : suspended ? '玩家禁锢期间无法收租' : viewer.cash < price ? '资金不足，暂不可购入' : undefined;
   return { price, rent, purchasable: !blocked && viewer.cash >= price, prospective: true, ...(reason ? { reason } : {}) };
 }
@@ -431,16 +430,18 @@ export function createGame(config: GameConfig): GameState {
   if (!['standard', 'challenge'].includes(config.weatherMode)) throw new Error('Invalid weather mode');
   if (!Number.isSafeInteger(config.seed)) throw new Error('Invalid random seed');
   if (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean') throw new Error('Invalid property trading setting');
+  if (config.rentLevel !== undefined && !RENT_LEVELS.includes(config.rentLevel)) throw new Error('Invalid rent level');
   if (config.players.some(player => player.aiLevel !== undefined && !['gentle', 'fierce'].includes(player.aiLevel))) throw new Error('Invalid AI level');
   const start = MAPS[config.mapId].nodes.find(n => n.kind === 'start')?.id ?? MAPS[config.mapId].nodes[0].id;
   const seed = config.seed >>> 0;
+  const startingCash = getStartingCash(config);
   const normalizedPlayers = normalizePlayerColors(config.players.map(player => ({ ...player, ...(player.ai ? { aiLevel: player.aiLevel ?? 'gentle' } : {}) })));
   const players: Player[] = normalizedPlayers.map((p, index) => ({
-    ...copy(p), id: `p${index + 1}`, cash: START_CASH, stamina: 100, mood: 100, position: start, previousPosition: null, routeNextPosition: null, travelProgress: 0,
+    ...copy(p), id: `p${index + 1}`, cash: startingCash, stamina: 100, mood: 100, position: start, previousPosition: null, routeNextPosition: null, travelProgress: 0,
     inventory: [], pawnedItems: [], capacity: 10, holdings: {}, stockCostBasis: {}, confinement: null, statuses: [], bankrupt: false,
   }));
   const stocks: Stock[] = copy(INITIAL_STOCKS).map(s => ({ ...s, history: s.history?.length ? s.history : [s.price], change: s.change ?? 0 }));
-  const state: GameState = { version: 1, mapLayoutVersion: 2, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
+  const state: GameState = { version: 1, mapLayoutVersion: 2, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, rentLevel: config.rentLevel ?? 'standard', players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
     encounters: [], turnEncounters: [], stocks, logs: [], notices: [], phase: 'ready', pending: null,
     movement: null, feedback: null, seasonReport: null, rng: seed, sequence: 0, winnerId: null, lastMarketEvent: null, selectedDie: 6, controlledRoll: null, twinRoll: false };
   for (const player of state.players) { addItem(state, player, 'snack', 2); addItem(state, player, 'rent', 1); addItem(state, player, 'dice8', 1); }
@@ -678,7 +679,8 @@ function eventChoiceScore(state: GameState, event: EventDef | undefined, choiceI
     if (buildings.length) score -= buildings.reduce((sum, [id, property]) => {
       const node = nodeAt(state, Number(id))!;
       const price = costOf(node);
-      const rentLoss = Math.ceil(price * (PROPERTY_RENT_MULTIPLIERS[property.level] - PROPERTY_RENT_MULTIPLIERS[property.level - 1]));
+      const multipliers = getPropertyRentMultipliers(state.config.rentLevel);
+      const rentLoss = Math.ceil(price * (multipliers[property.level] - multipliers[property.level - 1]));
       return sum + Math.ceil(price * 0.75) + rentLoss;
     }, 0) / buildings.length;
   }

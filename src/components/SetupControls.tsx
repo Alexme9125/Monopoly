@@ -1,6 +1,7 @@
 import { useId, type CSSProperties } from 'react';
-import { Check, CloudLightning, Infinity as InfinityIcon, Leaf, Sun, Swords } from 'lucide-react';
-import type { AILevel, GameConfig, Shape } from '../game/types';
+import { Check, CloudLightning, Coins, Feather, Infinity as InfinityIcon, Leaf, Scale, Sun, Swords, TriangleAlert, Weight } from 'lucide-react';
+import type { AILevel, GameConfig, MapId, RentLevel, Shape } from '../game/types';
+import { BASE_STARTING_CASH, getStartingCash, RENT_LEVEL_NAMES, RENT_LEVELS } from '../game/economy';
 
 const shapes: { value: Shape; name: string }[] = [
   { value: 'diamond', name: '菱形' }, { value: 'circle', name: '圆形' },
@@ -63,6 +64,43 @@ export function WeatherRuleControl({ value, onChange, disabled = false }: { valu
       <button type="button" disabled={disabled} aria-pressed={value === 'challenge'} onClick={() => onChange('challenge')}><CloudLightning size={16}/><span>挑战</span></button>
     </div>
     <p className="weather-rule-note">{value === 'challenge' ? '完全体天气体验' : '温和天气体验'}</p>
+  </div>;
+}
+
+const rentNotes: Record<RentLevel, string> = {
+  relaxed: '普通地产租金较标准低 40% · 基建租金不变',
+  standard: '普通地产采用常规租金 · 基建租金不变',
+  heavy: '普通地产租金为标准的 2 倍 · 基建租金不变',
+};
+const rentIcons = { relaxed: Feather, standard: Scale, heavy: Weight };
+
+export function RentBurdenControl({ value, mapId, seasons, onChange, disabled = false }: {
+  value: RentLevel; mapId: MapId; seasons: number; onChange: (level: RentLevel) => void; disabled?: boolean;
+}) {
+  const id = useId();
+  const startingCash = getStartingCash({ mapId, rentLevel: value });
+  const boostedStart = startingCash > BASE_STARTING_CASH;
+  const endlessRisk = seasons === 0 && value === 'relaxed';
+  return <div className="setup-control rent-burden-control" data-level={value} data-disabled={disabled}>
+    <span id={id} className="setup-control-label">租金负担</span>
+    <div className="rent-burden-capsule" role="group" aria-labelledby={id} aria-describedby={`${id}-note${boostedStart || endlessRisk ? ` ${id}-combination` : ''}`}>
+      {RENT_LEVELS.map(level => {
+        const Icon = rentIcons[level];
+        return <button key={level} type="button" disabled={disabled}
+          aria-pressed={value === level} onClick={() => onChange(level)}><Icon size={16} aria-hidden="true" /><span>{RENT_LEVEL_NAMES[level]}</span></button>;
+      })}
+    </div>
+    <p className="rent-burden-note" id={`${id}-note`} aria-live="polite">{rentNotes[value]}</p>
+    <div id={`${id}-combination`} role="status" aria-live="polite" aria-atomic="true">
+      {boostedStart && <div className="rent-combination-note rent-combination-note--bonus">
+        <Coins size={18} aria-hidden="true" />
+        <div><strong>森林启程补给 ×2</strong><p>始初森林搭配沉重负担，每位玩家初始资金为 <span className="rent-starting-cash">PM$ {startingCash.toLocaleString('zh-CN')}</span>。</p></div>
+      </div>}
+      {endlessRisk && <div className="rent-combination-note rent-combination-note--warning">
+        <TriangleAlert size={18} aria-hidden="true" />
+        <div><strong>不推荐警告</strong><p>破产模式搭配轻松负担，较容易出现长期循环，难以分出胜负。建议选择固定年限或提高租金负担。</p></div>
+      </div>}
+    </div>
   </div>;
 }
 

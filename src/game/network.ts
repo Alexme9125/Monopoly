@@ -1,10 +1,12 @@
-import type { AILevel, GameAction, GameConfig, GameState, MapId, PlayerConfig, Shape, Personality } from './types';
+import type { AILevel, GameAction, GameConfig, GameState, PlayerConfig, Shape, Personality } from './types';
+
+export type RoomConfig = Pick<GameConfig, 'mapId' | 'seasons' | 'weatherMode' | 'seed' | 'propertyTrading'> & Required<Pick<GameConfig, 'rentLevel'>>;
 
 export interface RoomMember { seatId: string; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; ready: boolean; connected: boolean; host: boolean }
 export interface RoomSnapshot {
   code: string;
   members: RoomMember[];
-  config: Pick<GameConfig, 'mapId' | 'seasons' | 'weatherMode' | 'seed' | 'propertyTrading'>;
+  config: RoomConfig;
   started: boolean;
   state: GameState | null;
   movementUntil?: number;
@@ -14,7 +16,6 @@ export interface RoomSnapshot {
 }
 export type NetworkEvent = { type: 'room'; room: RoomSnapshot } | { type: 'error'; message: string } | { type: 'left' } | { type: 'status'; connected: boolean };
 type Profile = PlayerConfig;
-type RoomConfig = { mapId: MapId; seasons: number; weatherMode: GameConfig['weatherMode']; seed: number; propertyTrading?: boolean };
 type Outbound =
   | { type: 'hello'; clientId: string }
   | { type: 'create'; profile: Profile; config: RoomConfig }

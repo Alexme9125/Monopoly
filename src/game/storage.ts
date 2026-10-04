@@ -6,6 +6,7 @@ import { normalizePlayerColors } from './colors';
 import { validShopData } from './shop';
 import { getRent } from './engine';
 import { migrateMapLayout } from './layoutMigration';
+import { RENT_LEVELS } from './economy';
 
 const KEY = 'prism-days-save-v1';
 const MAP_IDS: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
@@ -61,7 +62,8 @@ export function parseSave(raw: string): GameState {
     || !config.players.every(validPlayerConfig) || !Number.isSafeInteger(config.seed)
     || ![0, 4, 8, 16].includes(Number(config.seasons))
     || !['standard', 'challenge'].includes(String(config.weatherMode))
-    || (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean')) {
+    || (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean')
+    || (config.rentLevel !== undefined && !RENT_LEVELS.includes(config.rentLevel as typeof RENT_LEVELS[number]))) {
     throw new Error('存档中的游戏设置无效。');
   }
   if (config.mode === 'pve' && config.players.filter((p: PlayerConfig) => !p.ai).length !== 1) throw new Error('PVE 存档必须有一位真人玩家。');
@@ -230,7 +232,7 @@ export function parseSave(raw: string): GameState {
       travelProgress: (player.travelProgress ?? 0) % getJourneyRewardSteps(saved.config.mapId),
     };
   });
-  const normalizedConfig = { ...saved.config, propertyTrading: saved.config.propertyTrading ?? true,
+  const normalizedConfig = { ...saved.config, propertyTrading: saved.config.propertyTrading ?? true, rentLevel: saved.config.rentLevel ?? 'standard',
     players: saved.config.players.map((entry, index) => ({ ...entry,
       ...(entry.ai ? { aiLevel: entry.aiLevel ?? 'gentle' } : {}), color: players[index].color })) };
   const publicEncounters = [...(saved.turnEncounters ?? [])];
@@ -266,7 +268,7 @@ export function parseSave(raw: string): GameState {
       || pending.data?.ownerId !== owner.id || !['land', 'power', 'water', 'telecom'].includes(node.kind)) {
       throw new Error('存档中的租金选择无效。');
     }
-    const amount = getRent({ ...saved, players }, node.id);
+    const amount = getRent({ ...saved, config: normalizedConfig, players }, node.id);
     pending = amount > 0
       ? { ...pending, title: '租金选择', body: `${payer.name} 到达${node.name}，应向${owner.name}支付 ${amount} PM 租金。`,
         choices: [{ id: 'use_card', label: '使用免租卡', disabled: !payer.inventory.some(slot => slot.itemId === 'rent' && !slot.wet) },

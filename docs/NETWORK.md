@@ -7,14 +7,14 @@
 ```ts
 type AILevel = 'gentle' | 'fierce';
 type RoomMember = {seatId:string; name:string; color:string; shape:Shape; ai:boolean; personality:Personality; aiLevel?:AILevel; ready:boolean; connected:boolean; host:boolean};
-type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;seasons:number;weatherMode:'standard'|'challenge';seed:number;propertyTrading?:boolean}; started:boolean; state:GameState|null; movementUntil?:number; youSeatId:string; youPlayerId:string|null; isHost:boolean};
+type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;seasons:number;weatherMode:'standard'|'challenge';rentLevel:'relaxed'|'standard'|'heavy';seed:number;propertyTrading?:boolean}; started:boolean; state:GameState|null; movementUntil?:number; youSeatId:string; youPlayerId:string|null; isHost:boolean};
 // client -> server
 {type:'hello',clientId:string}
-{type:'create',profile:PlayerConfig,config:{mapId,seasons,weatherMode,seed,propertyTrading?}}
+{type:'create',profile:PlayerConfig,config:{mapId,seasons,weatherMode,seed,propertyTrading?,rentLevel?}}
 {type:'join',code:string,profile:PlayerConfig}
 {type:'reconnect',code:string}
 {type:'profile',profile:PlayerConfig}
-{type:'config',config:{mapId,seasons,weatherMode,seed,propertyTrading?}} // 仅房主、未开局
+{type:'config',config:{mapId,seasons,weatherMode,seed,propertyTrading?,rentLevel?}} // 仅房主、未开局
 {type:'ready',ready:boolean}
 {type:'addBot',profile:PlayerConfig} // 仅房主、<4席位；profile.aiLevel 可选，缺失为 gentle
 {type:'remove',seatId:string} // 仅房主、不可删除自己
@@ -37,8 +37,12 @@ type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;sea
 
 `propertyTrading` 是可选布尔值，省略时服务端归一为 `true` 并在房间快照中广播；仅房主能在开局前通过 `config` 切换，开局后不可改。关闭时，挂牌动作和指定买家的旧式 `offerTrade` 都不可用。`state.propertyListings` 保存有效挂牌；挂牌价格为正整数，买方提交 `buyListing` 后由服务端一次性交割现金与产权，不收手续费。卖方可提交 `cancelListing` 撤销。客户端不得在消息或 `action` 中传 `actorId`：服务端根据已认证 socket 的席位确定玩家身份，只有挂牌、撤销、购买三种市场动作把该身份作为规则引擎的操作者。
 
+`rentLevel` 接受 `relaxed`（轻松）、`standard`（标准）、`heavy`（沉重）；旧请求省略时归一为 `standard`，其他值拒绝。房间快照始终包含归一化后的档位，房主仅能在开局前修改，访客只读；广播、重连和开局后的 `state.config` 保持一致。档位仅影响普通地产租金，水厂、电厂、电信租金保持原有公式，详见 [租金负担](RENT_LEVELS.md)。
+
+服务端在开局时根据地图和租金档位计算初始资金：`forest + heavy` 每位玩家为 200000 PM，其他组合为 100000 PM；客户端不提交资金数额。真人与人机相同，重连只恢复原有状态。破产模式搭配轻松负担的提示由各客户端根据同一份房间配置显示，不额外限制开局。
+
 这三种市场动作允许非当前回合玩家在 `ready` 或 `end` 阶段操作，但必须没有待处理决定、季报、移动演出锁或真人断线，破产玩家也不可操作。普通回合动作继续由当前玩家执行。每笔有效市场操作广播新状态；重复购买已失效的挂牌不会再次成交。非当前玩家的市场操作不会重置已安排的人机行动计时，人机届时读取最新状态。
 
-开局前主人可配置地图/年份/天气/房产自由交易并增加有名人机。其他真人点击准备；房主也可在不足人数时补人机。断线保留座位、牌局暂停到该真人回来；不擅自把真人变成人机。相同clientId+房间码可恢复身份。主动离开游戏要明确说明离开不会替自己行动。房主离开则移交在线真人（无真人时回收房间）。房间需有最大数量、消息大小/频率约束、6位随机代码、不允许访客操控别人的turn、非法参数错误而非服务崩溃。旧式交易的 `pending.kind='trade'` 仅由 `pending.data.buyerId` 对应的真人回应。同一玩家多开连接应让最新连接接管，避免旧socket断线覆盖新连接状态。
+开局前主人可配置地图/年份/天气/租金负担/房产自由交易并增加有名人机。其他真人点击准备；房主也可在不足人数时补人机。断线保留座位、牌局暂停到该真人回来；不擅自把真人变成人机。相同clientId+房间码可恢复身份。主动离开游戏要明确说明离开不会替自己行动。房主离开则移交在线真人（无真人时回收房间）。房间需有最大数量、消息大小/频率约束、6位随机代码、不允许访客操控别人的turn、非法参数错误而非服务崩溃。旧式交易的 `pending.kind='trade'` 仅由 `pending.data.buyerId` 对应的真人回应。同一玩家多开连接应让最新连接接管，避免旧socket断线覆盖新连接状态。
 
 功能验收至少两独立WebSocket客户端：创建/加入/准备/补AI/开始；非房主start被拒、非当前玩家roll被拒；断线重连；一次骰子同步所有客户端；真人交易只买方回应。还须验证房主切换交易开关同步、非本人挂牌被拒、非当前玩家购买即时广播、并发双买仅一次成交，以及断线和演出期间的交易锁。
