@@ -128,6 +128,35 @@ const starSandsPaths: { points: Point[]; loop?: boolean }[] = [
   { points: [[600, 620], [660, 620], [720, 620], [780, 620], [840, 620], [900, 620]] },
 ];
 
+function orthogonalPath(corners: readonly Point[], loop = false): Point[] {
+  const points: Point[] = [];
+  const count = loop ? corners.length : corners.length - 1;
+  for (let index = 0; index < count; index++) {
+    const from = corners[index], to = corners[(index + 1) % corners.length];
+    const dx = to[0] - from[0], dy = to[1] - from[1];
+    if ((dx === 0) === (dy === 0) || (Math.abs(dx) + Math.abs(dy)) % 60 !== 0) throw new Error('Invalid orthogonal map segment');
+    const steps = (Math.abs(dx) + Math.abs(dy)) / 60;
+    for (let step = 0; step < steps; step++) points.push([from[0] + dx * step / steps, from[1] + dy * step / steps]);
+  }
+  if (!loop) points.push(corners[corners.length - 1]);
+  return points;
+}
+
+const ashCanyonPaths: { points: Point[]; loop?: boolean }[] = [
+  { points: orthogonalPath([[180, 200], [600, 200], [600, 140], [1020, 140], [1020, 260], [1320, 260],
+    [1320, 800], [900, 800], [900, 860], [480, 860], [480, 740], [180, 740]], true), loop: true },
+  { points: orthogonalPath([[180, 500], [420, 500], [420, 440], [660, 440], [660, 560],
+    [1080, 560], [1080, 500], [1320, 500]]) },
+];
+
+const peachHavenPaths: { points: Point[]; loop?: boolean }[] = [
+  { points: orthogonalPath([[180, 320], [420, 320], [420, 680], [180, 680]], true), loop: true },
+  { points: orthogonalPath([[660, 140], [1320, 140], [1320, 860], [660, 860]], true), loop: true },
+  { points: orthogonalPath([[420, 320], [660, 320]]) },
+  { points: orthogonalPath([[420, 680], [660, 680]]) },
+  { points: orthogonalPath([[660, 500], [1320, 500]]) },
+];
+
 const themes: Record<MapId, MapTheme> = {
   lake: { id: 'lake', name: '棱镜湖畔', subtitle: '湖光环路', description: '环湖道路与外城道路由多条短桥相接，投资者在水岸与城郊之间穿行。', accent: '#58b7c4', districts: ['芦湾', '星汀', '镜湖', '银栈'], seed: 241 },
   coast: { id: 'coast', name: '原色海岸', subtitle: '斜向双湾八字路', description: '西北与东南两座矩形海湾只在潮汐广场交会，形成清晰的斜向八字道路。', accent: '#f1a45d', districts: ['晨潮', '海镜', '暮帆', '珊瑚'], seed: 593 },
@@ -135,6 +164,8 @@ const themes: Record<MapId, MapTheme> = {
   sundered: { id: 'sundered', name: '破碎山道', subtitle: '林谷·断桥·高脊', description: '松林、湖泊与裂谷桥连接风雪高脊；旧屋、废弃矿道与气象站留下远行者的痕迹。', accent: '#8796aa', districts: ['漫行高原', '望穹高脊', '末灯林地', '回声裂谷'], seed: 1217 },
   forest: { id: 'forest', name: '始初森林', subtitle: '古木环道', description: '古木围成安静的环林道路，四方林地由星轨站均匀串联。', accent: '#69a77d', districts: ['初芽', '冠庭', '蕨溪', '眠根'], seed: 1429 },
   starSands: { id: 'starSands', name: '星砂荒滩', subtitle: '双环沙洲', description: '两片星砂环道由南北两条连接道相连，干燥的风沿沙洲穿行。', accent: '#d5a45e', districts: ['灼湾', '星砾', '风蚀', '盐汀'], seed: 1867 },
+  ashCanyon: { id: 'ashCanyon', name: '灰烬峡谷', subtitle: '折阶岩台 · 峡谷横桥', description: '焦木与新绿铺展在峡谷两岸，吊桥、石堤和旧矿道连接错层岩台。', accent: '#866044', districts: ['余烬台', '金脉崖', '复绿湾', '回音涧'], seed: 2107 },
+  peachHaven: { id: 'peachHaven', name: '远境桃源', subtitle: '缘溪入境 · 阡陌田园', description: '沿桃溪穿过狭口，桑竹、良田、水池与村舍在开阔的田园环路间相望。', accent: '#486f61', districts: ['桃溪', '桑畴', '问津', '南陌'], seed: 2203 },
 };
 
 const essentialFacilities: TileKind[] = [
@@ -261,12 +292,32 @@ const starSandsFacilities: Record<number, TileKind> = {
   53: 'prison', 55: 'station', 58: 'shop', 62: 'casino', 66: 'telecom',
 };
 
+const ashCanyonFacilities: Record<number, TileKind> = {
+  3: 'prison', 7: 'power', 9: 'station', 14: 'hospital', 16: 'shop', 18: 'sanatorium', 22: 'casino',
+  25: 'station', 27: 'water', 32: 'telecom', 36: 'power', 39: 'station', 45: 'shop',
+  48: 'exchange', 52: 'water', 55: 'station', 58: 'casino', 60: 'parking',
+  64: 'shop', 67: 'telecom', 72: 'station', 76: 'exchange', 80: 'shop',
+};
+
+const peachHavenFacilities: Record<number, TileKind> = {
+  2: 'shop', 5: 'casino', 8: 'shop', 11: 'power', 13: 'station', 19: 'exchange',
+  20: 'water', 22: 'hospital', 24: 'shop', 28: 'station', 31: 'telecom',
+  34: 'exchange', 41: 'station', 46: 'water', 48: 'shop', 51: 'station',
+  55: 'prison', 59: 'parking', 61: 'station', 72: 'telecom', 74: 'sanatorium',
+  77: 'casino', 81: 'power',
+};
+
+const ashCanyonReservedLand = new Set([10, 11, 12, 26, 40, 41, 42, 57, 73, 74, 75]);
+const peachHavenReservedLand = new Set([4, 10, 37, 57, 60, 63, 66, 67, 68, 69, 70, 71]);
+
 function populateNew(theme: MapTheme, paths: { points: Point[]; loop?: boolean }[],
-  facilities: Record<number, TileKind>, landCount: number, loopCount: number): MapData {
+  facilities: Record<number, TileKind>, landCount: number, loopCount: number, reservedLand?: ReadonlySet<number>): MapData {
   const nodes = makeGraph(paths);
   const facilityIds = new Set(Object.keys(facilities).map(Number));
   if (facilityIds.has(0) || [...facilityIds].some(id => id >= nodes.length)) throw new Error(`Invalid ${theme.id} facility layout`);
-  const candidates = Array.from({ length: loopCount - 1 }, (_, index) => index + 1).filter(id => !facilityIds.has(id));
+  const candidateCount = reservedLand ? nodes.length : loopCount;
+  const candidates = Array.from({ length: candidateCount - 1 }, (_, index) => index + 1)
+    .filter(id => !facilityIds.has(id) && !reservedLand?.has(id));
   const landIds = new Set(shuffled(candidates, theme.seed).slice(0, landCount));
   if (landIds.size !== landCount) throw new Error(`Invalid ${theme.id} land layout`);
   let otherIndex = 0;
@@ -307,6 +358,8 @@ export const MAPS: Record<MapId, MapData> = {
   sundered: populate(themes.sundered, sunderedPaths),
   forest: populateNew(themes.forest, forestPaths, forestFacilities, 29, 64),
   starSands: populateNew(themes.starSands, starSandsPaths, starSandsFacilities, 34, 68),
+  ashCanyon: populateNew(themes.ashCanyon, ashCanyonPaths, ashCanyonFacilities, 37, 62, ashCanyonReservedLand),
+  peachHaven: populateNew(themes.peachHaven, peachHavenPaths, peachHavenFacilities, 36, 66, peachHavenReservedLand),
 };
 
 for (const [id, name] of [

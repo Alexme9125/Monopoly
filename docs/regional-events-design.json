@@ -1541,5 +1541,484 @@
         "cash": 1100
       }
     ]
+  },
+  {
+    "id": "ashCanyon_charcoal_markers",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "title": "焦木上的新路标",
+    "story": "余烬台的旧路标被炭灰盖住了。巡路员正在重新描出安全通行的箭头，愿意为协助清理的代理人支付劳务费。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_charcoal_markers_1",
+        "label": "清理并补画箭头",
+        "description": "体力 -4，获得 420 PM$。",
+        "stamina": -4,
+        "cash": 420
+      },
+      {
+        "id": "ashCanyon_charcoal_markers_2",
+        "label": "上报模糊路段",
+        "description": "获得 180 PM$。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_first_shoots",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "title": "灰土间的第一抹绿",
+    "story": "烧焦的树根旁冒出了嫩芽。复绿湾的育苗员邀请你的代理人给新苗围上护圈，让峡谷重新长出一片林荫。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "ashCanyon_first_shoots_1",
+        "label": "帮新苗围护",
+        "description": "体力 -3，心情 +12。",
+        "stamina": -3,
+        "mood": 12
+      },
+      {
+        "id": "ashCanyon_first_shoots_2",
+        "label": "停步看一会儿",
+        "description": "心情 +7。",
+        "mood": 7
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_bridge_inspection",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "title": "吊桥例行检修",
+    "story": "横桥管理员发现你的运输挂绳擦松了一块护板。桥面仍可通行，但需要出一笔小额维护费，或留下来帮忙把护板重新固定。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "ashCanyon_bridge_inspection_1",
+        "label": "支付维护费",
+        "description": "支付 260 PM$。",
+        "cash": -260
+      },
+      {
+        "id": "ashCanyon_bridge_inspection_2",
+        "label": "协助紧固护板",
+        "description": "体力 -5，不收维护费。",
+        "stamina": -5
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_hot_flask",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "title": "冷涧旁的一壶热茶",
+    "story": "回音涧的测绘员刚煮好一壶热茶，旁边烘着简单的干粮。你可以分担一点补给费，也可以借背风处安静休息片刻。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_hot_flask_1",
+        "label": "分享茶和干粮",
+        "description": "支付 160 PM$，体力 +10，心情 +6。",
+        "cash": -160,
+        "stamina": 10,
+        "mood": 6
+      },
+      {
+        "id": "ashCanyon_hot_flask_2",
+        "label": "在背风处歇脚",
+        "description": "心情 +6。",
+        "mood": 6
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_ash_in_gear",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "title": "炭尘钻进了工具盒",
+    "story": "一阵峡风把细炭尘送进随行工具盒。维护棚可以替你清理；若自行慢慢擦拭，也能恢复正常，只是有些烦躁。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "ashCanyon_ash_in_gear_1",
+        "label": "委托维护棚清理",
+        "description": "支付 220 PM$。",
+        "cash": -220
+      },
+      {
+        "id": "ashCanyon_ash_in_gear_2",
+        "label": "耐心擦净炭尘",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_rope_store",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "岩台装备寄存处",
+    "story": "旧登高队留下了一批重新检验合格的装备。寄存员愿意按维护成本出让一个折叠背包；不需要装备，也可以领走找回寄存处的引路酬金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_rope_store_1",
+        "label": "领用折叠背包",
+        "description": "支付 950 PM$，获得 1 个折叠背包。",
+        "cash": -950,
+        "item": "bag"
+      },
+      {
+        "id": "ashCanyon_rope_store_2",
+        "label": "领取引路酬金",
+        "description": "获得 320 PM$。",
+        "cash": 320
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_mine_survey",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "金脉崖的旧测绘册",
+    "story": "废弃矿道的安全资料需要更新。工坊愿意优惠提供建筑修复包，也欢迎代理人沿已开放的步道补测几处岩壁标记。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_mine_survey_1",
+        "label": "换取修复物资",
+        "description": "支付 900 PM$，获得 1 个建筑修复包。",
+        "cash": -900,
+        "item": "repair"
+      },
+      {
+        "id": "ashCanyon_mine_survey_2",
+        "label": "补测步道标记",
+        "description": "体力 -6，获得 850 PM$。",
+        "stamina": -6,
+        "cash": 850
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_bridge_weather",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "横桥风向档案",
+    "story": "吊桥站整理出一册峡风记录，并修好了一台备用天气控制器。工作人员愿意把它交给承担维修成本的人，也欢迎旅人留下自己的观测。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_bridge_weather_1",
+        "label": "接手备用控制器",
+        "description": "支付 1250 PM$，获得 1 个天气控制器。",
+        "cash": -1250,
+        "item": "weather"
+      },
+      {
+        "id": "ashCanyon_bridge_weather_2",
+        "label": "交换观测见闻",
+        "description": "心情 +10。",
+        "mood": 10
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_deep_shaft",
+    "mapId": "ashCanyon",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "深井里的星辉",
+    "story": "封闭矿井的清理队在一只旧工具箱里发现了会映出远处景物的晶石。它已通过棱镜星检测，可以作为传送石使用；你也可以只收下提供线索的报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_deep_shaft_1",
+        "label": "认领星辉晶石",
+        "description": "支付 2200 PM$，获得 1 枚传送石。",
+        "cash": -2200,
+        "item": "teleportStone"
+      },
+      {
+        "id": "ashCanyon_deep_shaft_2",
+        "label": "领取线索报酬",
+        "description": "获得 800 PM$。",
+        "cash": 800
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_night_survey",
+    "mapId": "ashCanyon",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "百面测星仪",
+    "story": "旧岩台观测所重新亮起了灯。工程师将百面测星仪的备用星核改造成骰子，邀请你支持修复工作；不参与认购也能领到寻回观测记录的奖励。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_night_survey_1",
+        "label": "认购备用星核",
+        "description": "支付 2800 PM$，获得 1 枚百面星核骰。",
+        "cash": -2800,
+        "item": "dice100"
+      },
+      {
+        "id": "ashCanyon_night_survey_2",
+        "label": "交还观测记录",
+        "description": "获得 900 PM$。",
+        "cash": 900
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_creek_ferry",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "title": "桃溪小渡",
+    "story": "沿溪而来的渡船装着新收的果蔬。船家邀请代理人帮忙把篮筐搬上岸，或坐在船头看一会儿水面映出的桃花。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "peachHaven_creek_ferry_1",
+        "label": "帮忙搬运果蔬",
+        "description": "体力 -3，获得 360 PM$。",
+        "stamina": -3,
+        "cash": 360
+      },
+      {
+        "id": "peachHaven_creek_ferry_2",
+        "label": "在船头赏溪",
+        "description": "心情 +8。",
+        "mood": 8
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_peach_petals",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "title": "夹岸落英",
+    "story": "桃溪两岸的落花铺满了小径。村里的画师正在采集颜色，愿意为你带回的一小篮落瓣付费；此刻的花景也值得停下来看看。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "peachHaven_peach_petals_1",
+        "label": "欣赏夹岸桃林",
+        "description": "心情 +12。",
+        "mood": 12
+      },
+      {
+        "id": "peachHaven_peach_petals_2",
+        "label": "替画师收集落瓣",
+        "description": "获得 160 PM$。",
+        "cash": 160
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_shared_water",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "title": "桑田借一渠水",
+    "story": "桑畴的两户人家约好轮流引水，临时缺一位帮手照看水闸。你的代理人可以协助一轮灌溉，也可以坐在竹荫里听农人聊今年的收成。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_shared_water_1",
+        "label": "协助轮流灌溉",
+        "description": "体力 -4，获得 420 PM$。",
+        "stamina": -4,
+        "cash": 420
+      },
+      {
+        "id": "peachHaven_shared_water_2",
+        "label": "在竹荫里听闲谈",
+        "description": "心情 +6。",
+        "mood": 6
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_farmyard_detour",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "title": "鸡犬穿过小路",
+    "story": "村口的鸡犬被运输铃声惊动，跑散了几筐待送的菜。主人请代理人帮忙重新整理，或支付临时叫来的搬运工费用。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "peachHaven_farmyard_detour_1",
+        "label": "请搬运工帮忙",
+        "description": "支付 200 PM$。",
+        "cash": -200
+      },
+      {
+        "id": "peachHaven_farmyard_detour_2",
+        "label": "一起收拾菜筐",
+        "description": "体力 -3。",
+        "stamina": -3
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_village_table",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "title": "村里的长桌饭",
+    "story": "问津的村民把家常菜摆上长桌，招呼路过的代理人一起吃饭。若还要赶路，他们也愿意将一份饭菜打包带走。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "peachHaven_village_table_1",
+        "label": "坐下共用家常饭",
+        "description": "体力 +14，心情 +5。",
+        "stamina": 14,
+        "mood": 5
+      },
+      {
+        "id": "peachHaven_village_table_2",
+        "label": "带一份路上吃",
+        "description": "获得 1 份星港盛宴。",
+        "item": "feast"
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_ferryman_routes",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "问津图谱",
+    "story": "老船工把溪口与星轨站的换乘线路画进一本小册子。你可以添一点印制费领走换乘券，也可以留下来听他讲沿途的故事。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_ferryman_routes_1",
+        "label": "支持印制图谱",
+        "description": "支付 520 PM$，获得 1 张星轨换乘券。",
+        "cash": -520,
+        "item": "teleport"
+      },
+      {
+        "id": "peachHaven_ferryman_routes_2",
+        "label": "听船工讲故事",
+        "description": "心情 +8。",
+        "mood": 8
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_field_repairs",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "阡陌整渠",
+    "story": "村社正在修整田间水渠，准备了用于堤岸和房舍的小型修复物资。代理人可以按成本领一套，也可以帮忙完成一段浅渠的清淤。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_field_repairs_1",
+        "label": "领用修复物资",
+        "description": "支付 950 PM$，获得 1 个建筑修复包。",
+        "cash": -950,
+        "item": "repair"
+      },
+      {
+        "id": "peachHaven_field_repairs_2",
+        "label": "协助浅渠清淤",
+        "description": "体力 -5，获得 700 PM$。",
+        "stamina": -5,
+        "cash": 700
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_twin_seedlings",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "一盘双生苗",
+    "story": "桑竹学堂的孩子们正在用棱镜培养器观察两株同根新苗。老师愿意让支持材料费的旅人带走一只双生培养皿，也欢迎你留下自己的观察笔记。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_twin_seedlings_1",
+        "label": "支持学堂材料费",
+        "description": "支付 700 PM$，获得 1 个双生培养皿。",
+        "cash": -700,
+        "item": "twinDish"
+      },
+      {
+        "id": "peachHaven_twin_seedlings_2",
+        "label": "留下观察笔记",
+        "description": "心情 +8。",
+        "mood": 8
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_ferryman_stone",
+    "mapId": "peachHaven",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "渔人舟中的引路石",
+    "story": "修补旧舟时，船工找到一枚能映照远方地形的石头。检测表明它是一枚传送石。村社允许你付费认领，或在修好的船上听完这段寻路往事。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_ferryman_stone_1",
+        "label": "认领引路石",
+        "description": "支付 2100 PM$，获得 1 枚传送石。",
+        "cash": -2100,
+        "item": "teleportStone"
+      },
+      {
+        "id": "peachHaven_ferryman_stone_2",
+        "label": "听完寻路往事",
+        "description": "心情 +16。",
+        "mood": 16
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_southern_star",
+    "mapId": "peachHaven",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "南陌夜照星籽",
+    "story": "入夜后，一枚拾自田边的星籽映出上百道微光。村社匠人将它封装为百面星核骰，以资助下一季的公共苗圃；提供发现地点也有奖励。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_southern_star_1",
+        "label": "支持公共苗圃",
+        "description": "支付 2700 PM$，获得 1 枚百面星核骰。",
+        "cash": -2700,
+        "item": "dice100"
+      },
+      {
+        "id": "peachHaven_southern_star_2",
+        "label": "提供发现地点",
+        "description": "获得 900 PM$。",
+        "cash": 900
+      }
+    ]
   }
 ]

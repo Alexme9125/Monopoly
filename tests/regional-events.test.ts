@@ -9,7 +9,7 @@ import { REGIONAL_EVENTS } from '../src/game/regionalEvents';
 import { parseSave } from '../src/game/storage';
 import type { EventDef, GameConfig, GameState, MapId } from '../src/game/types';
 
-const mapIds = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'] as MapId[];
+const mapIds = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven'] as MapId[];
 const establishedMapIds = ['lake', 'coast', 'valley', 'sundered'] as MapId[];
 const config = (mapId: MapId, ai = false): GameConfig => ({
   mapId, mode: 'pve', seasons: 4, weatherMode: 'standard', seed: 1978,
@@ -44,13 +44,16 @@ describe('map-exclusive regional encounters', () => {
   it('keeps the 48 universal events and exposes exactly 5/3/2 regional events per map', () => {
     expect(REGIONAL_EVENTS).toEqual(JSON.parse(readFileSync(new URL('../docs/regional-events-design.json', import.meta.url), 'utf8')));
     expect(EVENTS).toHaveLength(48);
-    expect(REGIONAL_EVENTS).toHaveLength(60);
-    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(108);
-    // Canonical JSON locks the four existing maps' event text and effects while adding two regions.
+    expect(REGIONAL_EVENTS).toHaveLength(80);
+    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(128);
+    // Preserve the original four maps and the previous six-map catalogue byte for byte.
     expect(createHash('sha256').update(JSON.stringify(REGIONAL_EVENTS.slice(0, 40))).digest('hex'))
       .toBe('958d5b438e1dfdcf9d57e92b4d4587b1a193001df811a76140254efc981b77ad');
+    expect(createHash('sha256').update(JSON.stringify(REGIONAL_EVENTS.slice(0, 60))).digest('hex'))
+      .toBe('e31a05c3fb8958e0ca57099e61ea2cc76f90fceeba168b7ebf9ed946f61d09f3');
     expect(REGIONAL_EVENTS.slice(0, 40).every(event => establishedMapIds.includes(event.mapId!))).toBe(true);
-    expect(REGIONAL_EVENTS.slice(40).every(event => event.mapId === 'forest' || event.mapId === 'starSands')).toBe(true);
+    expect(REGIONAL_EVENTS.slice(40, 60).every(event => event.mapId === 'forest' || event.mapId === 'starSands')).toBe(true);
+    expect(REGIONAL_EVENTS.slice(60).every(event => event.mapId === 'ashCanyon' || event.mapId === 'peachHaven')).toBe(true);
     for (const mapId of mapIds) {
       const regional = REGIONAL_EVENTS.filter(event => event.mapId === mapId);
       expect(regional).toHaveLength(10);
@@ -190,7 +193,7 @@ describe('map-exclusive regional encounters', () => {
     expect(runAI(noBuilding).turnEncounters?.at(-1)?.selectedChoiceId).toBe('lake_cable_alarm_defer');
   });
 
-  it('resolves real low-resource and full-bag regional landings for all 60 events', () => {
+  it('resolves real low-resource and full-bag regional landings for all 80 events', () => {
     let blockedOptions = 0;
     let fallbackCount = 0;
     for (const mapId of mapIds) {
@@ -227,6 +230,21 @@ describe('map-exclusive regional encounters', () => {
         expect(after, `${event.id} AI low resources`).not.toBe(landed);
         expect(after.pending, `${event.id} should complete`).toBeNull();
         expect(after.turnEncounters?.at(-1)?.selectedChoiceId).toBeDefined();
+        if (mapId === 'ashCanyon' || mapId === 'peachHaven') {
+          const empty = structuredClone(state);
+          empty.players[0].cash = 0;
+          empty.players[0].stamina = 3;
+          empty.players[0].mood = 2;
+          const emptyLanding = act(empty, { type: 'roll' });
+          expect(emptyLanding.pending?.data?.eventId, `${event.id} minimal resources`).toBe(event.id);
+          expect(emptyLanding.pending?.choices.some(choice => !choice.disabled), `${event.id} escape`).toBe(true);
+          if (['ashCanyon_bridge_inspection', 'ashCanyon_ash_in_gear', 'peachHaven_farmyard_detour'].includes(event.id)) {
+            expect(emptyLanding.pending?.choices.some(choice => choice.id === 'skip_unavailable'), `${event.id} skip`).toBe(true);
+          }
+          const escaped = runAI(emptyLanding);
+          expect(escaped.pending, `${event.id} minimal-resource resolution`).toBeNull();
+          expect(escaped.turnEncounters?.at(-1)?.selectedChoiceId).toBeDefined();
+        }
       }
     }
     expect(blockedOptions).toBeGreaterThan(0);

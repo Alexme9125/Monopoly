@@ -1,8 +1,9 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { MAPS } from '../src/game/maps';
 import { weatherWeights } from '../src/game/weather';
-import type { GameState, MapId } from '../src/game/types';
+import type { GameState } from '../src/game/types';
 
-const MAPS: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
+const MAP_IDS = Object.values(MAPS).map(map => map.id);
 const MODES: GameState['config']['weatherMode'][] = ['standard', 'challenge'];
 const DAYS = { firstSpring: 1, summer: 22, autumn: 43, winter: 64, laterSpring: 85 } as const;
 const GROUPS = {
@@ -17,7 +18,7 @@ const GROUPS = {
 
 const probability = (part: number, whole: number) => Math.round(part / whole * 10000) / 100;
 const output: Record<string, Record<string, Record<string, unknown>>> = {};
-for (const mapId of MAPS) {
+for (const mapId of MAP_IDS) {
   output[mapId] = {};
   for (const weatherMode of MODES) {
     output[mapId][weatherMode] = {};

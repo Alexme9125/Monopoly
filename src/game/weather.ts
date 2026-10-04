@@ -8,6 +8,7 @@ const HARD = new Set(['blizzard', 'freezing', 'storm']);
 
 function regionalMultiplier(mapId: MapId, weatherId: string): number {
   if (mapId === 'valley') return MILD.has(weatherId) ? 0.92 : ROUGH.has(weatherId) ? 1.15 : HARD.has(weatherId) ? 1.12 : 1;
+  if (mapId === 'ashCanyon') return MILD.has(weatherId) ? 0.885 : ROUGH.has(weatherId) ? 1.225 : HARD.has(weatherId) ? 1.185 : 1;
   if (mapId === 'sundered') return MILD.has(weatherId) ? 0.85 : ROUGH.has(weatherId) ? 1.30 : HARD.has(weatherId) ? 1.25 : 1;
   if (mapId === 'forest') {
     if (EXTREME_WEATHER.has(weatherId)) return 0.35;

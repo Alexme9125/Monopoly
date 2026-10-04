@@ -8,6 +8,7 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { act, createGame, runAI } from '../src/game/engine';
 import { getMovementTimeline } from '../src/game/presentation';
 import { assignPlayerColor } from '../src/game/colors';
+import { MAPS } from '../src/game/maps';
 import type { AILevel, GameAction, GameState, MapId, Personality, PlayerConfig, RentLevel, Shape } from '../src/game/types';
 
 type RoomConfig = { mapId: MapId; seasons: number; weatherMode: 'standard' | 'challenge'; seed: number; propertyTrading?: boolean; rentLevel: RentLevel };
@@ -22,7 +23,6 @@ const MAX_ROOMS = 100;
 const MAX_MESSAGE_BYTES = 16 * 1024;
 const MAX_MESSAGES_PER_10_SECONDS = 50;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const mapIds: MapId[] = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands'];
 const shapes: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
 const personalities: Personality[] = ['cautious', 'balanced', 'aggressive'];
 const rentLevels: RentLevel[] = ['relaxed', 'standard', 'heavy'];
@@ -43,7 +43,7 @@ function profile(value: unknown, ai: boolean): PlayerConfig | null {
     ai, ...(ai ? { aiLevel: (value.aiLevel ?? 'gentle') as AILevel } : {}) };
 }
 function config(value: unknown): RoomConfig | null {
-  if (!record(value) || !mapIds.includes(value.mapId as MapId) || ![0, 4, 8, 16].includes(value.seasons as number)
+  if (!record(value) || typeof value.mapId !== 'string' || !Object.hasOwn(MAPS, value.mapId) || ![0, 4, 8, 16].includes(value.seasons as number)
     || !['standard', 'challenge'].includes(value.weatherMode as string) || !Number.isSafeInteger(value.seed)
     || (value.seed as number) < 0 || (value.seed as number) > 0xffff_ffff
     || (value.propertyTrading !== undefined && typeof value.propertyTrading !== 'boolean')
