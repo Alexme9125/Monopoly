@@ -8,13 +8,18 @@ import { getTileRentPreview } from '../game/engine';
 import { focusCameraPan, followCameraPan, screenDragToPan, type CameraViewport } from './cameraMath';
 import { layoutStationMarkers } from './stationLayout';
 import { PropertyLevelGlyph, PropertyLevelIcon, propertyLevelName } from './PropertyLevel';
+import { getAvailableLandLevel, getLandPurchasePrice, getMaxLandLevel } from '../game/propertyRules';
 import { SunderedBridges, SunderedTerrain } from './SunderedTerrain';
 import { NewRegionTerrain } from './NewRegionTerrain';
 import { CanyonHavenCrossings, CanyonHavenTerrain } from './CanyonHavenTerrain';
+import { FinalRegionCrossings, FinalRegionsTerrain } from './FinalRegionsTerrain';
 import { BeaconDirectionCard, BeaconDirectionRoads } from './BeaconDirectionPreview';
 import { getNextStepOptions } from '../game/routing';
+import { beaconHitShape } from './beaconHitArea';
+import { placeBeaconName } from './beaconNameLabel';
+import { isCoveredEventFeedback } from './feedbackVisibility';
 
-interface BoardProps { map: MapData; state?: GameState; viewerId?: string; selectedNode?: number | null; onSelectNode?: (id: number) => void; onMovementComplete?: () => void; preview?: boolean; zoom?: number; playing?: boolean; stationSelection?: { originId: number; destinationIds: number[]; disabled?: boolean }; itemSelection?: { itemName: string; nodeIds: number[]; selectedNodeId?: number; disabled?: boolean }; }
+interface BoardProps { map: MapData; state?: GameState; viewerId?: string; selectedNode?: number | null; onSelectNode?: (id: number) => void; onMovementComplete?: () => void; preview?: boolean; zoom?: number; playing?: boolean; feedbackBlocked?: boolean; stationSelection?: { originId: number; destinationIds: number[]; disabled?: boolean }; itemSelection?: { itemName: string; nodeIds: number[]; selectedNodeId?: number; disabled?: boolean }; }
 const hiddenWeather = new Set(['rain', 'storm', 'sand', 'sandstorm', 'mist', 'fog', 'haze', 'glitch', 'paradox']);
 const symbols = {start:Flag,hospital:HeartPulse,prison:Shield,sanatorium:Coffee,parking:ParkingCircle,power:UtilityPole,water:Waves,telecom:RadioTower,station:TrainFront,shop:ShoppingBag,casino:Dices,exchange:Landmark,event:Sparkles,coin:Coins,land:Building2};
 const pseudo = (i:number, salt=0) => { const v=Math.sin(i*127.1+salt*311.7)*43758.5453; return v-Math.floor(v); };
@@ -43,7 +48,7 @@ function lakeInside(x:number,y:number) { return ((x-876)/208)**2+((y-490)/142)**
 function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) {
  const island=map.id==='valley'?'M42-85Q-35-85-35-5V990Q-35 1080 60 1080H1440Q1545 1080 1545 990V5Q1545-85 1440-85Z':'M161 137Q195 79 304 91L1218 91Q1347 107 1366 187L1385 739Q1404 859 1290 896L279 919Q139 894 130 801L113 258Q108 165 161 137Z';
  const trees=useMemo(()=>{
-  if (map.id === 'sundered' || map.id === 'forest' || map.id === 'starSands' || map.id === 'ashCanyon' || map.id === 'peachHaven') return [];
+  if (map.id === 'sundered' || map.id === 'forest' || map.id === 'starSands' || map.id === 'ashCanyon' || map.id === 'peachHaven' || map.id === 'hushedValley' || map.id === 'grandCity') return [];
   const edges=map.nodes.flatMap(n=>n.neighbors.filter(i=>i>n.id).map(i=>[n,map.nodes[i]] as const));
   return Array.from({length:310},(_,i)=>({x:125+pseudo(i,3)*1250,y:95+pseudo(i,7)*810,s:.5+pseudo(i,11)*.35,v:i%4})).filter(t=>{
    if(map.id==='lake'&&lakeInside(t.x,t.y))return false;
@@ -55,6 +60,7 @@ function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) 
  },[map,lots]);
  if (map.id === 'forest' || map.id === 'starSands') return <NewRegionTerrain map={map} lots={lots} id={id}/>;
  if (map.id === 'ashCanyon' || map.id === 'peachHaven') return <CanyonHavenTerrain map={map} lots={lots} id={id}/>;
+ if (map.id === 'hushedValley' || map.id === 'grandCity') return <FinalRegionsTerrain map={map} lots={lots} id={id}/>;
  return <>
   <defs>
    <linearGradient id={`${id}-water`} x1="0" y1="0" x2=".7" y2="1"><stop stopColor="#B9DDE0"/><stop offset="1" stopColor="#82B8C5"/></linearGradient>
@@ -100,7 +106,7 @@ function Terrain({map,id,lots}:{map:MapData;id:string;lots:Record<number,Lot>}) 
  </>;
 }
 
-export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMovementComplete,preview=false,zoom=1,playing=true,stationSelection,itemSelection}:BoardProps) {
+export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMovementComplete,preview=false,zoom=1,playing=true,feedbackBlocked=false,stationSelection,itemSelection}:BoardProps) {
  const id=useId().replace(/:/g,'');
  const boardRef=useRef<HTMLDivElement>(null);
  const svgRef=useRef<SVGSVGElement>(null);
@@ -147,6 +153,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
  momentRef.current=moment;
  useEffect(()=>{if(moment)setHovered(null);},[moment?.movement.id]);
  const lots=useMemo(()=>getLotLayout(map),[map]);
+ const parcelBounds=useMemo(()=>Object.values(lots).map(lot=>lot.bounds),[lots]);
  const presented=useRef<{id:number|null;stages:string[]}>({id:null,stages:[]});
  if(moment){
    if(presented.current.id!==moment.movement.id)presented.current={id:moment.movement.id,stages:[]};
@@ -277,7 +284,9 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
  const hoverProperty=hoverNode?state?.properties[hoverNode.id]:undefined;
  const hoverOwner=players.find(p=>p.id===hoverProperty?.ownerId);
  const hoverQuote=state&&hoverNode?getTileRentPreview(state,hoverNode.id,viewerId):undefined;
- const feedbackNotice=state?.feedback&&state.notices?.some(notice=>notice.kind==='event'&&notice.playerId===state.feedback!.playerId&&notice.nodeId===state.feedback!.nodeId&&notice.id>state.feedback!.id);
+ const hoverAvailableLevel=state&&hoverNode?.kind==='land'&&!hoverProperty?getAvailableLandLevel(state,hoverNode.id):0;
+ const hoverPurchasePrice=state&&hoverNode&&!hoverProperty?getLandPurchasePrice(state,hoverNode.id):0;
+ const feedbackNotice=isCoveredEventFeedback(state?.feedback,state?.notices);
  useEffect(()=>{if(itemSelection)setHovered(null);},[itemSelection]);
  const showHover=(nodeId:number,element:SVGGElement)=>{
   if(preview||!state||moment||directionPlayer||stationSelection||itemSelection&&!itemSelection.nodeIds.includes(nodeId)||dragged.current)return;
@@ -306,6 +315,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
     <g fill="none" strokeLinecap="round" strokeLinejoin="round"><path d={roadPath} stroke="#AEC1AD" strokeWidth="43" opacity=".5" transform="translate(0 3)"/><path d={roadPath} stroke="#FBF8E8" strokeWidth="40"/><path d={roadPath} stroke="#B4BBA2" strokeWidth="1.5" strokeDasharray="5 8"/></g>
     {map.id==='sundered'&&<SunderedBridges/>}
     <CanyonHavenCrossings map={map}/>
+    <FinalRegionCrossings map={map}/>
     <g>
     {map.nodes.map(node=>{
       const property=state?.properties[node.id],owner=players.find(p=>p.id===property?.ownerId),pos=lots[node.id]??node,kind=node.kind;
@@ -315,29 +325,37 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
       const clickable=!!onSelectNode&&!stationSelection&&(!itemSelection||target&&!itemSelection.disabled);
       const color=owner?.color??'#657871';
       const land=kind==='land';
+      const availableLevel=land&&!owner?(state?getAvailableLandLevel(state,node.id):node.prefabLevel??0):0;
+      const prefab=land&&!owner&&availableLevel>0;
+      const maxLevel=getMaxLandLevel(map.id);
       const Glyph=symbols[kind as keyof typeof symbols];
       const purchasable=land||['power','water','telecom'].includes(kind);
       const seat=owner?players.findIndex(p=>p.id===owner.id)+1:0;
       const tileScale=lots[node.id]?(lots[node.id].bounds.right-lots[node.id].bounds.left)/46:1;
-      const status=owner?`P${seat}${land?` · ${propertyLevelName(property!.level)}`:''}${property?.mortgaged?' · 抵押':''}`:purchasable?'待售':'公共';
+      const status=owner?`P${seat}${land?` · ${propertyLevelName(property!.level,maxLevel)}`:''}${property?.mortgaged?' · 抵押':''}`:purchasable?`待售${prefab?` · ${availableLevel}层`:''}`:'公共';
       const shortName:Record<string,string>={hospital:'医院',prison:'监狱',sanatorium:'疗养',parking:'停车',power:'电厂',water:'水厂',telecom:'电信',station:'车站',shop:'商店',casino:'赌场',exchange:'交易所'};
       return <g key={node.id} data-node-id={node.id} data-item-target={itemSelection?target:undefined} className={`map-node ${selected?'is-selected':''} ${target?'item-target-node':''}`} role={clickable?'button':undefined} tabIndex={clickable?0:undefined} aria-label={itemSelection&&target?`${selected?'已选目标':'可选目标'}：#${node.id} ${node.name}，使用${itemSelection.itemName}`:`#${node.id} ${node.name}，${owner?`${owner.name}持有，${status}`:status}`} pointerEvents={itemSelection&&!target?'none':undefined} onPointerEnter={e=>{if(e.pointerType!=='touch')showHover(node.id,e.currentTarget);}} onPointerLeave={()=>setHovered(null)} onFocus={e=>showHover(node.id,e.currentTarget)} onBlur={()=>setHovered(null)} onClick={()=>{if(!dragged.current&&clickable){closeDirection();setHovered(null);onSelectNode?.(node.id);}}} onKeyDown={e=>{if(clickable&&(e.key==='Enter'||e.key===' ')){e.preventDefault();closeDirection();setHovered(null);onSelectNode?.(node.id);}if(e.key==='Escape')setHovered(null);}}>
        {itemSelection&&target&&<title>{`#${node.id} ${node.name} · ${itemSelection.itemName}${selected?' · 已选目标':' · 可选目标'}`}</title>}
        <circle cx={node.x} cy={node.y} r="21" fill="transparent"/>
        {selected&&!itemSelection&&<circle cx={node.x} cy={node.y} r="25" fill={color} fillOpacity=".15" stroke={color} strokeWidth="2" className="selection-ring"/>}
        {node.neighbors.length>2?<circle cx={node.x} cy={node.y} r="11" stroke="#E4E1CB" strokeWidth="3" fill="#F7F3DF"/>:<circle cx={node.x} cy={node.y} r="3" fill="#BCC9B4"/>}
-       {(land||facility)&&<g className={`parcel-tile ${owner?'parcel-owned':purchasable?'parcel-available':'parcel-public'} ${land&&owner?'parcel-developed':''} ${property?.mortgaged?'parcel-mortgaged':''}`} data-ownership={owner?`P${seat}`:purchasable?'available':'public'} transform={`translate(${pos.x} ${pos.y}) scale(${tileScale})`}>
-         <rect className="parcel-base" x="-23" y="-23" width="46" height="46" rx="4" fill={land&&owner?'#FBFDF5':owner?`${owner.color}1c`:purchasable?'#FBFCF4':'#DCE4E0'} stroke={color} strokeWidth={owner?2.4:1.4} strokeDasharray={(!owner&&purchasable)||property?.mortgaged?'4 2':undefined}/>
+       {(land||facility)&&<g className={`parcel-tile ${owner?'parcel-owned':purchasable?'parcel-available':'parcel-public'} ${land&&(owner||prefab)?'parcel-developed':''} ${prefab?'parcel-prefab':''} ${property?.mortgaged?'parcel-mortgaged':''}`} data-ownership={owner?`P${seat}`:purchasable?'available':'public'} data-available-level={prefab?availableLevel:undefined} transform={`translate(${pos.x} ${pos.y}) scale(${tileScale})`}>
+         <rect className="parcel-base" x="-23" y="-23" width="46" height="46" rx="4" fill={prefab?'#E8EDF0':land&&owner?'#FBFDF5':owner?`${owner.color}1c`:purchasable?'#FBFCF4':'#DCE4E0'} stroke={prefab?'#71808a':color} strokeWidth={owner?2.4:1.4} strokeDasharray={(!owner&&purchasable)||property?.mortgaged?'4 2':undefined}/>
          {owner&&<path d={land?'M-19-22H19Q22-22 22-19V-11H-22V-19Q-22-22-19-22':'M-19-22H19Q22-22 22-19V-16H-22V-19Q-22-22-19-22'} fill={owner.color}/>}
          {land&&owner?<>
            <text className="parcel-address" style={{fill:owner.color.toLowerCase()==='#b98b14'?'#312a15':'#ffffff'}} x="-18" y="-13.7">#{String(node.id).padStart(2,'0')}</text>
            <text className="parcel-seat" style={{fill:owner.color.toLowerCase()==='#b98b14'?'#312a15':'#ffffff'}} x="18" y="-13.7" textAnchor="end">P{seat}</text>
-           <PropertyLevelGlyph level={property!.level}/>
+           <PropertyLevelGlyph level={property!.level} maxLevel={maxLevel}/>
+         </>:prefab?<>
+           <path d="M-19-22H19Q22-22 22-19V-11H-22V-19Q-22-22-19-22" fill="#71808a"/>
+           <text className="parcel-address" fill="#ffffff" x="-18" y="-13.7">#{String(node.id).padStart(2,'0')}</text>
+           <text className="parcel-seat" fill="#ffffff" x="18" y="-13.7" textAnchor="end">待售</text>
+           <PropertyLevelGlyph level={availableLevel} maxLevel={maxLevel}/>
          </>:land?<text className="parcel-number" textAnchor="middle" y="3" fill="#304940" fontSize="18" fontWeight="700">{String(node.id).padStart(2,'0')}</text>:<>
            {Glyph&&<Glyph x="-8" y="-18" width="16" height="16" stroke="#465D55" strokeWidth="1.8"/>}
            <text textAnchor="middle" y="8" fill="#354E45" fontSize="10" fontWeight="650">{shortName[kind]}</text>
          </>}
-         {land?!owner&&<text textAnchor="middle" y="17" fill="#78857E" fontSize="8.5" fontWeight="700">待售</text>:<>
+         {land?!owner&&!prefab&&<text textAnchor="middle" y="17" fill="#78857E" fontSize="8.5" fontWeight="700">待售</text>:<>
            <rect x="-22" y="11" width="44" height="11" rx="1" fill={owner?owner.color:purchasable?'#EDF1E7':'#61766C'}/>
            <text textAnchor="middle" y="20" fill={owner||!purchasable?'#FFFFFF':'#63746B'} fontSize="9" fontWeight="700">{status}</text>
          </>}
@@ -356,7 +374,7 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
       </g>;
     })}
     </g>
-    {!hiddenWeather.has(weather)&&state?.encounters.map(n=>{const node=map.nodes[n];return node?<g key={`enc-${n}`} transform={`translate(${node.x+14} ${node.y-20})`} className="encounter-spark"><circle r="9" fill="#F7F0DB"/><path d="M0-6 2-2 6 0 2 2 0 6-2 2-6 0-2-2Z" fill="#BB9672"/></g>:null;})}
+    {!hiddenWeather.has(weather)&&state?.encounters.map(n=>{const node=map.nodes[n];return node?<g key={`enc-${n}`} transform={`translate(${node.x} ${node.y})`} className="encounter-spark encounter-road-badge" pointerEvents="none" aria-label={`#${n} 流动偶遇`}><circle r="8.5" fill="#F7F0DB" stroke="#BB9672" strokeWidth="1.3"/><path d="M0-5 1.6-1.6 5 0 1.6 1.6 0 5-1.6 1.6-5 0-1.6-1.6Z" fill="#BB9672"/></g>:null;})}
     {directionPlayer&&<BeaconDirectionRoads map={map} player={directionPlayer} options={directionOptions} scale={baseScale*zoom}/>}
     {players.filter(p=>!p.bankrupt).map((p,i)=>{
       const node=map.nodes[p.position]??map.nodes[0],point=moment?.movement.playerId===p.id?moment.point:node;
@@ -370,19 +388,29 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
       const labelLeft=screenX+22+labelWidth>svgSize.width-8;
       const labelX=(labelLeft?-labelWidth-22:22)*labelScale;
       const labelY=(screenY<66?42:-50)*labelScale;
+      const hitRadius=(mobileCamera?22:14)/Math.max(.05,baseScale*zoom);
+      const hitShape=directionEnabled?beaconHitShape(map,lots,{x:point.x+offset,y:point.y},hitRadius):null;
+      const hitClipId=`${id}-beacon-hit-${i}`;
+      const nameHalfWidth=Math.max(18,p.name.length*5+7);
+      const namePlacement=active?placeBeaconName({x:point.x+offset,y:point.y},nameHalfWidth,parcelBounds,
+        {left:viewBox.x,top:viewBox.y,right:viewBox.x+viewBox.width,bottom:viewBox.y+viewBox.height}):null;
       return <g key={p.id} data-player-id={p.id} data-direction-selected={directionPlayer?.id===p.id} data-phase={presenting?moment?.stage:undefined} data-step-index={presenting?moment?.stepIndex:undefined} data-step-count={presenting?moment?.stepCount:undefined} data-segment={presenting?stepSegment:undefined} data-step-state={presenting?stepState:undefined} data-transfer-phase={presenting?moment?.transferPhase:undefined} transform={`translate(${point.x+offset} ${point.y})`} className={`player-beacon ${active?'is-active':''}`} style={{'--beacon':p.color} as CSSProperties} pointerEvents={directionEnabled?undefined:'none'} role={directionEnabled?'button':undefined} tabIndex={directionEnabled?0:undefined} aria-label={directionEnabled?`${p.name}，查看下次前进方向`:undefined} aria-pressed={directionEnabled?directionPlayer?.id===p.id&&!!directionSelection?.pinned:undefined}
        onPointerEnter={e=>{if(e.pointerType!=='touch')previewDirection(p.id);}} onPointerLeave={scheduleDirectionClose}
        onFocus={()=>previewDirection(p.id)} onBlur={scheduleDirectionClose}
        onClick={e=>{if(!directionEnabled)return;e.preventDefault();e.stopPropagation();toggleDirection(p.id);}}
        onKeyDown={e=>{if(!directionEnabled)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();toggleDirection(p.id);}else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeDirection();}}}>
-        {directionEnabled&&<circle className="beacon-hit-area" cy="-19" r={(mobileCamera?22:14)/Math.max(.05,baseScale*zoom)} fill="transparent" pointerEvents="all"/>}
+        {hitShape&&<>
+          <defs><clipPath id={hitClipId} clipPathUnits="userSpaceOnUse"><circle cy="-19" r={hitRadius}/></clipPath></defs>
+          <circle className="beacon-hit-area" cy="-19" r={hitRadius} fill="transparent" pointerEvents="none" aria-hidden="true"/>
+          <path className="beacon-hit-target" d={hitShape.path} clipPath={`url(#${hitClipId})`} fill="transparent" fillRule="evenodd" pointerEvents="all" data-hit-exclusions={hitShape.cutouts.length}/>
+        </>}
         {presenting&&moment?.stage==='move'&&moment.segmentKind==='transfer'&&<circle className="transfer-portal" r="24" fill="none" stroke={p.color} strokeWidth="2" opacity=".7"/>}
         {presenting&&(moment?.stepState==='settled'||moment?.stage==='effect')&&<circle className="arrival-ring" r="26" data-node-id={moment.arrivedNodeId??p.position}/>}
         <ellipse cy="5" rx="16" ry="7" fill={p.color} opacity=".2"/>
         {active&&<ellipse cy="5" rx="22" ry="10" fill="none" stroke={p.color} opacity=".55" strokeWidth="1.5" className="beacon-ring"/>}
         <path d="M0 0V-15" stroke={p.color} strokeWidth="2" opacity=".4"/>
         <g transform="translate(0 -19)" className="beacon-float"><ShapeGlyph shape={p.shape} color={p.color}/><path d="M-4-4 0-9 4-4" fill="none" stroke="white" opacity=".65" strokeWidth="2"/></g>
-        {active&&<g transform="translate(0 -47)"><rect x={-Math.max(18,p.name.length*5+7)} y="-12" width={Math.max(36,p.name.length*10+14)} height="20" rx="10" fill="#FAFCF5" fillOpacity=".94"/><text textAnchor="middle" y="2" fontSize="10" fill="#466255" fontWeight="600">{p.name}</text></g>}
+        {namePlacement&&<g className="beacon-name-label" data-label-side={namePlacement.side} transform={`translate(${namePlacement.x} ${namePlacement.y})`}><rect x={-nameHalfWidth} y="-12" width={nameHalfWidth*2} height="20" rx="10" fill="#FAFCF5" fillOpacity=".94"/><text textAnchor="middle" y="2" fontSize="10" fill="#466255" fontWeight="600">{p.name}</text></g>}
         {p.confinement&&<text x="18" y="-22" fontSize="12">⌛</text>}
         {presenting&&stepLabel&&<g className="beacon-step-label" data-segment={stepSegment} transform={`translate(${labelX} ${labelY}) scale(${labelScale})`} aria-label={stepLabel}>
           <rect x="0" y="-19" width={labelWidth} height="29" rx="8"/>
@@ -428,12 +456,13 @@ export default function Board({map,state,viewerId,selectedNode,onSelectNode,onMo
   {hovered&&hoverNode&&!preview&&!moment&&!directionPlayer&&!stationSelection&&(!itemSelection||itemSelection.nodeIds.includes(hovered.id))&&<div className="parcel-tooltip" role="tooltip" style={{left:hovered.x,top:hovered.y}}>
     <small>地点 {String(hoverNode.id).padStart(2,'0')} · {hoverOwner?hoverOwner.name:(hoverQuote?.price??0)>0?'待售地块':'公共设施'}</small>
     <strong>{hoverNode.name}</strong>
-    {hoverQuote&&hoverQuote.price>0?<dl><div><dt>地价</dt><dd>PM$ {hoverQuote.price.toLocaleString()}</dd></div><div><dt>{hoverQuote.prospective?'购入后租金':'当前经过租金'}</dt><dd>PM$ {hoverQuote.rent.toLocaleString()}</dd></div></dl>:<p>{hoverNode.kind==='empty'?'空地 · 不可购买':hoverNode.kind==='coin'?'硬币路面 · 停留拾取零钱':hoverNode.kind==='event'?'事件路面 · 停留触发不期而遇':hoverNode.kind==='start'?'出发站 · 经过领取补给':'公共服务设施 · 不可购买'}</p>}
+    {hoverQuote&&hoverQuote.price>0?<dl><div><dt>基础地价</dt><dd>PM$ {(hoverNode.price??0).toLocaleString()}</dd></div>{hoverAvailableLevel>0&&<div><dt>现有楼层</dt><dd>{hoverAvailableLevel} 层 · 待售</dd></div>}{!hoverProperty&&<div><dt>整栋认购价</dt><dd>PM$ {hoverPurchasePrice.toLocaleString()}</dd></div>}<div><dt>{hoverQuote.prospective?'购后预计租金':'当前经过租金'}</dt><dd>PM$ {hoverQuote.rent.toLocaleString()}</dd></div></dl>:<p>{hoverNode.kind==='empty'?'空地 · 不可购买':hoverNode.kind==='coin'?'硬币路面 · 停留拾取零钱':hoverNode.kind==='event'?'事件路面 · 停留触发不期而遇':hoverNode.kind==='start'?'出发站 · 经过领取补给':'公共服务设施 · 不可购买'}</p>}
+    {hoverAvailableLevel>0&&<p>银行持有 · 未认购前不收租</p>}
     {hoverQuote&&hoverQuote.price>0&&hoverQuote.reason&&<p>{hoverQuote.reason}</p>}
-    {hoverProperty&&hoverNode.kind==='land'?<div className="property-level-detail"><PropertyLevelIcon level={hoverProperty.level} size={38}/><div><strong>{propertyLevelName(hoverProperty.level)}</strong><small>{hoverProperty.mortgaged?'已抵押 · 暂停收租':hoverProperty.level===4?'不可拆除或恶意收购':'可继续建造升级'}</small></div></div>:hoverProperty&&<p>{hoverProperty.mortgaged?'已抵押 · 暂停收租':'经济设施 · 不可升级'}</p>}
+    {hoverProperty&&hoverNode.kind==='land'?<div className="property-level-detail"><PropertyLevelIcon level={hoverProperty.level} maxLevel={getMaxLandLevel(map.id)} size={38}/><div><strong>{propertyLevelName(hoverProperty.level,getMaxLandLevel(map.id))}</strong><small>{hoverProperty.mortgaged?'已抵押 · 暂停收租':hoverProperty.level>=getMaxLandLevel(map.id)?'不可拆除或恶意收购':'可继续建造升级'}</small></div></div>:hoverProperty&&<p>{hoverProperty.mortgaged?'已抵押 · 暂停收租':'经济设施 · 不可升级'}</p>}
     <span className="tooltip-hint">{itemSelection?'点击选择此目标':'点击查看完整详情'}</span>
   </div>}
-  {!preview&&state&&<><TurnMoment moment={moment} state={state}/>{!feedbackNotice&&<FeedbackMoment feedback={state.feedback}/>}</>}
+  {!preview&&state&&<><TurnMoment moment={moment} state={state}/><FeedbackMoment feedback={state.feedback} blocked={feedbackBlocked} suppressed={feedbackNotice}/></>}
   {!preview&&<div className={`weather-atmosphere atmosphere-${weatherClass}`} aria-hidden="true">
    {['rain','snow','sand','fireflies','breeze'].includes(weatherClass)&&Array.from({length:weatherClass==='rain'?88:weatherClass==='snow'?65:32},(_,i)=><i key={i} style={{left:`${pseudo(i,8)*100}%`,top:`${pseudo(i,9)*100}%`,animationDelay:`${-pseudo(i,6)*7}s`,animationDuration:`${weatherClass==='rain'?.9+pseudo(i,4)*.5:3+pseudo(i,4)*5}s`}}/>)}
    <div className="weather-horizon"/>

@@ -1,0 +1,58 @@
+/* A resolved encounter belongs to the next decision, without another overlay. */
+.prompt-vitals{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr));gap:12px;padding:13px 15px;margin:0 0 17px;border:1px solid #d7e2d3;border-radius:11px;background:#f0f5eb;color:#3d5c4a;font-variant-numeric:tabular-nums}
+.prompt-vitals>span{display:flex;flex-direction:column;gap:4px;min-width:0}
+.prompt-vitals>span+span{border-left:1px solid #d6e1d0;padding-left:12px}
+.prompt-vitals small{color:#7c8f74;font-size:10px;line-height:1.4}
+.prompt-vitals strong{font:600 15px/1.45 ui-monospace,SFMono-Regular,monospace;white-space:nowrap}
+.event-identity>.event-identity-roaming{color:#7a5736;background:#f8f0df;border-color:#e5d5b8}
+.recent-encounter{flex:0 0 auto;min-width:0;margin:0 0 15px;border:1px solid #d9cce0;border-left:3px solid #a185b0;border-radius:10px;background:#f8f3fa;color:#6a5276;overflow:hidden}
+.recent-encounter>summary{display:flex;flex-direction:column;gap:3px;position:relative;list-style:none;cursor:pointer;padding:10px 31px 10px 12px;line-height:1.65}
+.recent-encounter>summary::-webkit-details-marker{display:none}
+.recent-encounter>summary::after{content:'';position:absolute;right:13px;top:16px;width:6px;height:6px;border-right:1.5px solid #92759f;border-bottom:1.5px solid #92759f;transform:rotate(45deg);transition:transform .15s}
+.recent-encounter[open]>summary::after{transform:rotate(225deg);top:19px}
+.recent-encounter>summary>span{font-size:11px;font-weight:600;overflow-wrap:anywhere}
+.recent-encounter>summary>small{font-size:10px;color:#7f668c}
+.recent-encounter .recent-encounter-result{font-size:11px;line-height:1.8;margin:0;padding:9px 12px 12px;border-top:1px solid #e5dce9;color:#6c5777;max-height:135px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.modal-shop .recent-encounter{margin-bottom:11px}
+.station-travel-panel>.recent-encounter{grid-column:1/-1;grid-row:auto;margin:0}
+.station-travel-panel:has(.recent-encounter){max-height:calc(100svh - 160px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.game-shell.station-selecting .game-main .activity-carousel{display:none}
+/* Travel keeps a real map row above its panel, including an expanded encounter. */
+.game-shell.station-selecting .game-main{display:flex;flex-direction:column;flex:1 0 auto;height:auto;min-height:680px}
+.game-shell.station-selecting .game-main>.board-stage{position:relative;inset:auto;flex:1 0 360px;min-height:360px;width:calc(100% - 48px);margin:12px 24px 0}
+.game-shell.station-selecting .station-travel-panel{position:relative;inset:auto;transform:none;flex:none;align-self:center;margin:16px auto 20px}
+
+/* Short notices take their own row inside the activity card; never cover it. */
+.game-main .activity-carousel .activity-toast{position:relative;inset:auto;transform:none;z-index:auto;width:100%;max-height:180px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;flex:0 0 auto;grid-column:1/-1;grid-row:auto;margin:0 0 11px;padding:10px 12px;border-radius:8px;border-left-width:3px;background:#f6fbf2;box-shadow:none;pointer-events:auto;animation:encounter-notice-reveal .18s ease-out}
+.game-main .activity-carousel .activity-toast[aria-hidden="true"]{display:none}
+.game-main .activity-carousel .activity-toast>strong{font-size:12px;line-height:1.55;margin-bottom:4px}
+.game-main .activity-carousel .activity-toast>span{font-size:11px;line-height:1.8;color:#60775f;overflow-wrap:anywhere}
+.game-main .activity-carousel .activity-toast.notice-tone-bad{background:#fcf4eb;border-color:#ddc6b0;color:#865d43}
+.game-main .activity-carousel .activity-toast.notice-tone-bad>span{color:#886c58}
+.game-main .activity-carousel .activity-toast.notice-tone-info{background:#f4f1f8;border-color:#d5c8df;color:#715783}
+.activity-carousel:has(.activity-toast:not([aria-hidden="true"])) .carousel-controls{grid-row:auto}
+.encounter-road-badge{animation:encounter-road-glow 3.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center;pointer-events:none}
+@keyframes encounter-road-glow{0%,100%{opacity:.82}50%{opacity:1;filter:drop-shadow(0 0 2px #d8b97b88)}}
+@keyframes encounter-notice-reveal{from{opacity:0}to{opacity:1}}
+@media(max-width:520px){
+ .prompt-vitals{gap:7px;padding:10px;margin-bottom:13px;border-radius:9px}
+ .prompt-vitals>span+span{padding-left:7px}.prompt-vitals strong{font-size:12px}.prompt-vitals small{font-size:9px}
+ .recent-encounter{margin-bottom:12px;border-radius:8px}
+ .recent-encounter>summary{padding:8px 28px 8px 10px;gap:2px}
+ .recent-encounter>summary>span{font-size:10px}.recent-encounter>summary>small{font-size:10px}
+ .recent-encounter .recent-encounter-result{font-size:10px;padding:8px 10px 10px;max-height:110px}
+ .modal-shop .recent-encounter{margin-bottom:8px}
+ .game-main .activity-carousel .activity-toast{max-height:125px;padding:8px 10px;margin-bottom:8px}
+ .game-main .activity-carousel.has-turn-encounters .activity-toast{max-height:110px}
+ .game-main .activity-carousel .activity-toast>strong{font-size:11px}.game-main .activity-carousel .activity-toast>span{font-size:10px;line-height:1.7}
+ .station-travel-panel:has(.recent-encounter){padding:12px;gap:9px}
+ .station-travel-panel .recent-encounter-result{max-height:80px}
+ .game-shell.station-selecting .game-main{min-height:720px}
+ .game-shell.station-selecting .game-main>.board-stage{width:calc(100% - 16px);margin:8px 8px 0}
+ .game-shell.station-selecting .station-travel-panel{margin:12px auto}
+}
+@media(max-height:600px){
+ .modal-shop .recent-encounter>summary{padding-block:6px}
+ .modal-shop .recent-encounter .recent-encounter-result{max-height:72px;padding-block:6px}
+}
+@media(prefers-reduced-motion:reduce){.encounter-road-badge,.game-main .activity-carousel .activity-toast{animation:none}.recent-encounter>summary::after{transition:none}}

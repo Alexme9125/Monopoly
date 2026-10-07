@@ -28,7 +28,7 @@ export function advanceNoticeStream(visible: GameNotice[], pending: GameNotice[]
 }
 
 export function noticeToastPolicy(busy: boolean, blocked: boolean, hasActive: boolean) {
-  return { canStart: !busy && !blocked && !hasActive, hidden: blocked, ticking: hasActive && !blocked };
+  return { canStart: !busy && !blocked && !hasActive, hidden: busy || blocked, ticking: hasActive && !busy && !blocked };
 }
 
 export function visibleTurnEncounters(known: TurnEncounter[], incoming: TurnEncounter[], busy: boolean): TurnEncounter[] {
@@ -135,6 +135,9 @@ export default function ActivityNotifications({ state, busy, blocked = false, on
   return <>
     <aside ref={carouselRef} className={`activity-carousel ${displayedEncounters.length ? 'has-turn-encounters' : ''}`} aria-label={displayedEncounters.length ? '本回合不期而遇' : '旅途播报'}>
       <div className="activity-heading"><strong>{displayedEncounters.length ? '本回合 · 不期而遇' : '旅途播报'}</strong><button type="button" onClick={onOpenLogs}>旅途手记</button></div>
+      {toast && <div className={`activity-toast notice-tone-${toast.tone}`} data-encounter-visible={displayedEncounters.length > 0} role="status" aria-live="polite" aria-atomic="true" aria-hidden={toastPolicy.hidden} style={toastPolicy.hidden ? { visibility: 'hidden' } : undefined}>
+        <strong>{toast.title}</strong><span>{toast.body}</span>
+      </div>}
       {displayedEncounters.length ? <TurnEncounters encounters={displayedEncounters} players={state.players} mapId={state.config.mapId} /> : <>{active ? <article className={`activity-card notice-tone-${active.tone}`}>
         <small>第 {active.day} 天 · {active.kind === 'rent' ? '租金' : active.kind === 'milestone' ? '行进奖励' : active.kind === 'trade' ? '房产交易' : active.kind === 'lottery' ? '奖券开奖' : '事件'}</small>
         <strong>{active.title}</strong>
@@ -147,8 +150,5 @@ export default function ActivityNotifications({ state, busy, blocked = false, on
         <button type="button" onClick={() => setPaused(value => !value)} aria-label={paused ? '继续轮播' : '暂停轮播'} title={paused ? '继续轮播' : '暂停轮播'}>{paused ? <Play size={16} /> : <Pause size={16} />}</button>
       </div></>}
     </aside>
-    {toast && <div className={`activity-toast notice-tone-${toast.tone}`} role="status" aria-live="polite" aria-atomic="true" aria-hidden={toastPolicy.hidden} style={toastPolicy.hidden ? { visibility: 'hidden' } : undefined}>
-      <strong>{toast.title}</strong><span>{toast.body}</span>
-    </div>}
   </>;
 }

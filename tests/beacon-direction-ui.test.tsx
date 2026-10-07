@@ -23,6 +23,11 @@ describe('beacon direction affordance', () => {
       expect(beacon).toContain('查看下次前进方向');
     }
     expect(html.match(/class="beacon-hit-area"/g)).toHaveLength(2);
+    expect(html.match(/class="beacon-hit-area"[^>]*pointer-events="none"/g)).toHaveLength(2);
+    expect(html.match(/class="beacon-hit-target"[^>]*fill-rule="evenodd"[^>]*pointer-events="all"/g)).toHaveLength(2);
+    const clips = [...html.matchAll(/<clipPath id="([^"]+)"[^>]*><circle cy="-19"[^>]*><\/circle><\/clipPath>/g)].map(match => match[1]);
+    expect(clips).toHaveLength(2);
+    for (const clip of clips) expect(html).toContain(`clip-path="url(#${clip})"`);
   });
 
   it('removes beacon hit targets during item selection', () => {

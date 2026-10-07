@@ -157,6 +157,25 @@ const peachHavenPaths: { points: Point[]; loop?: boolean }[] = [
   { points: orthogonalPath([[660, 500], [1320, 500]]) },
 ];
 
+// Two concentric square streets meet at their four side midpoints. Each link
+// adds two internal nodes: 56 outer + 32 inner + 8 axial = 96 road nodes.
+const grandCityPaths: { points: Point[]; loop?: boolean }[] = [
+  { points: sampledLoop([[330, 80], [1170, 80], [1170, 920], [330, 920]], [14, 14, 14, 14]), loop: true },
+  { points: sampledLoop([[510, 260], [990, 260], [990, 740], [510, 740]], [8, 8, 8, 8]), loop: true },
+  { points: [[750, 80], [750, 140], [750, 200], [750, 260]] },
+  { points: [[1170, 500], [1110, 500], [1050, 500], [990, 500]] },
+  { points: [[750, 920], [750, 860], [750, 800], [750, 740]] },
+  { points: [[330, 500], [390, 500], [450, 500], [510, 500]] },
+];
+
+const hushedValleyPaths: { points: Point[]; loop?: boolean }[] = [
+  { points: orthogonalPath([[180, 140], [660, 140], [660, 80], [1140, 80],
+    [1140, 260], [1320, 260], [1320, 800], [960, 800], [960, 920],
+    [540, 920], [540, 800], [180, 800]], true), loop: true },
+  { points: orthogonalPath([[180, 440], [420, 440], [420, 380], [660, 380],
+    [660, 620], [960, 620], [960, 500], [1320, 500]]) },
+];
+
 const themes: Record<MapId, MapTheme> = {
   lake: { id: 'lake', name: '棱镜湖畔', subtitle: '湖光环路', description: '环湖道路与外城道路由多条短桥相接，投资者在水岸与城郊之间穿行。', accent: '#58b7c4', districts: ['芦湾', '星汀', '镜湖', '银栈'], seed: 241 },
   coast: { id: 'coast', name: '原色海岸', subtitle: '斜向双湾八字路', description: '西北与东南两座矩形海湾只在潮汐广场交会，形成清晰的斜向八字道路。', accent: '#f1a45d', districts: ['晨潮', '海镜', '暮帆', '珊瑚'], seed: 593 },
@@ -166,6 +185,8 @@ const themes: Record<MapId, MapTheme> = {
   starSands: { id: 'starSands', name: '星砂荒滩', subtitle: '双环沙洲', description: '两片星砂环道由南北两条连接道相连，干燥的风沿沙洲穿行。', accent: '#d5a45e', districts: ['灼湾', '星砾', '风蚀', '盐汀'], seed: 1867 },
   ashCanyon: { id: 'ashCanyon', name: '灰烬峡谷', subtitle: '折阶岩台 · 峡谷横桥', description: '焦木与新绿铺展在峡谷两岸，吊桥、石堤和旧矿道连接错层岩台。', accent: '#866044', districts: ['余烬台', '金脉崖', '复绿湾', '回音涧'], seed: 2107 },
   peachHaven: { id: 'peachHaven', name: '远境桃源', subtitle: '缘溪入境 · 阡陌田园', description: '沿桃溪穿过狭口，桑竹、良田、水池与村舍在开阔的田园环路间相望。', accent: '#486f61', districts: ['桃溪', '桑畴', '问津', '南陌'], seed: 2203 },
+  hushedValley: { id: 'hushedValley', name: '寂静河谷', subtitle: '叠瀑河槽 · 五层地标', description: '峭壁与森林围住静流河槽，瀑布、岩棚和洞穴间的临时据点沿环路与谷底横道相接。', accent: '#527b78', districts: ['雾杉', '叠瀑', '静流', '回声'], seed: 2309 },
+  grandCity: { id: 'grandCity', name: '伟岸之城', subtitle: '双环都会 · 四轴相连', description: '外城与内城两道同心方环由四条正交大道连接，四片城区沿轴路相互往来。', accent: '#55697b', districts: ['云阶', '曜庭', '环翠', '天际'], seed: 2411 },
 };
 
 const essentialFacilities: TileKind[] = [
@@ -307,6 +328,30 @@ const peachHavenFacilities: Record<number, TileKind> = {
   77: 'casino', 81: 'power',
 };
 
+const grandCityFacilities: Record<number, TileKind> = {
+  4: 'telecom', 9: 'shop', 12: 'station', 15: 'casino',
+  22: 'power', 24: 'water', 30: 'station', 32: 'telecom',
+  43: 'casino', 45: 'station', 47: 'shop', 50: 'water',
+  52: 'power', 55: 'station', 57: 'station', 63: 'sanatorium',
+  65: 'prison', 73: 'station', 80: 'parking', 83: 'hospital',
+  86: 'shop', 89: 'exchange', 90: 'exchange', 93: 'shop', 94: 'exchange',
+};
+
+const hushedValleyFacilities: Record<number, TileKind> = {
+  1: 'station', 3: 'prison', 11: 'telecom', 13: 'shop', 15: 'station',
+  18: 'water', 23: 'parking', 26: 'sanatorium', 30: 'shop', 33: 'station',
+  44: 'telecom', 47: 'shop', 49: 'station', 51: 'water', 57: 'hospital',
+  65: 'shop', 69: 'power', 71: 'casino', 73: 'exchange', 78: 'station',
+  82: 'power', 85: 'casino', 87: 'exchange',
+};
+
+// Bridge decks and both junctions remain clear for the river and route signs.
+const hushedReservedLand = new Set([27, 28, 29, 61, 75, 76, 77, 88, 89, 90]);
+const hushedFacilityNames: Partial<Record<TileKind, string>> = {
+  station: '星轨驿站', shop: '无人补给站', exchange: '自动交易终端', casino: '星运补给机',
+  hospital: '应急医护舱', sanatorium: '静养营地', prison: '隔离管制舱', parking: '临时停泊点',
+};
+
 const ashCanyonReservedLand = new Set([10, 11, 12, 26, 40, 41, 42, 57, 73, 74, 75]);
 const peachHavenReservedLand = new Set([4, 10, 37, 57, 60, 63, 66, 67, 68, 69, 70, 71]);
 
@@ -351,6 +396,87 @@ function populateNew(theme: MapTheme, paths: { points: Point[]; loop?: boolean }
     width: 1500, height: 1000, nodes, accent: theme.accent };
 }
 
+function populateGrandCity(): MapData {
+  const theme = themes.grandCity;
+  const nodes = makeGraph(grandCityPaths);
+  if (nodes.length !== 96 || Object.keys(grandCityFacilities).length !== 25) throw new Error('Invalid grand city road or facility count');
+  const facilityIds = new Set(Object.keys(grandCityFacilities).map(Number));
+  // Reserve roadside scenery in every district while spreading all four tower
+  // heights through the city. The level quotas sum to exactly 15/15/10/10.
+  const landPerDistrict = [10, 13, 13, 14] as const;
+  const levelsPerDistrict = [
+    [3, 3, 2, 2], [4, 4, 2, 3], [4, 4, 3, 2], [4, 4, 3, 3],
+  ] as const;
+  const districtOf = (node: MapNode) => (node.x >= 750 ? 1 : 0) + (node.y >= 500 ? 2 : 0);
+  const prefabLevels = new Map<number, number>();
+  for (let district = 0; district < 4; district++) {
+    const candidates = nodes.filter(node => node.id !== 0 && node.neighbors.length === 2
+      && !facilityIds.has(node.id) && districtOf(node) === district)
+      .map(node => node.id);
+    const chosen = shuffled(candidates, theme.seed + district * 101).slice(0, landPerDistrict[district]);
+    if (chosen.length !== landPerDistrict[district]) throw new Error(`Invalid grand city land district ${district}`);
+    const levels = levelsPerDistrict[district].flatMap((count, index) => Array<number>(count).fill(index + 1));
+    shuffled(chosen, theme.seed + district * 113 + 29).forEach((id, index) => prefabLevels.set(id, levels[index]));
+  }
+  if (prefabLevels.size !== 50) throw new Error('Invalid grand city prefab count');
+  let otherIndex = 0;
+  for (const node of nodes) {
+    const districtIndex = districtOf(node);
+    const district = theme.districts[districtIndex];
+    node.district = district;
+    if (node.id === 0) {
+      node.kind = 'start'; node.name = `${district}·星港起点`;
+    } else if (facilityIds.has(node.id)) {
+      const kind = grandCityFacilities[node.id];
+      node.kind = kind;
+      node.name = `${district}·${facilityNames[kind]}${node.id}号`;
+      if (!['hospital', 'prison', 'sanatorium', 'parking'].includes(kind)) {
+        node.price = Math.min(4000, 800 + districtIndex * 480 + (node.id % 7) * 260 + (kind === 'station' ? 450 : 0));
+      }
+    } else if (prefabLevels.has(node.id)) {
+      node.kind = 'land';
+      node.prefabLevel = prefabLevels.get(node.id);
+      node.name = `${district}·${scenicNames[node.id % scenicNames.length]}${node.id}号地`;
+      node.price = Math.min(4000, 800 + districtIndex * 530 + (node.id % 8) * 210);
+    } else {
+      node.kind = (['empty', 'coin', 'event'] as TileKind[])[otherIndex++ % 3];
+      const suffix = node.kind === 'empty' ? '空地' : node.kind === 'coin' ? '星币驿' : '奇遇角';
+      node.name = `${district}·${scenicNames[node.id % scenicNames.length]}${suffix}${node.id}号`;
+    }
+    node.neighbors.sort((a, b) => a - b);
+  }
+  // Convert the selected road spaces only after the other kinds are assigned;
+  // otherwise the remaining coin and event positions would shift.
+  const vacantLandByDistrict: Record<string, number[]> = {
+    云阶: [3, 59], 曜庭: [20, 67], 环翠: [41, 77], 天际: [33, 72],
+  };
+  for (const [district, ids] of Object.entries(vacantLandByDistrict)) for (const id of ids) {
+    const node = nodes[id];
+    if (node.district !== district || !['empty', 'coin', 'event'].includes(node.kind)) {
+      throw new Error(`Invalid grand city vacant land ${id}`);
+    }
+    const districtIndex = theme.districts.indexOf(district);
+    node.kind = 'land';
+    node.name = `${district}·${scenicNames[id % scenicNames.length]}${id}号地`;
+    node.price = Math.min(4000, 800 + districtIndex * 530 + (id % 8) * 210);
+  }
+  return { id: theme.id, name: theme.name, subtitle: theme.subtitle, description: theme.description,
+    width: 1500, height: 1000, nodes, accent: theme.accent };
+}
+
+function populateHushedValley(): MapData {
+  const map = populateNew(themes.hushedValley, hushedValleyPaths, hushedValleyFacilities, 40, 91, hushedReservedLand);
+  if (map.nodes.length !== 91 || Object.keys(hushedValleyFacilities).length !== 23) throw new Error('Invalid hushed valley layout');
+  for (const node of map.nodes) {
+    if (hushedReservedLand.has(node.id) && (node.kind === 'land' || hushedValleyFacilities[node.id])) {
+      throw new Error(`Hushed valley bridge or junction ${node.id} must be clear`);
+    }
+    const facilityName = hushedFacilityNames[node.kind];
+    if (facilityName) node.name = `${node.district}·${facilityName}${node.id}号`;
+  }
+  return map;
+}
+
 export const MAPS: Record<MapId, MapData> = {
   lake: populate(themes.lake, lakePaths),
   coast: populate(themes.coast, coastPaths),
@@ -360,6 +486,8 @@ export const MAPS: Record<MapId, MapData> = {
   starSands: populateNew(themes.starSands, starSandsPaths, starSandsFacilities, 34, 68),
   ashCanyon: populateNew(themes.ashCanyon, ashCanyonPaths, ashCanyonFacilities, 37, 62, ashCanyonReservedLand),
   peachHaven: populateNew(themes.peachHaven, peachHavenPaths, peachHavenFacilities, 36, 66, peachHavenReservedLand),
+  hushedValley: populateHushedValley(),
+  grandCity: populateGrandCity(),
 };
 
 for (const [id, name] of [

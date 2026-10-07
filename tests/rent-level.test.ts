@@ -33,7 +33,7 @@ function rentLanding(level: RentLevel): GameState {
 }
 
 describe('ordinary property rent levels', () => {
-  it('doubles new-game cash only for heavy Forest, for every player and season length', () => {
+  it('applies map-specific starting cash to every player and season length', () => {
     const players = [
       config.players[0],
       config.players[1],
@@ -44,7 +44,7 @@ describe('ordinary property rent levels', () => {
     expect(getStartingCash({ mapId: 'forest' })).toBe(BASE_STARTING_CASH);
     for (const mapId of Object.keys(MAPS) as (keyof typeof MAPS)[]) {
       for (const rentLevel of RENT_LEVELS) {
-        const cash = mapId === 'forest' && rentLevel === 'heavy' ? 200_000 : BASE_STARTING_CASH;
+        const cash = mapId === 'grandCity' ? 150_000 : mapId === 'forest' && rentLevel === 'heavy' ? 200_000 : BASE_STARTING_CASH;
         expect(getStartingCash({ mapId, rentLevel })).toBe(cash);
         for (const seasons of [0, 4, 8, 16]) {
           const state = createGame({ ...config, mapId, rentLevel, seasons, players });

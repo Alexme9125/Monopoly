@@ -76,7 +76,9 @@ function beaconSeed(): number {
   for (let seed = 1; seed < 20_000; seed++) {
     const config: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
       players: [hostProfile, guestProfile] as GameConfig['players'] };
-    if (act(createGame(config), { type: 'roll' }).pending?.data?.eventId === 'beacon_lab') return seed;
+    const landed = act(createGame(config), { type: 'roll' });
+    if (landed.pending?.data?.eventId === 'beacon_lab'
+      && act(landed, { type: 'choose', choiceId: 'beacon_lab_assist' }).phase === 'end') return seed;
   }
   throw new Error('Could not find a deterministic beacon_lab opening');
 }
@@ -229,11 +231,16 @@ describe('authoritative room server', () => {
   }, 30_000);
 
   it('shares the current turn encounter and its selected result with both PVP clients', async () => {
-    // This opening roll produces a choice event after the facility redistribution.
-    const seed = 25;
-    const preview: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
-      players: [hostProfile, guestProfile] as GameConfig['players'] };
-    expect(act(createGame(preview), { type: 'roll' }).pending?.data?.eventId).toBe('archive');
+    let seed = 0;
+    for (let candidate = 1; candidate < 20_000; candidate++) {
+      const preview: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed: candidate,
+        players: [hostProfile, guestProfile] as GameConfig['players'] };
+      const landed = act(createGame(preview), { type: 'roll' });
+      if (landed.pending?.data?.eventId !== 'archive') continue;
+      const choice = landed.pending.choices.find(entry => !entry.disabled);
+      if (choice && act(landed, { type: 'choose', choiceId: choice.id }).phase === 'end') { seed = candidate; break; }
+    }
+    expect(seed).toBeGreaterThan(0);
     const host = await Client.connect(server.port); clients.push(host);
     const guest = await Client.connect(server.port); clients.push(guest);
     let since = host.messages.length;
@@ -337,10 +344,20 @@ describe('authoritative room server', () => {
   }, 20_000);
 
   it('lets only the landed PVP payer decide whether to keep a rent card', async () => {
+    let seed = 0;
+    for (let candidate = 1; candidate < 20_000; candidate++) {
+      const preview: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed: candidate,
+        players: [hostProfile, guestProfile] as GameConfig['players'] };
+      const first = act(createGame(preview), { type: 'roll' });
+      if (first.pending?.kind !== 'land' || first.players[0].position !== 1) continue;
+      const second = act(act(act(first, { type: 'choose', choiceId: 'buy' }), { type: 'endTurn' }), { type: 'roll' });
+      if (second.pending?.kind === 'rent' && second.pending.data?.nodeId === 1) { seed = candidate; break; }
+    }
+    expect(seed).toBeGreaterThan(0);
     const host = await Client.connect(server.port); clients.push(host);
     const guest = await Client.connect(server.port); clients.push(guest);
     let since = host.messages.length;
-    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: 15 } });
+    host.send({ type: 'create', profile: hostProfile, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed } });
     const created = await host.wait(message => message.type === 'room' && message.room.members.length === 1, since);
     const code = created.room.code;
     since = guest.messages.length;

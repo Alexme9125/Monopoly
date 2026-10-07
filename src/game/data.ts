@@ -3,7 +3,7 @@ import { HOSTILE_ITEM_MOOD_LOSS } from './economy';
 
 export const JOURNEY_REWARD_STEPS = 72;
 export const JOURNEY_REWARD_CASH = 10_000;
-export const getJourneyRewardSteps = (mapId: MapId): number => mapId === 'forest' ? 24 : JOURNEY_REWARD_STEPS;
+export const getJourneyRewardSteps = (mapId: MapId): number => mapId === 'forest' ? 24 : mapId === 'grandCity' ? 48 : JOURNEY_REWARD_STEPS;
 
 const item = (id: string, name: string, icon: string, category: ItemDef['category'], price: number, description: string, shop = true, susceptible = false, target?: ItemDef['target']): ItemDef => ({
   id, name, icon, category, price, description, shop, susceptible, target,
@@ -38,7 +38,7 @@ const itemList: ItemDef[] = [
   item('teleportStone', '传送石', '💎', 'special', 3200, '行动前点选任意其他地块，直接传送并结算落点，本回合不再掷骰。传送不计入行走奖励，不受行走位移影响。', true, false, 'node'),
   item('dry', '全效干燥剂', '🧴', 'supply', 760, '立即晾干背包中所有受潮道具，恢复其使用能力。'),
   item('umbrella', '三日星伞', '☂️', 'special', 1100, '获得持续 3 日的天气防护状态。'),
-  item('repair', '建筑修复包', '🔧', 'special', 1600, '修复指定房产；原建筑低于 4 层时，还可免费升级 1 层。', true, false, 'property'),
+  item('repair', '建筑修复包', '🔧', 'special', 1600, '指定自己未抵押且未达本地图地标层数的普通地产，免费升级 1 层；不可用于公共设施。', true, false, 'property'),
   item('lottery', '星海奖券', '🎟️', 'card', 1200, '事件奖券，使用后立即开奖并获得 100–5000 PM 奖金；商店不售卖。', false),
 ];
 

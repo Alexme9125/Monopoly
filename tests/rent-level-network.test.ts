@@ -3,9 +3,9 @@ import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { expect, it } from 'vitest';
 import { createRoomServer } from '../server/index';
-import { getRent } from '../src/game/engine';
+import { act, createGame, getRent } from '../src/game/engine';
 import { MAPS } from '../src/game/maps';
-import type { RentLevel } from '../src/game/types';
+import type { GameConfig, RentLevel } from '../src/game/types';
 
 type Wire = { type: string; room?: any; message?: string };
 
@@ -57,7 +57,21 @@ class Client {
 
 const hostProfile = { name: '房主', color: '#D55B48', shape: 'circle', personality: 'balanced' };
 const guestProfile = { name: '访客', color: '#277DA8', shape: 'diamond', personality: 'cautious' };
-const initialConfig = { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: 16 };
+function purchaseAndRentSeed(): number {
+  for (let seed = 1; seed <= 20_000; seed++) {
+    const config: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', rentLevel: 'heavy', seed,
+      players: [{ ...hostProfile, shape: 'circle', ai: false }, { ...guestProfile, shape: 'diamond', ai: false }] as GameConfig['players'] };
+    const landed = act(createGame(config), { type: 'roll' });
+    if (landed.pending?.kind !== 'land' || landed.players[0].position !== 48) continue;
+    const bought = act(landed, { type: 'choose', choiceId: 'buy' });
+    if (bought.properties[48]?.ownerId !== 'p1') continue;
+    const nextPlayer = act(bought, { type: 'endTurn' });
+    const rent = act(nextPlayer, { type: 'roll' });
+    if (rent.pending?.kind === 'rent' && rent.pending.data?.nodeId === 48) return seed;
+  }
+  throw new Error('No deterministic opening purchase and rent seed');
+}
+const initialConfig = { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: purchaseAndRentSeed() };
 
 it('defaults, validates, broadcasts, and preserves rent level through reconnect and paid rent', async () => {
   const server = await createRoomServer({ port: 0, host: '127.0.0.1' });

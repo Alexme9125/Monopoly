@@ -2023,5 +2023,486 @@ export const REGIONAL_EVENTS: EventDef[] = [
         "cash": 900
       }
     ]
+  },
+  {
+    "id": "hushedValley_cairn_route",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "title": "苔痕石堆的岔路",
+    "story": "几块叠起的石头露出旧测绘刻痕。这里没有问路的人，代理人可以重新比对河岸坐标，把失落的支路上传到导航网。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_cairn_route_1",
+        "label": "测绘支路",
+        "description": "体力 -4，获得 420 PM$。",
+        "stamina": -4,
+        "cash": 420
+      },
+      {
+        "id": "hushedValley_cairn_route_2",
+        "label": "只上传石堆位置",
+        "description": "获得 160 PM$。",
+        "cash": 160
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_falls_echo",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "title": "瀑布之后的安静",
+    "story": "走过轰鸣的叠瀑，背风岩台上只剩细水滴落的声音。代理人在苔毯边放下行囊，终于能喘一口气。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "hushedValley_falls_echo_1",
+        "label": "听完一段水声",
+        "description": "心情 +12。",
+        "mood": 12
+      },
+      {
+        "id": "hushedValley_falls_echo_2",
+        "label": "在岩台整理呼吸",
+        "description": "体力 +8。",
+        "stamina": 8
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_reed_store",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "title": "浅滩的芦根匣",
+    "story": "枯芦丛中藏着一个带有效期标签的野外补给匣。取出里面的密封口粮需要清开淤沙，匣盖也标明了可领取的线索登记赏金。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "hushedValley_reed_store_1",
+        "label": "清开淤沙取口粮",
+        "description": "体力 -4，获得 1 份能量小食。",
+        "stamina": -4,
+        "item": "snack"
+      },
+      {
+        "id": "hushedValley_reed_store_2",
+        "label": "登记补给匣坐标",
+        "description": "获得 180 PM$。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_bridge_lashing",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "title": "桥索松了半圈",
+    "story": "独木桥旁的自动巡检灯亮起黄光，你的随行货架刚好挂松一根系索。维护材料箱可以付费开启，也能让代理人用备用绳重新固定。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "hushedValley_bridge_lashing_1",
+        "label": "开启维护材料箱",
+        "description": "支付 260 PM$。",
+        "cash": -260
+      },
+      {
+        "id": "hushedValley_bridge_lashing_2",
+        "label": "重新紧固系索",
+        "description": "体力 -5，免付材料费。",
+        "stamina": -5
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_bramble_zip",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "title": "倒木钩住工具袋",
+    "story": "跨过横在路侧的倒木时，工具袋被枯枝缠住了。快拆扣能直接换新；慢慢解开则省钱，只是让代理人有些烦躁。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "hushedValley_bramble_zip_1",
+        "label": "更换快拆扣",
+        "description": "支付 220 PM$。",
+        "cash": -220
+      },
+      {
+        "id": "hushedValley_bramble_zip_2",
+        "label": "耐心解开枯枝",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_sealed_cache",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "岩棚下的密封储箱",
+    "story": "岩棚深处放着仍在运行的应急储箱。公共口粮可以免费领取，防潮维护模块则需要补缴储备成本，供后来者继续使用。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_sealed_cache_1",
+        "label": "补缴防潮模块成本",
+        "description": "支付 650 PM$，获得 1 瓶全效干燥剂。",
+        "cash": -650,
+        "item": "dry"
+      },
+      {
+        "id": "hushedValley_sealed_cache_2",
+        "label": "领取公共口粮",
+        "description": "获得 1 份能量小食。",
+        "item": "snack"
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_cave_compass",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "荧岩洞中的偏转",
+    "story": "洞壁微光照亮一台旧校准台，信标指针在晶脉附近轻轻偏转。重新采样可以修好一枚控骰器，也可以只在安全处看一会儿微光。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_cave_compass_1",
+        "label": "更换探头并采样",
+        "description": "支付 500 PM$、体力 -8，获得 1 个控骰器。",
+        "cash": -500,
+        "stamina": -8,
+        "item": "controller"
+      },
+      {
+        "id": "hushedValley_cave_compass_2",
+        "label": "在洞口观察微光",
+        "description": "心情 +6。",
+        "mood": 6
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_root_anchor",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "河岸根基松动",
+    "story": "监测信标报告：涨落的河水带走了名下普通建筑周围的细沙。临时锚固能保住楼层；拖延处理则会损坏一处非地标建筑，地标已有深桩保护。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "hushedValley_root_anchor_1",
+        "label": "购买临时锚固组件",
+        "description": "支付 700 PM$，避免建筑损坏。",
+        "cash": -700
+      },
+      {
+        "id": "hushedValley_root_anchor_2",
+        "label": "暂缓锚固",
+        "description": "一处非地标建筑损失 1 层，心情 -3；没有符合条件的建筑则不损楼。",
+        "damageBuilding": true,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_distant_signal",
+    "mapId": "hushedValley",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "无人守候的烽烟",
+    "story": "远处岩脊升起一缕细烟，走近才发现是定时启动的求援标记。旧救援终端仍存着一枚传送石，可以付费重置并徒步取回，也可提交位置换取维护赏金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_distant_signal_1",
+        "label": "重置终端并取回",
+        "description": "支付 1800 PM$、体力 -8，获得 1 枚传送石。",
+        "cash": -1800,
+        "stamina": -8,
+        "item": "teleportStone"
+      },
+      {
+        "id": "hushedValley_distant_signal_2",
+        "label": "提交终端位置",
+        "description": "获得 600 PM$。",
+        "cash": 600
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_luminous_kernel",
+    "mapId": "hushedValley",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "微光深处的星核",
+    "story": "洞中矿脉映出细密的百面纹路。一台远程研究装置允许你承担封装费用带走样品；只采集光谱，也能让信标获得短暂的幸运校准。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_luminous_kernel_1",
+        "label": "耐心封装星核",
+        "description": "支付 2500 PM$、心情 -6，获得 1 枚百面星核骰。",
+        "cash": -2500,
+        "mood": -6,
+        "item": "dice100"
+      },
+      {
+        "id": "hushedValley_luminous_kernel_2",
+        "label": "采集矿脉光谱",
+        "description": "获得 3 日幸运。",
+        "status": "luck:3"
+      }
+    ]
+  },
+  {
+    "id": "grandCity_stair_delivery",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "title": "云阶的最后一段台阶",
+    "story": "服务机器人把文件送到了楼下，最后一段观景台阶需要人工接驳。代理人可以接下跑腿单，或在开放平台稍作休息。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_stair_delivery_1",
+        "label": "把文件送上平台",
+        "description": "体力 -3，获得 360 PM$。",
+        "stamina": -3,
+        "cash": 360
+      },
+      {
+        "id": "grandCity_stair_delivery_2",
+        "label": "在平台歇脚",
+        "description": "心情 +6。",
+        "mood": 6
+      }
+    ]
+  },
+  {
+    "id": "grandCity_address_receipt",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "title": "门牌后的旧账单",
+    "story": "预制楼交接系统把一笔公共门牌维护费寄到了你的临时账户。先行支付能立刻结案，翻查交接编号也能撤回误单。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "grandCity_address_receipt_1",
+        "label": "先支付维护费",
+        "description": "支付 280 PM$。",
+        "cash": -280
+      },
+      {
+        "id": "grandCity_address_receipt_2",
+        "label": "翻查编号撤回误单",
+        "description": "心情 -5，不扣现金。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "grandCity_fountain_recording",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "title": "水庭整点的弧光",
+    "story": "中央水庭的喷泉恰好迎来整点，水雾在石阶上拉出一条淡虹。城市影像库正在征集这一刻的取景，也欢迎旅人静静欣赏。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "grandCity_fountain_recording_1",
+        "label": "看完喷泉表演",
+        "description": "心情 +12。",
+        "mood": 12
+      },
+      {
+        "id": "grandCity_fountain_recording_2",
+        "label": "提交取景照片",
+        "description": "获得 180 PM$。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roof_garden",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "title": "楼顶花园开放日",
+    "story": "环翠片区把一座公共屋顶花园向行人开放。帮园丁搬几盆小树，就能亲手种下一角绿意；遮阴凉棚也准备了饮水。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "grandCity_roof_garden_1",
+        "label": "帮忙安放小树",
+        "description": "体力 -4，心情 +14。",
+        "stamina": -4,
+        "mood": 14
+      },
+      {
+        "id": "grandCity_roof_garden_2",
+        "label": "在凉棚补水",
+        "description": "体力 +8。",
+        "stamina": 8
+      }
+    ]
+  },
+  {
+    "id": "grandCity_awning_trial",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "title": "街角新雨棚",
+    "story": "曜庭街角正在试装可伸缩雨棚，设计师想记录代理人推车通过时的间距。旁边的咖啡窗口也刚刚开门。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_awning_trial_1",
+        "label": "协助测量通行间距",
+        "description": "获得 260 PM$。",
+        "cash": 260
+      },
+      {
+        "id": "grandCity_awning_trial_2",
+        "label": "买一杯开门咖啡",
+        "description": "支付 150 PM$，获得 1 份晨星咖啡。",
+        "cash": -150,
+        "item": "coffee"
+      }
+    ]
+  },
+  {
+    "id": "grandCity_prefab_inspection",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "预制楼的交接清单",
+    "story": "建筑中心准备了一批标准接缝修复包，参加交接巡检便可按材料价领走一份。若代理人愿意逐层记录，也能领取巡检劳务费。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_prefab_inspection_1",
+        "label": "领取标准修复包",
+        "description": "支付 650 PM$，获得 1 个建筑修复包。",
+        "cash": -650,
+        "item": "repair"
+      },
+      {
+        "id": "grandCity_prefab_inspection_2",
+        "label": "逐层记录接缝",
+        "description": "体力 -6，获得 480 PM$。",
+        "stamina": -6,
+        "cash": 480
+      }
+    ]
+  },
+  {
+    "id": "grandCity_paired_lights",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "双环同步的信号灯",
+    "story": "内外两环的信号灯总是慢半拍。实验室用一对同步晶体查找原因，邀请你付费领走培养样本，或帮忙沿街计时。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_paired_lights_1",
+        "label": "领走同步晶体样本",
+        "description": "支付 650 PM$，获得 1 个双生培养皿。",
+        "cash": -650,
+        "item": "twinDish"
+      },
+      {
+        "id": "grandCity_paired_lights_2",
+        "label": "沿街采集计时数据",
+        "description": "体力 -6，获得 350 PM$。",
+        "stamina": -6,
+        "cash": 350
+      }
+    ]
+  },
+  {
+    "id": "grandCity_lease_archive",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "title": "天际租约档案",
+    "story": "天际片区的商户正在整理旧租约，愿意向出资修复档案的老板提供联合免租凭证。人工核对页码也能换一笔小额劳务费。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_lease_archive_1",
+        "label": "资助修复旧租约",
+        "description": "支付 620 PM$，获得 1 张免租卡。",
+        "cash": -620,
+        "item": "rent"
+      },
+      {
+        "id": "grandCity_lease_archive_2",
+        "label": "逐页核对编号",
+        "description": "心情 -4，获得 150 PM$。",
+        "mood": -4,
+        "cash": 150
+      }
+    ]
+  },
+  {
+    "id": "grandCity_axial_transfer",
+    "mapId": "grandCity",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "四轴传送的测试席",
+    "story": "四条中轴连接路汇入同一套城市定位网。交通实验室开放了一个测试席，付费完成登记可以带走传送石；仅提交路测记录也有酬谢。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_axial_transfer_1",
+        "label": "完成测试席登记",
+        "description": "支付 2300 PM$，获得 1 枚传送石。",
+        "cash": -2300,
+        "item": "teleportStone"
+      },
+      {
+        "id": "grandCity_axial_transfer_2",
+        "label": "提交双环路测记录",
+        "description": "获得 650 PM$。",
+        "cash": 650
+      }
+    ]
+  },
+  {
+    "id": "grandCity_skyline_observatory",
+    "mapId": "grandCity",
+    "rarity": "rare",
+    "dlc": true,
+    "title": "天际线上的气象台",
+    "story": "城市高处的观测台正在校准微气候模型。你可以分担试验成本带走一台天气控制器，也可以为代理人领取一份观星幸运签。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_skyline_observatory_1",
+        "label": "分担微气候试验",
+        "description": "支付 2000 PM$，获得 1 台天气控制器。",
+        "cash": -2000,
+        "item": "weather"
+      },
+      {
+        "id": "grandCity_skyline_observatory_2",
+        "label": "领取观星幸运签",
+        "description": "获得 3 日幸运。",
+        "status": "luck:3"
+      }
+    ]
   }
 ];

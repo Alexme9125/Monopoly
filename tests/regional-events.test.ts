@@ -9,7 +9,7 @@ import { REGIONAL_EVENTS } from '../src/game/regionalEvents';
 import { parseSave } from '../src/game/storage';
 import type { EventDef, GameConfig, GameState, MapId } from '../src/game/types';
 
-const mapIds = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven'] as MapId[];
+const mapIds = ['lake', 'coast', 'valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven', 'hushedValley', 'grandCity'] as MapId[];
 const establishedMapIds = ['lake', 'coast', 'valley', 'sundered'] as MapId[];
 const config = (mapId: MapId, ai = false): GameConfig => ({
   mapId, mode: 'pve', seasons: 4, weatherMode: 'standard', seed: 1978,
@@ -41,19 +41,24 @@ function itemQuantity(state: GameState, itemId: string): number {
 }
 
 describe('map-exclusive regional encounters', () => {
-  it('keeps the 48 universal events and exposes exactly 5/3/2 regional events per map', () => {
+  it('keeps the 48 universal events and exposes exactly 5/3/2 regional events on all ten maps', () => {
     expect(REGIONAL_EVENTS).toEqual(JSON.parse(readFileSync(new URL('../docs/regional-events-design.json', import.meta.url), 'utf8')));
+    expect(REGIONAL_EVENTS.slice(80)).toEqual(JSON.parse(readFileSync(new URL('../docs/HUSHED_CITY_EVENTS.json', import.meta.url), 'utf8')));
     expect(EVENTS).toHaveLength(48);
-    expect(REGIONAL_EVENTS).toHaveLength(80);
-    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(128);
-    // Preserve the original four maps and the previous six-map catalogue byte for byte.
+    expect(REGIONAL_EVENTS).toHaveLength(100);
+    expect(new Set([...EVENTS, ...REGIONAL_EVENTS].map(event => event.id)).size).toBe(148);
+    // Preserve all original 80 regional entries exactly, including earlier DLC additions.
     expect(createHash('sha256').update(JSON.stringify(REGIONAL_EVENTS.slice(0, 40))).digest('hex'))
       .toBe('958d5b438e1dfdcf9d57e92b4d4587b1a193001df811a76140254efc981b77ad');
     expect(createHash('sha256').update(JSON.stringify(REGIONAL_EVENTS.slice(0, 60))).digest('hex'))
       .toBe('e31a05c3fb8958e0ca57099e61ea2cc76f90fceeba168b7ebf9ed946f61d09f3');
+    expect(createHash('sha256').update(JSON.stringify(REGIONAL_EVENTS.slice(0, 80))).digest('hex'))
+      .toBe('dea39fbf91ef11c28dbdba66aeef6763f5ec203c108853b41bc99331973e58f4');
     expect(REGIONAL_EVENTS.slice(0, 40).every(event => establishedMapIds.includes(event.mapId!))).toBe(true);
     expect(REGIONAL_EVENTS.slice(40, 60).every(event => event.mapId === 'forest' || event.mapId === 'starSands')).toBe(true);
-    expect(REGIONAL_EVENTS.slice(60).every(event => event.mapId === 'ashCanyon' || event.mapId === 'peachHaven')).toBe(true);
+    expect(REGIONAL_EVENTS.slice(60, 80).every(event => event.mapId === 'ashCanyon' || event.mapId === 'peachHaven')).toBe(true);
+    expect(REGIONAL_EVENTS.slice(80, 90).every(event => event.mapId === 'hushedValley')).toBe(true);
+    expect(REGIONAL_EVENTS.slice(90).every(event => event.mapId === 'grandCity')).toBe(true);
     for (const mapId of mapIds) {
       const regional = REGIONAL_EVENTS.filter(event => event.mapId === mapId);
       expect(regional).toHaveLength(10);
@@ -112,6 +117,7 @@ describe('map-exclusive regional encounters', () => {
   });
 
   it('settles every local choice using its declared effects and leaves public results', () => {
+    expect(REGIONAL_EVENTS.slice(80).reduce((count, event) => count + event.choices.length, 0)).toBe(40);
     for (const event of REGIONAL_EVENTS) for (const option of event.choices) {
       const before = awaitingEvent(event.mapId!, event);
       const after = act(before, { type: 'choose', choiceId: option.id });
@@ -144,11 +150,35 @@ describe('map-exclusive regional encounters', () => {
       eventId: foreign.id, title: foreign.title, story: foreign.story, tone: foreign.tone,
       choices: [{ id: foreign.choices[0].id, label: foreign.choices[0].label }] }];
     expect(() => parseSave(JSON.stringify(publicForgery))).toThrow('偶遇');
+    for (const event of REGIONAL_EVENTS.slice(80).filter(entry => entry.id.endsWith('cairn_route') || entry.id.endsWith('stair_delivery'))) {
+      for (const otherMap of mapIds.filter(id => id !== event.mapId)) {
+        const wrongMap = awaitingEvent(otherMap, event);
+        expect(act(wrongMap, { type: 'choose', choiceId: event.choices[0].id }), `${event.id} on ${otherMap}`).toBe(wrongMap);
+        expect(() => parseSave(JSON.stringify(wrongMap)), `${event.id} save on ${otherMap}`).toThrow('对局');
+      }
+    }
     const legacy = awaitingEvent('lake', EVENTS[0]);
     delete legacy.turnEncounters;
     const resumed = parseSave(JSON.stringify(legacy));
     expect(resumed.turnEncounters?.at(-1)?.eventId).toBe(EVENTS[0].id);
     expect(act(resumed, { type: 'choose', choiceId: EVENTS[0].choices[0].id })).not.toBe(resumed);
+  });
+
+  it('lets riverbank damage lower a fourth floor but protects the fifth-floor landmark', () => {
+    const event = REGIONAL_EVENTS.find(entry => entry.id === 'hushedValley_root_anchor')!;
+    const land = MAPS.hushedValley.nodes.find(node => node.kind === 'land')!;
+    const damageChoice = 'hushedValley_root_anchor_2';
+    for (const [level, expected] of [[4, 3], [5, 5]] as const) {
+      const before = awaitingEvent('hushedValley', event);
+      before.properties[land.id] = { ownerId: 'p1', level, mortgaged: false };
+      const after = act(before, { type: 'choose', choiceId: damageChoice });
+      expect(after).not.toBe(before);
+      expect(after.properties[land.id].level).toBe(expected);
+      expect(after.players[0].mood).toBe(before.players[0].mood - 3);
+      expect(after.turnEncounters?.at(-1)).toMatchObject({ eventId: event.id, selectedChoiceId: damageChoice });
+      expect(after.turnEncounters?.at(-1)?.result).toContain(level === 4 ? '降至3级' : '无受损建筑');
+      expect(parseSave(JSON.stringify(after)).properties[land.id].level).toBe(expected);
+    }
   });
 
   it('lets AI resolve local choices and resource-disabled fallback without deadlock', () => {
@@ -158,10 +188,14 @@ describe('map-exclusive regional encounters', () => {
       expect(after, `${event.id} AI`).not.toBe(state);
       expect(after.turnEncounters?.at(-1)?.selectedChoiceId).toBeDefined();
     }
-    const itemEvent = REGIONAL_EVENTS.find(event => event.choices.some(choice => !!choice.item))!;
-    const full = awaitingEvent(itemEvent.mapId!, itemEvent, true);
-    full.players[0].capacity = full.players[0].inventory.length;
-    full.pending!.choices = [{ id: 'skip_unavailable', label: '资源不足，离开' }];
+    const blockedEvent = REGIONAL_EVENTS.find(event => event.id === 'lake_meter_dispute')!;
+    const full = awaitingEvent('lake', blockedEvent, true);
+    full.players[0].cash = 0;
+    full.players[0].mood = 0;
+    full.pending!.choices = [
+      ...blockedEvent.choices.map(choice => ({ id: choice.id, label: choice.label, disabled: true })),
+      { id: 'skip_unavailable', label: '资源不足，离开' },
+    ];
     const left = runAI(full);
     expect(left).not.toBe(full);
     expect(left.pending).toBeNull();
@@ -193,7 +227,7 @@ describe('map-exclusive regional encounters', () => {
     expect(runAI(noBuilding).turnEncounters?.at(-1)?.selectedChoiceId).toBe('lake_cable_alarm_defer');
   });
 
-  it('resolves real low-resource and full-bag regional landings for all 80 events', () => {
+  it('resolves real low-resource and full-bag regional landings for all 100 events', () => {
     let blockedOptions = 0;
     let fallbackCount = 0;
     for (const mapId of mapIds) {

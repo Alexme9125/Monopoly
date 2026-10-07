@@ -120,8 +120,8 @@ describe('map road networks', () => {
     expect(MAPS.sundered.nodes[0]).toMatchObject({ x: 180, y: 560, kind: 'start' });
     expect(MAPS.sundered.nodes.filter(node => node.neighbors.length === 3)).toHaveLength(6);
   });
-  const expectedRanges: Record<MapId, [number, number]> = { lake: [70, 90], coast: [70, 90], valley: [90, 110], sundered: [105, 105], forest: [64, 64], starSands: [76, 76], ashCanyon: [84, 84], peachHaven: [82, 82] };
-  const maxEdgeLength: Record<MapId, number> = { lake: 82, coast: 75, valley: 100, sundered: 60, forest: 60, starSands: 60, ashCanyon: 60, peachHaven: 60 };
+  const expectedRanges: Record<MapId, [number, number]> = { lake: [70, 90], coast: [70, 90], valley: [90, 110], sundered: [105, 105], forest: [64, 64], starSands: [76, 76], ashCanyon: [84, 84], peachHaven: [82, 82], hushedValley: [91, 91], grandCity: [96, 96] };
+  const maxEdgeLength: Record<MapId, number> = { lake: 82, coast: 75, valley: 100, sundered: 60, forest: 60, starSands: 60, ashCanyon: 60, peachHaven: 60, hushedValley: 60, grandCity: 60 };
   const bounds: Record<MapId, { left: number; right: number; top: number; bottom: number }> = {
     lake: { left: 220, right: 1308, top: 150, bottom: 820 },
     coast: { left: 160, right: 1340, top: 150, bottom: 830 },
@@ -131,6 +131,8 @@ describe('map road networks', () => {
     starSands: { left: 180, right: 1320, top: 200, bottom: 800 },
     ashCanyon: { left: 180, right: 1320, top: 140, bottom: 860 },
     peachHaven: { left: 180, right: 1320, top: 140, bottom: 860 },
+    hushedValley: { left: 180, right: 1320, top: 80, bottom: 920 },
+    grandCity: { left: 330, right: 1170, top: 80, bottom: 920 },
   };
   for (const map of Object.values(MAPS)) {
     it(`${map.id} has contiguous, connected and local roads`, () => {
@@ -151,7 +153,7 @@ describe('map road networks', () => {
           expect(next).toBeDefined();
           expect(next.neighbors).toContain(node.id);
           expect(Math.hypot(next.x - node.x, next.y - node.y)).toBeLessThanOrEqual(maxEdgeLength[map.id]);
-          if (['valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven'].includes(map.id)) expect(node.x === next.x || node.y === next.y).toBe(true);
+          if (['valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven', 'hushedValley', 'grandCity'].includes(map.id)) expect(node.x === next.x || node.y === next.y).toBe(true);
           if (node.id < nextId) edges.push([node, next]);
           if (!seen.has(nextId)) { seen.add(nextId); stack.push(nextId); }
         }
@@ -173,7 +175,7 @@ describe('map road networks', () => {
           expect(intersects(a, b, c, d), `${map.id}: ${a.id}-${b.id} touches ${c.id}-${d.id} without a junction`).toBe(false);
         }
       }
-      if (['sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven'].includes(map.id)) {
+      if (['sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven', 'hushedValley', 'grandCity'].includes(map.id)) {
         for (const [a, b] of edges) for (const node of nodes) {
           if (node.id === a.id || node.id === b.id) continue;
           const cross = (b.x - a.x) * (node.y - a.y) - (b.y - a.y) * (node.x - a.x);
@@ -181,7 +183,7 @@ describe('map road networks', () => {
           expect(Math.abs(cross) < 1e-6 && inside, `${map.id} edge ${a.id}-${b.id} passes node ${node.id} without connecting`).toBe(false);
         }
       }
-      if (['valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven'].includes(map.id)) {
+      if (['valley', 'sundered', 'forest', 'starSands', 'ashCanyon', 'peachHaven', 'hushedValley', 'grandCity'].includes(map.id)) {
         for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
           expect(Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y), `${map.id} nodes ${i} and ${j} are too close`).toBeGreaterThanOrEqual(52);
         }
@@ -196,11 +198,18 @@ describe('map road networks', () => {
       expect(counts.get('station')).toBeGreaterThanOrEqual(3);
       expect(counts.get('shop')).toBeGreaterThanOrEqual(3);
       expect(counts.get('exchange')).toBeGreaterThanOrEqual(2);
-      expect((counts.get('land') ?? 0) / nodes.length).toBeGreaterThan(0.42);
-      expect((counts.get('land') ?? 0) / nodes.length).toBeLessThan(0.48);
+      if (map.id === 'grandCity') expect(counts.get('land')).toBe(58);
+      else {
+        expect((counts.get('land') ?? 0) / nodes.length).toBeGreaterThan(0.42);
+        expect((counts.get('land') ?? 0) / nodes.length).toBeLessThan(0.48);
+      }
       const facilities = nodes.filter(n => facilityKinds.has(n.kind));
-      expect(facilities.length / nodes.length).toBeGreaterThan(0.27);
-      expect(facilities.length / nodes.length).toBeLessThan(0.33);
+      if (map.id === 'hushedValley') expect(facilities).toHaveLength(23);
+      else if (map.id === 'grandCity') expect(facilities).toHaveLength(25);
+      else {
+        expect(facilities.length / nodes.length).toBeGreaterThan(0.27);
+        expect(facilities.length / nodes.length).toBeLessThan(0.33);
+      }
       expect(new Set(nodes.map(n => n.name)).size).toBe(nodes.length);
       for (const node of nodes.filter(n => n.price !== undefined)) {
         expect(node.price).toBeGreaterThanOrEqual(800);

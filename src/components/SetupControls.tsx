@@ -94,7 +94,7 @@ export function RentBurdenControl({ value, mapId, seasons, onChange, disabled = 
     <div id={`${id}-combination`} role="status" aria-live="polite" aria-atomic="true">
       {boostedStart && <div className="rent-combination-note rent-combination-note--bonus">
         <Coins size={18} aria-hidden="true" />
-        <div><strong>森林启程补给 ×2</strong><p>始初森林搭配沉重负担，每位玩家初始资金为 <span className="rent-starting-cash">PM$ {startingCash.toLocaleString('zh-CN')}</span>。</p></div>
+        <div><strong>{mapId === 'grandCity' ? '伟岸之城 · 都会启程资金' : '森林启程补给 ×2'}</strong><p>{mapId === 'grandCity' ? '伟岸之城的预制楼认购价含已有建筑投入，' : '始初森林搭配沉重负担，'}每位玩家初始资金为 <span className="rent-starting-cash">PM$ {startingCash.toLocaleString('zh-CN')}</span>。</p></div>
       </div>}
       {endlessRisk && <div className="rent-combination-note rent-combination-note--warning">
         <TriangleAlert size={18} aria-hidden="true" />

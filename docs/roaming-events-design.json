@@ -1,0 +1,3786 @@
+[
+  {
+    "id": "lake_roaming_glass_letters",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "落在窗沿的玻璃字",
+    "story": "湖畔玻璃工坊的展示字片被风吹散，一块正落在代理人的行进线上。工坊按送回的字片支付劳务，也接受位置标记。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "lake_roaming_glass_letters_1",
+        "label": "逐片收回",
+        "description": "体力 -3；棱镜币 +340。",
+        "stamina": -3,
+        "cash": 340
+      },
+      {
+        "id": "lake_roaming_glass_letters_2",
+        "label": "标记散落位置",
+        "description": "棱镜币 +160。",
+        "cash": 160
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_ferry_charger",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "借电的摆渡终端",
+    "story": "流动摆渡服务的终端没电了，船长拿着备用电池沿街寻找接线助手。协助接线能换来船上配给，提供线路图也有谢礼。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_ferry_charger_1",
+        "label": "帮忙接好电池",
+        "description": "体力 -2；获得 1 件能量小食。",
+        "stamina": -2,
+        "item": "snack"
+      },
+      {
+        "id": "lake_roaming_ferry_charger_2",
+        "label": "分享公共充电点",
+        "description": "棱镜币 +180。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_reed_shadow",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "芦影投上墙面",
+    "story": "一阵斜光把湖边芦苇投成巨大的剪影，临时摄影队正招募路过的记录员。你可以留一张照片，也可以替他们测量光线。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "lake_roaming_reed_shadow_1",
+        "label": "收下一张剪影照",
+        "description": "心情 +10。",
+        "mood": 10
+      },
+      {
+        "id": "lake_roaming_reed_shadow_2",
+        "label": "测量光线",
+        "description": "体力 -2；棱镜币 +260。",
+        "stamina": -2,
+        "cash": 260
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_pollen_filter",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "柳絮堵住散热口",
+    "story": "湖岸柳絮钻进代理人终端的散热口，温度警报催促你处理。街边维修车愿意更换滤网，自己慢慢清理则会费些精神。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "lake_roaming_pollen_filter_1",
+        "label": "更换滤网",
+        "description": "棱镜币 -240。",
+        "cash": -240
+      },
+      {
+        "id": "lake_roaming_pollen_filter_2",
+        "label": "逐孔清理",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_floating_lunch",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "差点漂走的餐篮",
+    "story": "一只系在岸栏上的送餐篮松了扣，代理人恰好抓住绳尾。送餐员赶来后，让你在小费和一份热饭之间选择。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "lake_roaming_floating_lunch_1",
+        "label": "收下配送小费",
+        "description": "棱镜币 +280。",
+        "cash": 280
+      },
+      {
+        "id": "lake_roaming_floating_lunch_2",
+        "label": "分一份热饭",
+        "description": "体力 +16。",
+        "stamina": 16
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_metered_shade",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "树荫的半小时",
+    "story": "临时导览队需要人帮忙照看湖畔排队线。你可以在荫凉处陪大家等候，也可以接下搬运导览牌的工作。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_metered_shade_1",
+        "label": "陪游客等候",
+        "description": "心情 +8；体力 +3。",
+        "mood": 8,
+        "stamina": 3
+      },
+      {
+        "id": "lake_roaming_metered_shade_2",
+        "label": "搬运导览牌",
+        "description": "体力 -4；棱镜币 +420。",
+        "stamina": -4,
+        "cash": 420
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_wrong_pier",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "发错的栈桥预约",
+    "story": "订位终端把你的代理人认成了包场联系人，自动送来一份现场确认单。立刻取消会收手续费，核对往来记录可以免缴。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "lake_roaming_wrong_pier_1",
+        "label": "支付取消手续费",
+        "description": "棱镜币 -180。",
+        "cash": -180
+      },
+      {
+        "id": "lake_roaming_wrong_pier_2",
+        "label": "逐条核对记录",
+        "description": "心情 -4。",
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_watercolour_route",
+    "mapId": "lake",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "水彩导览的空白一角",
+    "story": "流动画家正在补画湖岸的新街区，邀请你提供沿途印象。他愿意付钱购买线路笔记，也愿意用小画交换。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_watercolour_route_1",
+        "label": "出售线路笔记",
+        "description": "棱镜币 +310。",
+        "cash": 310
+      },
+      {
+        "id": "lake_roaming_watercolour_route_2",
+        "label": "用笔记换画",
+        "description": "心情 +12。",
+        "mood": 12
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_resonance_buoy",
+    "mapId": "lake",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "走失的测波浮标",
+    "story": "实验室的微型浮标搁浅在附近，储存着尚未回收的波形。你可以购买解锁服务取得校准设备，或把完整浮标送回领取补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_resonance_buoy_1",
+        "label": "购买解锁服务",
+        "description": "棱镜币 -760；获得 1 件控骰器。",
+        "cash": -760,
+        "item": "controller"
+      },
+      {
+        "id": "lake_roaming_resonance_buoy_2",
+        "label": "护送浮标回收",
+        "description": "体力 -5；棱镜币 +680。",
+        "stamina": -5,
+        "cash": 680
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_rainproof_archive",
+    "mapId": "lake",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "防潮档案的移动柜",
+    "story": "湖岸档案馆搬迁，一批街区契据装在流动防潮柜里。管理员以优惠价出售备用干燥剂，也愿意付费请人帮忙核对柜号。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_rainproof_archive_1",
+        "label": "买下备用干燥剂",
+        "description": "棱镜币 -360；获得 1 件全效干燥剂。",
+        "cash": -360,
+        "item": "dry"
+      },
+      {
+        "id": "lake_roaming_rainproof_archive_2",
+        "label": "核对柜号",
+        "description": "心情 -3；棱镜币 +520。",
+        "mood": -3,
+        "cash": 520
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_waterfront_audit",
+    "mapId": "lake",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "湖岸临时巡查",
+    "story": "巡查员发现你的随行施工申报少了一份湖岸保护附件。补办要收费；拒绝补办会触发一次非地标建筑检查，可能要求退回一层。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "lake_roaming_waterfront_audit_1",
+        "label": "补齐保护附件",
+        "description": "棱镜币 -850。",
+        "cash": -850
+      },
+      {
+        "id": "lake_roaming_waterfront_audit_2",
+        "label": "接受建筑整改",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -3。",
+        "damageBuilding": true,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_night_lanterns",
+    "mapId": "lake",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "留到明晚的湖灯",
+    "story": "流动湖灯摊准备收摊，你帮忙整理的灯芯恰好点亮最后一盏。摊主送你一份守夜补给，或邀请你为明晚许个好运。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "lake_roaming_night_lanterns_1",
+        "label": "带走守夜补给",
+        "description": "获得 1 件野营休憩包。",
+        "item": "restkit"
+      },
+      {
+        "id": "lake_roaming_night_lanterns_2",
+        "label": "点亮最后一盏",
+        "description": "获得幸运 2 日；心情 +5。",
+        "status": "luck:2",
+        "mood": 5
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_quiet_lease",
+    "mapId": "lake",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "水岸短租的错位日期",
+    "story": "移动租赁柜台发现两份优惠日历没有对齐，正在征集现场核算员。花时间核算可得到免租凭证，直接领工作补贴也行。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_quiet_lease_1",
+        "label": "校准优惠日历",
+        "description": "心情 -5；获得 1 件免租卡。",
+        "mood": -5,
+        "item": "rent"
+      },
+      {
+        "id": "lake_roaming_quiet_lease_2",
+        "label": "领取基础补贴",
+        "description": "棱镜币 +460。",
+        "cash": 460
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_prismatic_tide",
+    "mapId": "lake",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "没有潮汐的涨落",
+    "story": "镜湖突然出现一圈整齐的光纹，便携探测台把它判定为短暂空间折叠。研究员需要付费封装材料，也接受免费的远处观测记录。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_prismatic_tide_1",
+        "label": "出资封装光纹",
+        "description": "棱镜币 -1800；体力 -5；获得 1 件传送石。",
+        "cash": -1800,
+        "stamina": -5,
+        "item": "teleportStone"
+      },
+      {
+        "id": "lake_roaming_prismatic_tide_2",
+        "label": "留下观测记录",
+        "description": "棱镜币 +950；心情 +8。",
+        "cash": 950,
+        "mood": 8
+      }
+    ]
+  },
+  {
+    "id": "lake_roaming_hundred_reflections",
+    "mapId": "lake",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "一百个倒影的样本",
+    "story": "漂来的密封样本盒投出许多不重叠的倒影，回收团队正在现场分离星核。承担精密筛选可获百面骰，交回原盒则有奖金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "lake_roaming_hundred_reflections_1",
+        "label": "承担精密筛选",
+        "description": "棱镜币 -1700；心情 -8；获得 1 件百面星核骰。",
+        "cash": -1700,
+        "mood": -8,
+        "item": "dice100"
+      },
+      {
+        "id": "lake_roaming_hundred_reflections_2",
+        "label": "交回完整样本盒",
+        "description": "棱镜币 +1300。",
+        "cash": 1300
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_kite_tether",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "拴住一只送货风筝",
+    "story": "海岸的送货风筝被侧风吹低，牵引线从代理人面前滑过。接住货物有跑腿费；通知岸上操纵员也能换一杯饮品。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "coast_roaming_kite_tether_1",
+        "label": "拉回货物",
+        "description": "体力 -4；棱镜币 +390。",
+        "stamina": -4,
+        "cash": 390
+      },
+      {
+        "id": "coast_roaming_kite_tether_2",
+        "label": "呼叫操纵员",
+        "description": "获得 1 件晨星咖啡。",
+        "item": "coffee"
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_shell_receipt",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "贝壳背面的收据",
+    "story": "一枚装饰贝壳背面夹着商队遗失的收据，广播正寻找这张抵用凭证。归还可收谢礼，顺路帮忙整理账目能换更多报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_shell_receipt_1",
+        "label": "归还收据",
+        "description": "棱镜币 +220。",
+        "cash": 220
+      },
+      {
+        "id": "coast_roaming_shell_receipt_2",
+        "label": "顺手核对账目",
+        "description": "心情 -3；棱镜币 +470。",
+        "mood": -3,
+        "cash": 470
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_salt_lens",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "盐雾蒙住镜头",
+    "story": "代理人的导航镜头蒙上一层盐膜，画面开始失焦。维修摊提供清洗液，自己处理也能恢复，只是要消耗些精力。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "coast_roaming_salt_lens_1",
+        "label": "使用专用清洗液",
+        "description": "棱镜币 -230。",
+        "cash": -230
+      },
+      {
+        "id": "coast_roaming_salt_lens_2",
+        "label": "手工擦净盐膜",
+        "description": "体力 -2；心情 -3。",
+        "stamina": -2,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_driftwood_chorus",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "漂流木的敲击声",
+    "story": "沿海移动乐队用不同长度的漂流木试音。代理人可以停下来听完一段，也可以替他们搬运刚选好的木料。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "coast_roaming_driftwood_chorus_1",
+        "label": "听一段潮声节奏",
+        "description": "心情 +12。",
+        "mood": 12
+      },
+      {
+        "id": "coast_roaming_driftwood_chorus_2",
+        "label": "搬运漂流木",
+        "description": "体力 -4；棱镜币 +370。",
+        "stamina": -4,
+        "cash": 370
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_tide_warning",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "反过来的潮汐牌",
+    "story": "一块可移动潮汐牌被吹翻，指针朝向了错误的刻度。值守终端为现场修正提供奖励，远程报错同样可以领到小额补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_tide_warning_1",
+        "label": "校回刻度",
+        "description": "体力 -3；棱镜币 +350。",
+        "stamina": -3,
+        "cash": 350
+      },
+      {
+        "id": "coast_roaming_tide_warning_2",
+        "label": "提交现场照片",
+        "description": "棱镜币 +150。",
+        "cash": 150
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_borrowed_goggles",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "冲浪队的备用护目镜",
+    "story": "一支路过的冲浪队多带了补给，准备与其他旅人交换。你可以低价买下一份点心，也可以用宣传照片的拍摄换一杯热茶。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_borrowed_goggles_1",
+        "label": "购买点心",
+        "description": "棱镜币 -90；获得 1 件能量小食。",
+        "cash": -90,
+        "item": "snack"
+      },
+      {
+        "id": "coast_roaming_borrowed_goggles_2",
+        "label": "拍摄队伍合照",
+        "description": "体力 -2；获得 1 件月露茶。",
+        "stamina": -2,
+        "item": "tea"
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_harbour_whistle",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "把口哨当成警报",
+    "story": "代理人试吹纪念口哨，却恰好模仿了港区的临时警报码。广播要求当场说明情况；如果嫌麻烦，只能缴纳一次误报处理费。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "coast_roaming_harbour_whistle_1",
+        "label": "说明误报原因",
+        "description": "心情 -5。",
+        "mood": -5
+      },
+      {
+        "id": "coast_roaming_harbour_whistle_2",
+        "label": "缴纳处理费",
+        "description": "棱镜币 -270。",
+        "cash": -270
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_low_tide_basket",
+    "mapId": "coast",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "退潮线上的果篮",
+    "story": "补给无人车把一篮耐储存水果送到了旧退潮线，你的代理人碰巧经过。帮忙转移可以挑一份水果，也可以收运输费。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "coast_roaming_low_tide_basket_1",
+        "label": "挑选新鲜水果",
+        "description": "体力 +18。",
+        "stamina": 18
+      },
+      {
+        "id": "coast_roaming_low_tide_basket_2",
+        "label": "转移到新交接点",
+        "description": "体力 -3；棱镜币 +380。",
+        "stamina": -3,
+        "cash": 380
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_lighthouse_calibration",
+    "mapId": "coast",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "移动灯塔校准队",
+    "story": "灯塔检修队正沿海岸寻找反射角度合适的位置。协助长时间举稳反光板可换多面骰，支付材料费还能获得更精准的设备。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_lighthouse_calibration_1",
+        "label": "举稳反光板",
+        "description": "体力 -7；获得 1 件十二面电子骰。",
+        "stamina": -7,
+        "item": "dice12"
+      },
+      {
+        "id": "coast_roaming_lighthouse_calibration_2",
+        "label": "补足校准材料",
+        "description": "棱镜币 -850；获得 1 件控骰器。",
+        "cash": -850,
+        "item": "controller"
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_storm_shutters",
+    "mapId": "coast",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "风暴百叶的加固清单",
+    "story": "移动巡检车提醒你，一批物业的迎风百叶存在松动。付费统一处理最省心；不处理则要按抽查结果拆减一层非地标建筑。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "coast_roaming_storm_shutters_1",
+        "label": "统一加固",
+        "description": "棱镜币 -900。",
+        "cash": -900
+      },
+      {
+        "id": "coast_roaming_storm_shutters_2",
+        "label": "接受抽查整改",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -4。",
+        "damageBuilding": true,
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_sail_patch",
+    "mapId": "coast",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "能装进口袋的帆",
+    "story": "修帆师把剩余帆布折成耐用的小包，正在沿街交换材料。资助纤维涂层可以带走扩容背包，参与裁切则能拿到露营补给。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_sail_patch_1",
+        "label": "资助涂层",
+        "description": "棱镜币 -1050；获得 1 件折叠背包。",
+        "cash": -1050,
+        "item": "bag"
+      },
+      {
+        "id": "coast_roaming_sail_patch_2",
+        "label": "帮助裁切帆布",
+        "description": "体力 -6；获得 1 件野营休憩包。",
+        "stamina": -6,
+        "item": "restkit"
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_blue_signal",
+    "mapId": "coast",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "蓝色信号弹演习",
+    "story": "海岸救援队进行无火药信号演习，邀请代理人担任地面观察员。完成观察可领取安全卡，也能改领值勤补贴。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "coast_roaming_blue_signal_1",
+        "label": "领取安全凭证",
+        "description": "获得 1 件星盾卡。",
+        "item": "shield"
+      },
+      {
+        "id": "coast_roaming_blue_signal_2",
+        "label": "领取值勤补贴",
+        "description": "棱镜币 +720。",
+        "cash": 720
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_shoreline_twin",
+    "mapId": "coast",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "双湾镜像测试",
+    "story": "双湾研究车发现两处潮位传感器的读数成对变化，想借你的终端复核。付费参与试制可带走双生培养皿，普通采样另有报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_shoreline_twin_1",
+        "label": "参与试制",
+        "description": "棱镜币 -520；获得 1 件双生培养皿。",
+        "cash": -520,
+        "item": "twinDish"
+      },
+      {
+        "id": "coast_roaming_shoreline_twin_2",
+        "label": "完成普通采样",
+        "description": "体力 -5；棱镜币 +620。",
+        "stamina": -5,
+        "cash": 620
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_horizon_fold",
+    "mapId": "coast",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "海平线上的折痕",
+    "story": "天边一条亮线短暂折向岸内，流动研究站捕获了空间晶体。协助稳定需要昂贵耗材；保存影像同样是有价值的工作。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_horizon_fold_1",
+        "label": "稳定空间晶体",
+        "description": "棱镜币 -1850；体力 -6；获得 1 件传送石。",
+        "cash": -1850,
+        "stamina": -6,
+        "item": "teleportStone"
+      },
+      {
+        "id": "coast_roaming_horizon_fold_2",
+        "label": "保存全景影像",
+        "description": "棱镜币 +1100；心情 +6。",
+        "cash": 1100,
+        "mood": 6
+      }
+    ]
+  },
+  {
+    "id": "coast_roaming_captains_case",
+    "mapId": "coast",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "船长封存的百格盒",
+    "story": "远航船只卸下一只封存百格盒，里面是无法在商店购得的星核骰。你可以承担鉴定费用领走它，也可将盒子转交博物馆。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "coast_roaming_captains_case_1",
+        "label": "承担鉴定费用",
+        "description": "棱镜币 -1900；心情 -6；获得 1 件百面星核骰。",
+        "cash": -1900,
+        "mood": -6,
+        "item": "dice100"
+      },
+      {
+        "id": "coast_roaming_captains_case_2",
+        "label": "转交海岸博物馆",
+        "description": "棱镜币 +1400。",
+        "cash": 1400
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_apple_crate",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "山口翻倒的苹果箱",
+    "story": "一辆慢行货车在山口掉下一箱苹果，果农沿路捡拾。代理人帮忙后可以带走一份水果，也可以领取搬运酬劳。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "valley_roaming_apple_crate_1",
+        "label": "分一份山地苹果",
+        "description": "体力 +17。",
+        "stamina": 17
+      },
+      {
+        "id": "valley_roaming_apple_crate_2",
+        "label": "装好整箱苹果",
+        "description": "体力 -3；棱镜币 +350。",
+        "stamina": -3,
+        "cash": 350
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_terrace_seeds",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "梯田种子换路书",
+    "story": "流动种子车正在收集新道路信息，方便把春播种子送到各层梯田。你可以交一份路线笔记，或亲自带车走一小段。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_terrace_seeds_1",
+        "label": "提供路线笔记",
+        "description": "棱镜币 +210。",
+        "cash": 210
+      },
+      {
+        "id": "valley_roaming_terrace_seeds_2",
+        "label": "领车穿过岔路",
+        "description": "体力 -4；棱镜币 +430。",
+        "stamina": -4,
+        "cash": 430
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_bell_rope",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "山羊叼走的铃绳",
+    "story": "一只山羊把代理人包上的装饰绳当成了草料，正准备拖走。用饲料交换最省事，慢慢安抚它则要花点心力。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "valley_roaming_bell_rope_1",
+        "label": "购买一把饲料",
+        "description": "棱镜币 -160。",
+        "cash": -160
+      },
+      {
+        "id": "valley_roaming_bell_rope_2",
+        "label": "耐心哄回绳子",
+        "description": "心情 -4。",
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_warm_mail",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "邮袋里的暖手石",
+    "story": "山谷邮差带着一袋刚烘热的暖手石，沿路送给值勤人员。代理人可以稍作停留暖身，也可以帮助分送余下的一袋。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "valley_roaming_warm_mail_1",
+        "label": "停一会儿暖身",
+        "description": "体力 +9；心情 +5。",
+        "stamina": 9,
+        "mood": 5
+      },
+      {
+        "id": "valley_roaming_warm_mail_2",
+        "label": "分送暖手石",
+        "description": "体力 -3；棱镜币 +320。",
+        "stamina": -3,
+        "cash": 320
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_contour_sketch",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "缺了一道等高线",
+    "story": "测绘员的速写板漏了一段新修路边界，正在请行人核对。协助测量会有补贴，指出观察位置也能拿到一杯山茶。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_contour_sketch_1",
+        "label": "补测边界",
+        "description": "体力 -4；棱镜币 +410。",
+        "stamina": -4,
+        "cash": 410
+      },
+      {
+        "id": "valley_roaming_contour_sketch_2",
+        "label": "标记观察位置",
+        "description": "获得 1 件月露茶。",
+        "item": "tea"
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_bee_procession",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "蜂群经过的街口",
+    "story": "一小群蜜蜂跟着移动蜂箱穿过街口，代理人的终端却误播驱虫声。向蜂农赔付损耗，或帮忙安顿受惊的蜂群，可以解决误会。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "valley_roaming_bee_procession_1",
+        "label": "赔付损耗",
+        "description": "棱镜币 -260。",
+        "cash": -260
+      },
+      {
+        "id": "valley_roaming_bee_procession_2",
+        "label": "帮忙安顿蜂箱",
+        "description": "体力 -4；心情 -2。",
+        "stamina": -4,
+        "mood": -2
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_knitted_waymark",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "织在围巾上的路标",
+    "story": "山谷织工把老路标织进了围巾，流动展柜邀请旅人认图。答对路线可以收一笔小奖，也能换一次免费的暖茶歇脚。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "valley_roaming_knitted_waymark_1",
+        "label": "领取认图小奖",
+        "description": "棱镜币 +300。",
+        "cash": 300
+      },
+      {
+        "id": "valley_roaming_knitted_waymark_2",
+        "label": "享用暖茶歇脚",
+        "description": "心情 +11；体力 +4。",
+        "mood": 11,
+        "stamina": 4
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_valley_scent",
+    "mapId": "valley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "午后吹来的草药香",
+    "story": "药草采集队刚结束一天的工作，带着尚未整理的叶束回城。代理人可以低价买一份能量补给，也可以用整理劳动换取。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_valley_scent_1",
+        "label": "买下采集补给",
+        "description": "棱镜币 -100；获得 1 件能量小食。",
+        "cash": -100,
+        "item": "snack"
+      },
+      {
+        "id": "valley_roaming_valley_scent_2",
+        "label": "整理叶束",
+        "description": "体力 -3；获得 1 件晨星咖啡。",
+        "stamina": -3,
+        "item": "coffee"
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_suspended_crate",
+    "mapId": "valley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "索道的备用货箱",
+    "story": "山谷索道更换货箱，旧箱里有能折叠成背包的轻型支架。承担回收费用可领走支架，现场拆解的助手则获得较小补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_suspended_crate_1",
+        "label": "支付支架回收费",
+        "description": "棱镜币 -1000；获得 1 件折叠背包。",
+        "cash": -1000,
+        "item": "bag"
+      },
+      {
+        "id": "valley_roaming_suspended_crate_2",
+        "label": "协助拆解旧箱",
+        "description": "体力 -6；棱镜币 +700。",
+        "stamina": -6,
+        "cash": 700
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_ridge_draught",
+    "mapId": "valley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "山脊风口的试验伞",
+    "story": "流动装备队要测试一把能持续防护天气的星伞。付费领样后需要提供使用报告，也可以替他们完成普通风速记录。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_ridge_draught_1",
+        "label": "领用星伞样品",
+        "description": "棱镜币 -540；获得 1 件三日星伞。",
+        "cash": -540,
+        "item": "umbrella"
+      },
+      {
+        "id": "valley_roaming_ridge_draught_2",
+        "label": "记录风速",
+        "description": "体力 -5；棱镜币 +580。",
+        "stamina": -5,
+        "cash": 580
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_retaining_wall",
+    "mapId": "valley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "挡土墙检查单",
+    "story": "山谷工程终端把一份挡土墙复检单发到你的账户。补缴防护费用即可关闭工单；接受抽查则可能让一处普通建筑退回一层。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "valley_roaming_retaining_wall_1",
+        "label": "补缴防护费用",
+        "description": "棱镜币 -820。",
+        "cash": -820
+      },
+      {
+        "id": "valley_roaming_retaining_wall_2",
+        "label": "接受复检整改",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -3。",
+        "damageBuilding": true,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_twin_weather_vanes",
+    "mapId": "valley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "一对同步风向标",
+    "story": "修理车上的两枚风向标总在同一时刻转动，工程师邀请你参与同步实验。供给电池能换双生培养皿，手工记录也有报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_twin_weather_vanes_1",
+        "label": "供给试验电池",
+        "description": "棱镜币 -480；获得 1 件双生培养皿。",
+        "cash": -480,
+        "item": "twinDish"
+      },
+      {
+        "id": "valley_roaming_twin_weather_vanes_2",
+        "label": "手工记录转动",
+        "description": "心情 -4；棱镜币 +560。",
+        "mood": -4,
+        "cash": 560
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_emergency_shuttle",
+    "mapId": "valley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "空出的应急接驳座位",
+    "story": "山谷接驳队完成演练，留下一张可随时使用的车站换乘券。负责点验装备可以领券，也可选择领取本次协勤补贴。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "valley_roaming_emergency_shuttle_1",
+        "label": "点验装备后领券",
+        "description": "体力 -3；获得 1 件星轨换乘券。",
+        "stamina": -3,
+        "item": "teleport"
+      },
+      {
+        "id": "valley_roaming_emergency_shuttle_2",
+        "label": "领取协勤补贴",
+        "description": "棱镜币 +620。",
+        "cash": 620
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_cloud_sill",
+    "mapId": "valley",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "云层落下的窗槛",
+    "story": "一小片凝固云晶落在巡测台上，能短暂调整周围空气。研究队允许你资助封装换取天气控制器，或出售完整记录。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_cloud_sill_1",
+        "label": "资助云晶封装",
+        "description": "棱镜币 -1350；心情 -5；获得 1 件天气控制器。",
+        "cash": -1350,
+        "mood": -5,
+        "item": "weather"
+      },
+      {
+        "id": "valley_roaming_cloud_sill_2",
+        "label": "出售完整记录",
+        "description": "棱镜币 +1050；心情 +5。",
+        "cash": 1050,
+        "mood": 5
+      }
+    ]
+  },
+  {
+    "id": "valley_roaming_geode_steps",
+    "mapId": "valley",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "有百道纹路的晶洞",
+    "story": "移动岩芯车剖开一块山谷晶石，内部正好有百道反射纹路。承担精细打磨可将它制成星核骰，直接转让则有一笔收入。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "valley_roaming_geode_steps_1",
+        "label": "精细打磨晶石",
+        "description": "棱镜币 -1650；体力 -8；获得 1 件百面星核骰。",
+        "cash": -1650,
+        "stamina": -8,
+        "item": "dice100"
+      },
+      {
+        "id": "valley_roaming_geode_steps_2",
+        "label": "转让完整晶石",
+        "description": "棱镜币 +1350。",
+        "cash": 1350
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_rope_knots",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "绳结上的方向记号",
+    "story": "巡路无人机投下一束打着方向结的旧绳，附近终端正在回收仍可使用的材料。代理人可以分类归还，或只提交绳结照片。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_rope_knots_1",
+        "label": "分类回收旧绳",
+        "description": "体力 -5；棱镜币 +520。",
+        "stamina": -5,
+        "cash": 520
+      },
+      {
+        "id": "sundered_roaming_rope_knots_2",
+        "label": "提交方向照片",
+        "description": "棱镜币 +210。",
+        "cash": 210
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_abandoned_thermos",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "还温热的补给壶",
+    "story": "山道旁的轮换补给箱中有一壶刚由机器人送来的热饮，标签允许过路代理人取用。饮用能够恢复状态，完整转交下一站则有补贴。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "sundered_roaming_abandoned_thermos_1",
+        "label": "喝一杯热饮",
+        "description": "体力 +12；心情 +7。",
+        "stamina": 12,
+        "mood": 7
+      },
+      {
+        "id": "sundered_roaming_abandoned_thermos_2",
+        "label": "转交完整补给壶",
+        "description": "体力 -3；棱镜币 +430。",
+        "stamina": -3,
+        "cash": 430
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_scree_shoes",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "碎石钻进鞋底",
+    "story": "山道碎石钻进代理人装备的鞋底夹层，走路时不断磨擦。替换内衬要花钱，停下来逐块清除则会损耗些体力。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sundered_roaming_scree_shoes_1",
+        "label": "更换内衬",
+        "description": "棱镜币 -260。",
+        "cash": -260
+      },
+      {
+        "id": "sundered_roaming_scree_shoes_2",
+        "label": "清除碎石",
+        "description": "体力 -5。",
+        "stamina": -5
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_ravine_packet",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "峡隙吹来的数据包",
+    "story": "一枚巡线设备掉出的存储片被气流吹到代理人脚边。上传数据能领取补贴，帮忙重新标注危险点还能赚更多。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_ravine_packet_1",
+        "label": "直接上传数据",
+        "description": "棱镜币 +290。",
+        "cash": 290
+      },
+      {
+        "id": "sundered_roaming_ravine_packet_2",
+        "label": "标注危险点",
+        "description": "心情 -4；棱镜币 +560。",
+        "mood": -4,
+        "cash": 560
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_fir_shelter",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "冷杉下的防风空隙",
+    "story": "路旁几棵冷杉恰好形成一小片避风空间，临时补给终端也设在这里。代理人可以歇口气，或替终端清走积下的枝条。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "sundered_roaming_fir_shelter_1",
+        "label": "在树下歇脚",
+        "description": "体力 +10；心情 +9。",
+        "stamina": 10,
+        "mood": 9
+      },
+      {
+        "id": "sundered_roaming_fir_shelter_2",
+        "label": "清理补给出口",
+        "description": "体力 -4；棱镜币 +460。",
+        "stamina": -4,
+        "cash": 460
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_echo_radio",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "收音机重复你的声音",
+    "story": "山体反射让应急电台反复播出代理人的通话，终端要求核销一次占频记录。支付处理费或提交完整通话记录可以消除误报。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sundered_roaming_echo_radio_1",
+        "label": "核销占频费用",
+        "description": "棱镜币 -330。",
+        "cash": -330
+      },
+      {
+        "id": "sundered_roaming_echo_radio_2",
+        "label": "整理通话记录",
+        "description": "心情 -6。",
+        "mood": -6
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_marker_stones",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "一排倒下的标石",
+    "story": "自动巡路车报告，几枚临时标石被落石撞倒，线路识别受到影响。扶正可以领取维修奖，远程标注缺口也有报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_marker_stones_1",
+        "label": "扶正标石",
+        "description": "体力 -5；棱镜币 +590。",
+        "stamina": -5,
+        "cash": 590
+      },
+      {
+        "id": "sundered_roaming_marker_stones_2",
+        "label": "标注缺口",
+        "description": "棱镜币 +240。",
+        "cash": 240
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_sun_warmed_pack",
+    "mapId": "sundered",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "被阳光烘暖的急救包",
+    "story": "无人补给橱刚被一束阳光照亮，里面有一份开放领取的野外口粮。终端提示你也可以留下口粮，改领配给额度。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "sundered_roaming_sun_warmed_pack_1",
+        "label": "领取口粮",
+        "description": "获得 1 件星港盛宴。",
+        "item": "feast"
+      },
+      {
+        "id": "sundered_roaming_sun_warmed_pack_2",
+        "label": "领取配给额度",
+        "description": "棱镜币 +300。",
+        "cash": 300
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_ice_cable",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "结冰的测试缆线",
+    "story": "高处测试缆线上结了一圈冰，旁边的机器人等待人工作业确认。购买热切耗材可得到控骰校准器，徒手整理标线另有补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_ice_cable_1",
+        "label": "购买热切耗材",
+        "description": "棱镜币 -720；获得 1 件控骰器。",
+        "cash": -720,
+        "item": "controller"
+      },
+      {
+        "id": "sundered_roaming_ice_cable_2",
+        "label": "整理缆线标识",
+        "description": "体力 -7；棱镜币 +780。",
+        "stamina": -7,
+        "cash": 780
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_scree_audit",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "边坡支撑复核",
+    "story": "地质系统要求你的施工档案追加一份边坡支撑报告。付费补足会立即通过，否则一处非地标建筑可能需要退层整改。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sundered_roaming_scree_audit_1",
+        "label": "补足支撑报告",
+        "description": "棱镜币 -1050。",
+        "cash": -1050
+      },
+      {
+        "id": "sundered_roaming_scree_audit_2",
+        "label": "接受退层整改",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -4。",
+        "damageBuilding": true,
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_weather_cache",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "密封的风口储物罐",
+    "story": "应急储物罐在强风过后露出编号，终端允许支付补货费领取星伞，也提供普通物资的免费份额。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_weather_cache_1",
+        "label": "补货后领取星伞",
+        "description": "棱镜币 -510；获得 1 件三日星伞。",
+        "cash": -510,
+        "item": "umbrella"
+      },
+      {
+        "id": "sundered_roaming_weather_cache_2",
+        "label": "领取普通应急份额",
+        "description": "获得 1 件能量小食；心情 +4。",
+        "item": "snack",
+        "mood": 4
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_split_battery",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "裂成两片的实验电池",
+    "story": "研究无人车的电池外壳裂开，内部两组培养单元却仍同步发光。资助安全拆解可以带走双生培养皿，交回设备则领赏。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_split_battery_1",
+        "label": "资助安全拆解",
+        "description": "棱镜币 -630；获得 1 件双生培养皿。",
+        "cash": -630,
+        "item": "twinDish"
+      },
+      {
+        "id": "sundered_roaming_split_battery_2",
+        "label": "交回设备",
+        "description": "棱镜币 +650。",
+        "cash": 650
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_signal_register",
+    "mapId": "sundered",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "紧急信号登记",
+    "story": "你刚拾起一枚旧发信器，它便广播了不合时宜的求援编码。清除登记需要提交完整证明；也可随自动护送舱去管制点核实。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "sundered_roaming_signal_register_1",
+        "label": "提交证明并缴费",
+        "description": "棱镜币 -720；心情 -3。",
+        "cash": -720,
+        "mood": -3
+      },
+      {
+        "id": "sundered_roaming_signal_register_2",
+        "label": "前往管制点核实",
+        "description": "进入监狱，禁锢 3 次行动。",
+        "confinement": "prison"
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_last_rescue_crystal",
+    "mapId": "sundered",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "最后一枚回程晶体",
+    "story": "断裂的山道信标露出一枚仍可工作的回程晶体，回收终端允许先行结算。支付封装费用可保留晶体，否则获得回收奖金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_last_rescue_crystal_1",
+        "label": "封装回程晶体",
+        "description": "棱镜币 -1600；体力 -7；获得 1 件传送石。",
+        "cash": -1600,
+        "stamina": -7,
+        "item": "teleportStone"
+      },
+      {
+        "id": "sundered_roaming_last_rescue_crystal_2",
+        "label": "领取回收奖金",
+        "description": "棱镜币 +1250。",
+        "cash": 1250
+      }
+    ]
+  },
+  {
+    "id": "sundered_roaming_hundred_bearings",
+    "mapId": "sundered",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "百个方位的旧观测仪",
+    "story": "无人观测台的核心记录了一百个不同山风方位，足以加工出百面星核骰。你需要支付加工费，也可以把核心留给资料站。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "sundered_roaming_hundred_bearings_1",
+        "label": "加工观测核心",
+        "description": "棱镜币 -1800；心情 -7；获得 1 件百面星核骰。",
+        "cash": -1800,
+        "mood": -7,
+        "item": "dice100"
+      },
+      {
+        "id": "sundered_roaming_hundred_bearings_2",
+        "label": "交存资料站",
+        "description": "棱镜币 +1500。",
+        "cash": 1500
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_seed_clock",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "种子落下的整点",
+    "story": "林冠观测器在整点释放一小袋采样种子，邀请路过者帮忙分类。整理样本有劳务费，交一张落点照片也有记录补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_seed_clock_1",
+        "label": "分类种子样本",
+        "description": "体力 -4；棱镜币 +620。",
+        "stamina": -4,
+        "cash": 620
+      },
+      {
+        "id": "forest_roaming_seed_clock_2",
+        "label": "提交落点照片",
+        "description": "棱镜币 +260。",
+        "cash": 260
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_moss_cushion",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "苔藓垫上的午休",
+    "story": "森林驿员搬来一块可循环使用的软垫，邀请过路代理人在树荫下短休。你也可以接手送回软垫，领取搬运报酬。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "forest_roaming_moss_cushion_1",
+        "label": "在树荫下短休",
+        "description": "体力 +10；心情 +12。",
+        "stamina": 10,
+        "mood": 12
+      },
+      {
+        "id": "forest_roaming_moss_cushion_2",
+        "label": "送回借用软垫",
+        "description": "体力 -3；棱镜币 +460。",
+        "stamina": -3,
+        "cash": 460
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_root_invoice",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "根系保护的误收费",
+    "story": "一根地表树根被维护系统重复编号，费用因此记到了你的账户。提交复核能撤销收费，但需要整理一长串位置记录。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "forest_roaming_root_invoice_1",
+        "label": "先行结清费用",
+        "description": "棱镜币 -360。",
+        "cash": -360
+      },
+      {
+        "id": "forest_roaming_root_invoice_2",
+        "label": "整理位置记录",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_forest_library",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "林间书车的空书签",
+    "story": "移动书车用落叶制作书签，征集沿途树种的简短介绍。提供记录可收稿费，也可以把稿费换成一杯安神茶。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "forest_roaming_forest_library_1",
+        "label": "领取树种稿费",
+        "description": "棱镜币 +390。",
+        "cash": 390
+      },
+      {
+        "id": "forest_roaming_forest_library_2",
+        "label": "换一杯安神茶",
+        "description": "获得 1 件月露茶；心情 +3。",
+        "item": "tea",
+        "mood": 3
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_fern_spores",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "蕨叶孢子沾满袖口",
+    "story": "代理人擦过一簇成熟蕨叶，袖口和感应器布满细小孢子。购买清洁套件可以迅速处理，自行清扫则有些费神。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "forest_roaming_fern_spores_1",
+        "label": "购买清洁套件",
+        "description": "棱镜币 -220。",
+        "cash": -220
+      },
+      {
+        "id": "forest_roaming_fern_spores_2",
+        "label": "自行清扫",
+        "description": "体力 -2；心情 -4。",
+        "stamina": -2,
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_sapling_escort",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "轮式幼树托盘",
+    "story": "育苗机器人被一道高差困住，轮式托盘上的幼树需要协助转移。帮忙可领取栽培补助，也可以只向维护站报送位置。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_sapling_escort_1",
+        "label": "托住幼树越坎",
+        "description": "体力 -5；棱镜币 +710。",
+        "stamina": -5,
+        "cash": 710
+      },
+      {
+        "id": "forest_roaming_sapling_escort_2",
+        "label": "报送故障位置",
+        "description": "棱镜币 +240。",
+        "cash": 240
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_canopy_bread",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "林冠早餐的小吊篮",
+    "story": "树上观测站用吊篮送下多余早餐，标签允许代理人领取。你可以补充体力，也可以替站里送一份早餐给值班终端。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "forest_roaming_canopy_bread_1",
+        "label": "领取早餐",
+        "description": "体力 +20。",
+        "stamina": 20
+      },
+      {
+        "id": "forest_roaming_canopy_bread_2",
+        "label": "完成早餐配送",
+        "description": "体力 -3；棱镜币 +490。",
+        "stamina": -3,
+        "cash": 490
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_ring_count",
+    "mapId": "forest",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "一张树轮拓片",
+    "story": "林业档案员正用旧木切面制作树轮拓片，请路过者帮忙计数。你可以收下纪念拓片，或完整核对数据领取报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_ring_count_1",
+        "label": "收下纪念拓片",
+        "description": "心情 +13。",
+        "mood": 13
+      },
+      {
+        "id": "forest_roaming_ring_count_2",
+        "label": "核对树轮数据",
+        "description": "心情 -3；棱镜币 +540。",
+        "mood": -3,
+        "cash": 540
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_root_bridge_contract",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "树根桥的检修合同",
+    "story": "移动工程站征集树根桥的无损检修记录。支付传感器耗材能换取建筑修复包，体力巡检则按次结算工钱。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_root_bridge_contract_1",
+        "label": "支付传感器耗材",
+        "description": "棱镜币 -880；获得 1 件建筑修复包。",
+        "cash": -880,
+        "item": "repair"
+      },
+      {
+        "id": "forest_roaming_root_bridge_contract_2",
+        "label": "完成体力巡检",
+        "description": "体力 -7；棱镜币 +920。",
+        "stamina": -7,
+        "cash": 920
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_mycelium_pairs",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "同步发光的菌丝盒",
+    "story": "林下实验车展示一对会同时发光的菌丝培养盒。你可以资助培养液换取双生培养皿，也可为实验完成一次手工计时。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_mycelium_pairs_1",
+        "label": "资助培养液",
+        "description": "棱镜币 -540；获得 1 件双生培养皿。",
+        "cash": -540,
+        "item": "twinDish"
+      },
+      {
+        "id": "forest_roaming_mycelium_pairs_2",
+        "label": "完成手工计时",
+        "description": "心情 -5；棱镜币 +680。",
+        "mood": -5,
+        "cash": 680
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_canopy_lease",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "林冠通道的临时租约",
+    "story": "林冠步道的运营方在路边征集试行条款意见。付出一段时间核对完整租约，可领一张免租卡；简短反馈另有补助。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_canopy_lease_1",
+        "label": "核对完整租约",
+        "description": "心情 -6；获得 1 件免租卡。",
+        "mood": -6,
+        "item": "rent"
+      },
+      {
+        "id": "forest_roaming_canopy_lease_2",
+        "label": "提交简短反馈",
+        "description": "棱镜币 +580。",
+        "cash": 580
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_conservation_seal",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "保护区施工封签",
+    "story": "自动巡检器要求核对你名下建筑的生态隔离层。补交材料费可完成封签；缺少材料则可能拆减一层普通建筑重新处理。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "forest_roaming_conservation_seal_1",
+        "label": "补交隔离材料",
+        "description": "棱镜币 -1250。",
+        "cash": -1250
+      },
+      {
+        "id": "forest_roaming_conservation_seal_2",
+        "label": "接受拆层处理",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -3。",
+        "damageBuilding": true,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_folded_bark",
+    "mapId": "forest",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "像树皮一样折叠的袋子",
+    "story": "林业材料车把仿树皮纤维制成便携袋，邀请代理人试用。支付试制成本可以扩充背包，也可以选择带走野营补给。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "forest_roaming_folded_bark_1",
+        "label": "领取试制便携袋",
+        "description": "棱镜币 -850；获得 1 件折叠背包。",
+        "cash": -850,
+        "item": "bag"
+      },
+      {
+        "id": "forest_roaming_folded_bark_2",
+        "label": "领取野营补给",
+        "description": "获得 1 件野营休憩包。",
+        "item": "restkit"
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_ancient_pollination",
+    "mapId": "forest",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "古树的单次授粉",
+    "story": "古树一年一度的授粉数据刚被仪器捕获，远程研究站愿意高价收购完整记录。你也可以承担封装成本，获得一枚能折叠空间的种晶。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_ancient_pollination_1",
+        "label": "封装空间种晶",
+        "description": "棱镜币 -1750；体力 -5；获得 1 件传送石。",
+        "cash": -1750,
+        "stamina": -5,
+        "item": "teleportStone"
+      },
+      {
+        "id": "forest_roaming_ancient_pollination_2",
+        "label": "出售完整记录",
+        "description": "棱镜币 +1900。",
+        "cash": 1900
+      }
+    ]
+  },
+  {
+    "id": "forest_roaming_hundred_canopies",
+    "mapId": "forest",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "百层林冠的光谱",
+    "story": "观测队的棱镜同时捕获了一百层枝叶的光谱，星核样品已达到成骰条件。资助加工可领百面骰，也可把样品卖给林业档案馆。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "forest_roaming_hundred_canopies_1",
+        "label": "资助星核加工",
+        "description": "棱镜币 -1900；心情 -6；获得 1 件百面星核骰。",
+        "cash": -1900,
+        "mood": -6,
+        "item": "dice100"
+      },
+      {
+        "id": "forest_roaming_hundred_canopies_2",
+        "label": "出售光谱样品",
+        "description": "棱镜币 +2100。",
+        "cash": 2100
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_sun_sail",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "松开的遮阳帆扣",
+    "story": "沙岸补给车的一枚遮阳帆扣松脱，影子正一点点移开。代理人可以协助重新扣紧，或请维修终端前来处理。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_sun_sail_1",
+        "label": "重新扣紧帆绳",
+        "description": "体力 -4；棱镜币 +390。",
+        "stamina": -4,
+        "cash": 390
+      },
+      {
+        "id": "starSands_roaming_sun_sail_2",
+        "label": "呼叫维修终端",
+        "description": "棱镜币 +180。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_dew_vial",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "清晨剩下的一管露水",
+    "story": "采露车还留着一管经过处理的饮用水，准备结束当天配给。你可以喝下补充体力，也可以替它送去下个回收点。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "starSands_roaming_dew_vial_1",
+        "label": "喝下采集露水",
+        "description": "体力 +18。",
+        "stamina": 18
+      },
+      {
+        "id": "starSands_roaming_dew_vial_2",
+        "label": "送到回收点",
+        "description": "体力 -3；棱镜币 +360。",
+        "stamina": -3,
+        "cash": 360
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_sand_in_stamp",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "盖章器进了沙",
+    "story": "流动服务台的盖章器夹住一粒星砂，把代理人的通行记录印成了两份。选择即时更正要收材料费，等人工比对会消磨耐心。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "starSands_roaming_sand_in_stamp_1",
+        "label": "即时更正记录",
+        "description": "棱镜币 -210。",
+        "cash": -210
+      },
+      {
+        "id": "starSands_roaming_sand_in_stamp_2",
+        "label": "等待人工比对",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_glass_pebbles",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "晒暖的玻璃卵石",
+    "story": "一名沿岸记录员把圆润的玻璃卵石排成了热量示意图，邀请你提供读数。抄录数据有报酬，停下欣赏也能放松片刻。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "starSands_roaming_glass_pebbles_1",
+        "label": "抄录热量读数",
+        "description": "棱镜币 +280。",
+        "cash": 280
+      },
+      {
+        "id": "starSands_roaming_glass_pebbles_2",
+        "label": "欣赏透光石阵",
+        "description": "心情 +11。",
+        "mood": 11
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_solar_bill",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "多记的一格太阳电",
+    "story": "移动充电车把你的终端识别成大容量货柜，多记了一格电费。补缴费用就能离开，提交运行日志可以撤销误记。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "starSands_roaming_solar_bill_1",
+        "label": "补缴电费",
+        "description": "棱镜币 -260。",
+        "cash": -260
+      },
+      {
+        "id": "starSands_roaming_solar_bill_2",
+        "label": "整理运行日志",
+        "description": "心情 -4；体力 -1。",
+        "mood": -4,
+        "stamina": -1
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_shade_courier",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "沿阴影走的信使",
+    "story": "沙岸信使想把新的阴凉路线录入公共地图，请你帮忙核对一段。实际走过可领取补贴，只做终端标注也有小额奖励。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_shade_courier_1",
+        "label": "核对阴凉路线",
+        "description": "体力 -4；棱镜币 +450。",
+        "stamina": -4,
+        "cash": 450
+      },
+      {
+        "id": "starSands_roaming_shade_courier_2",
+        "label": "只做终端标注",
+        "description": "棱镜币 +190。",
+        "cash": 190
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_date_bread",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "刚出炉的耐储面饼",
+    "story": "沙岸商队试制适合长途携带的果干面饼，路过的代理人可以参加试吃。写详细反馈还可以换到一份打包补给。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "starSands_roaming_date_bread_1",
+        "label": "参加试吃",
+        "description": "体力 +13；心情 +4。",
+        "stamina": 13,
+        "mood": 4
+      },
+      {
+        "id": "starSands_roaming_date_bread_2",
+        "label": "填写详细反馈",
+        "description": "心情 -2；获得 1 件能量小食。",
+        "mood": -2,
+        "item": "snack"
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_mirage_postcard",
+    "mapId": "starSands",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "多了一座塔的明信片",
+    "story": "临时摊主的明信片把海市蜃楼也画进了路线，你的代理人一眼看出偏差。解释地形有谢礼，也可以把这张独特印刷品留作纪念。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_mirage_postcard_1",
+        "label": "说明地形偏差",
+        "description": "棱镜币 +320。",
+        "cash": 320
+      },
+      {
+        "id": "starSands_roaming_mirage_postcard_2",
+        "label": "留下奇景明信片",
+        "description": "心情 +12。",
+        "mood": 12
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_cooling_crystals",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "冷却晶体交换点",
+    "story": "巡回维修车正在回收发热芯片，用冷却晶体制作天气防护装置。支付加工费可领星伞，普通分类工作则换来补给。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_cooling_crystals_1",
+        "label": "支付防护加工费",
+        "description": "棱镜币 -530；获得 1 件三日星伞。",
+        "cash": -530,
+        "item": "umbrella"
+      },
+      {
+        "id": "starSands_roaming_cooling_crystals_2",
+        "label": "分类回收芯片",
+        "description": "体力 -5；获得 1 件星港盛宴。",
+        "stamina": -5,
+        "item": "feast"
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_sand_filter_lab",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "风沙滤镜的试装",
+    "story": "便携光学站邀请代理人测试能识别骰点的滤镜。资助镜片可以得到控骰器，也可完成基础校验领取现金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_sand_filter_lab_1",
+        "label": "资助试制镜片",
+        "description": "棱镜币 -740；获得 1 件控骰器。",
+        "cash": -740,
+        "item": "controller"
+      },
+      {
+        "id": "starSands_roaming_sand_filter_lab_2",
+        "label": "完成基础校验",
+        "description": "心情 -4；棱镜币 +610。",
+        "mood": -4,
+        "cash": 610
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_salt_foundations",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "盐蚀地基复检",
+    "story": "海盐结晶进入了部分建材，移动巡检器向你发来复检提醒。统一补做隔离需要付费，否则抽中的非地标建筑须退层处理。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "starSands_roaming_salt_foundations_1",
+        "label": "统一补做隔离",
+        "description": "棱镜币 -940。",
+        "cash": -940
+      },
+      {
+        "id": "starSands_roaming_salt_foundations_2",
+        "label": "按抽检退层",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -3。",
+        "damageBuilding": true,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_cargo_shade",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "货物架上的折叠阴棚",
+    "story": "行商把轻型阴棚改装成折叠储物包，只需补足材料差价就能换走。若不想负担费用，也可以协助整货领取小额酬劳。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_cargo_shade_1",
+        "label": "补足材料差价",
+        "description": "棱镜币 -960；获得 1 件折叠背包。",
+        "cash": -960,
+        "item": "bag"
+      },
+      {
+        "id": "starSands_roaming_cargo_shade_2",
+        "label": "帮助整理货架",
+        "description": "体力 -5；棱镜币 +660。",
+        "stamina": -5,
+        "cash": 660
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_detour_permit",
+    "mapId": "starSands",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "封路前的最后一张许可",
+    "story": "沙岸道路维护终端临时封闭了施工便道，尚未核销的许可正好落在代理人脚边。归还后可选一张安全卡或协勤奖金。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "starSands_roaming_detour_permit_1",
+        "label": "领取免捕凭证",
+        "description": "获得 1 件免捕卡。",
+        "item": "arrest"
+      },
+      {
+        "id": "starSands_roaming_detour_permit_2",
+        "label": "领取协勤奖金",
+        "description": "棱镜币 +630。",
+        "cash": 630
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_dune_observatory",
+    "mapId": "starSands",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "沙丘天文台的白昼星",
+    "story": "流动天文台在白昼捕获一个稳定星点，偏转装置还能工作。你可以资助封装把它变成天气控制器，或出售观测时段。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_dune_observatory_1",
+        "label": "封装偏转装置",
+        "description": "棱镜币 -1300；体力 -5；获得 1 件天气控制器。",
+        "cash": -1300,
+        "stamina": -5,
+        "item": "weather"
+      },
+      {
+        "id": "starSands_roaming_dune_observatory_2",
+        "label": "出售观测时段",
+        "description": "棱镜币 +1100。",
+        "cash": 1100
+      }
+    ]
+  },
+  {
+    "id": "starSands_roaming_stellar_grain",
+    "mapId": "starSands",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "一粒折射整片星海的砂",
+    "story": "采样瓶里的一粒星砂投出异常清晰的夜空，仪器确认它可以成为百面星核。精制需要费用，保留原样也有收藏价值。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "starSands_roaming_stellar_grain_1",
+        "label": "精制百面星核",
+        "description": "棱镜币 -1750；心情 -7；获得 1 件百面星核骰。",
+        "cash": -1750,
+        "mood": -7,
+        "item": "dice100"
+      },
+      {
+        "id": "starSands_roaming_stellar_grain_2",
+        "label": "出售完整砂样",
+        "description": "棱镜币 +1450；心情 +4。",
+        "cash": 1450,
+        "mood": 4
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_charcoal_stamp",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "炭印留下的路标",
+    "story": "峡谷志愿者把烧焦的旧木制成炭笔，正在给临时路牌补上清楚的箭头。代理人可以帮忙描字，也可以只回报看不清的路段。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_charcoal_stamp_1",
+        "label": "补描路牌",
+        "description": "体力 -4；棱镜币 +420。",
+        "stamina": -4,
+        "cash": 420
+      },
+      {
+        "id": "ashCanyon_roaming_charcoal_stamp_2",
+        "label": "回报模糊路段",
+        "description": "棱镜币 +180。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_new_growth",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "灰土里的一片新绿",
+    "story": "巡回植物记录车停在一丛刚长出的新芽旁，邀请代理人记录叶片。看完可以放松心情，完整测量则会获得补助。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_new_growth_1",
+        "label": "安静看一会儿新芽",
+        "description": "心情 +13。",
+        "mood": 13
+      },
+      {
+        "id": "ashCanyon_roaming_new_growth_2",
+        "label": "测量并提交叶片数据",
+        "description": "体力 -3；棱镜币 +350。",
+        "stamina": -3,
+        "cash": 350
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_soot_docket",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "被烟灰糊住的工单",
+    "story": "一张飘来的检修工单糊住代理人的扫描镜头，还触发了未结清费用提示。重新打票需要付费，自己核对模糊字迹则会费神。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_soot_docket_1",
+        "label": "申请重打工单",
+        "description": "棱镜币 -250。",
+        "cash": -250
+      },
+      {
+        "id": "ashCanyon_roaming_soot_docket_2",
+        "label": "核对模糊字迹",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_bridge_whisper",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "桥索传来的轻响",
+    "story": "峡谷巡桥设备收到细微振动，需要行人核实是松动还是风声。隔栏观察可以领小额报酬，协助固定临时传感器能领更多。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_bridge_whisper_1",
+        "label": "隔栏观察",
+        "description": "棱镜币 +230。",
+        "cash": 230
+      },
+      {
+        "id": "ashCanyon_roaming_bridge_whisper_2",
+        "label": "固定传感器",
+        "description": "体力 -5；棱镜币 +510。",
+        "stamina": -5,
+        "cash": 510
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_miners_bread",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "矿工旧配方的面包",
+    "story": "流动补给车按旧矿区配方烤了耐储面包，正在征集口味意见。你可以吃一份热面包，也可以把意见换成茶包。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_miners_bread_1",
+        "label": "吃一份热面包",
+        "description": "体力 +18。",
+        "stamina": 18
+      },
+      {
+        "id": "ashCanyon_roaming_miners_bread_2",
+        "label": "用意见换茶包",
+        "description": "获得 1 件月露茶。",
+        "item": "tea"
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_loose_helmet",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "掉下来的空头盔",
+    "story": "一顶旧头盔从维护车上滚下来，刮到了代理人的随身箱。更换外壳要小额费用，自己磨平刮痕则会消耗体力。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_loose_helmet_1",
+        "label": "更换箱体外壳",
+        "description": "棱镜币 -280。",
+        "cash": -280
+      },
+      {
+        "id": "ashCanyon_roaming_loose_helmet_2",
+        "label": "磨平刮痕",
+        "description": "体力 -4；心情 -1。",
+        "stamina": -4,
+        "mood": -1
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_fern_drawing",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "岩缝蕨叶的速写",
+    "story": "一位路过的自然画师想把岩缝中的蕨叶画完整，请代理人举稳遮光板。完成协助可以选劳务费或速写复制品。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_fern_drawing_1",
+        "label": "领取劳务费",
+        "description": "体力 -2；棱镜币 +310。",
+        "stamina": -2,
+        "cash": 310
+      },
+      {
+        "id": "ashCanyon_roaming_fern_drawing_2",
+        "label": "留下速写复制品",
+        "description": "心情 +12。",
+        "mood": 12
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_cable_numbers",
+    "mapId": "ashCanyon",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "缆车牌上的倒序数字",
+    "story": "停运缆车的回收牌被装成倒序，维修队需要人重新编号。逐个核对有补助，简单标记问题也能换一杯咖啡。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_cable_numbers_1",
+        "label": "重新编号",
+        "description": "心情 -3；棱镜币 +440。",
+        "mood": -3,
+        "cash": 440
+      },
+      {
+        "id": "ashCanyon_roaming_cable_numbers_2",
+        "label": "标记倒序区段",
+        "description": "获得 1 件晨星咖啡。",
+        "item": "coffee"
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_reinforcement_coupon",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "岩台加固的余料",
+    "story": "检修队将加固岩台的剩余材料装成标准修复包，允许代理人承担回收费领取。若愿意帮忙装箱，也可以只拿工钱。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_reinforcement_coupon_1",
+        "label": "领取标准修复包",
+        "description": "棱镜币 -780；获得 1 件建筑修复包。",
+        "cash": -780,
+        "item": "repair"
+      },
+      {
+        "id": "ashCanyon_roaming_reinforcement_coupon_2",
+        "label": "帮忙整理装箱",
+        "description": "体力 -6；棱镜币 +690。",
+        "stamina": -6,
+        "cash": 690
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_canopy_instrument",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "树冠下的双通道仪器",
+    "story": "山谷火后监测采用成对探头，流动实验车正回收两组同步样本。你可以资助新的培养介质取得双生培养皿，也可转交采样记录。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_canopy_instrument_1",
+        "label": "资助培养介质",
+        "description": "棱镜币 -500；获得 1 件双生培养皿。",
+        "cash": -500,
+        "item": "twinDish"
+      },
+      {
+        "id": "ashCanyon_roaming_canopy_instrument_2",
+        "label": "转交采样记录",
+        "description": "棱镜币 +550；心情 +3。",
+        "cash": 550,
+        "mood": 3
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_smoke_memory",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "警报器记住了旧烟",
+    "story": "一枚旧警报器把代理人的设备热量误判成烟情，巡检终端要求现场核实。支付检修费能解除记录，随护送舱到管制点也能说明。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_smoke_memory_1",
+        "label": "支付误报检修费",
+        "description": "棱镜币 -780。",
+        "cash": -780
+      },
+      {
+        "id": "ashCanyon_roaming_smoke_memory_2",
+        "label": "前往管制点说明",
+        "description": "进入监狱，禁锢 3 次行动。",
+        "confinement": "prison"
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_rope_market",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "绳桥检修日的交换摊",
+    "story": "峡谷检修队在轮休时交换剩余装备，一只耐磨背包正等着新主人。支付材料差价可以带走，帮忙盘绳则能换野营包。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_rope_market_1",
+        "label": "补足背包差价",
+        "description": "棱镜币 -920；获得 1 件折叠背包。",
+        "cash": -920,
+        "item": "bag"
+      },
+      {
+        "id": "ashCanyon_roaming_rope_market_2",
+        "label": "盘好检修长绳",
+        "description": "体力 -7；获得 1 件野营休憩包。",
+        "stamina": -7,
+        "item": "restkit"
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_windward_cover",
+    "mapId": "ashCanyon",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "背风岩棚的试验屏",
+    "story": "临时实验屏让岩棚里的风明显减弱，研究终端允许协助记录者选择回报。你可以领天气防护，也可以领一笔测量补贴。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_windward_cover_1",
+        "label": "领取短期天气防护",
+        "description": "获得天气防护 2 日。",
+        "status": "umbrella:2"
+      },
+      {
+        "id": "ashCanyon_roaming_windward_cover_2",
+        "label": "领取测量补贴",
+        "description": "棱镜币 +760。",
+        "cash": 760
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_ember_prism",
+    "mapId": "ashCanyon",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "灰烬中完整的棱镜",
+    "story": "一块矿区棱镜躲过了大火，回收仪器确认它仍能折叠路径。支付稳定费用可制成传送石，完整交存也有高额奖金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_ember_prism_1",
+        "label": "稳定路径棱镜",
+        "description": "棱镜币 -1700；体力 -6；获得 1 件传送石。",
+        "cash": -1700,
+        "stamina": -6,
+        "item": "teleportStone"
+      },
+      {
+        "id": "ashCanyon_roaming_ember_prism_2",
+        "label": "交存完整棱镜",
+        "description": "棱镜币 +1350；心情 +4。",
+        "cash": 1350,
+        "mood": 4
+      }
+    ]
+  },
+  {
+    "id": "ashCanyon_roaming_reconstruction_rights",
+    "mapId": "ashCanyon",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "封存的重建优先权",
+    "story": "流动档案车找到了矿区重建计划的最后一份可转让凭证。核验费用不低，但它能换成强制收购契约；放弃权利也能领取资料奖金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "ashCanyon_roaming_reconstruction_rights_1",
+        "label": "支付权利核验费",
+        "description": "棱镜币 -2050；心情 -5；获得 1 件强制收购契约。",
+        "cash": -2050,
+        "mood": -5,
+        "item": "acquire"
+      },
+      {
+        "id": "ashCanyon_roaming_reconstruction_rights_2",
+        "label": "领取资料奖金",
+        "description": "棱镜币 +1400。",
+        "cash": 1400
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_petal_letter",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "夹着桃瓣的便笺",
+    "story": "一张夹着桃瓣的便笺随风落到代理人面前，写着附近临时集会的送物清单。帮忙送到可领谢礼，抄录清单也能换一杯茶。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_petal_letter_1",
+        "label": "完成送物",
+        "description": "体力 -3；棱镜币 +350。",
+        "stamina": -3,
+        "cash": 350
+      },
+      {
+        "id": "peachHaven_roaming_petal_letter_2",
+        "label": "抄录清单",
+        "description": "获得 1 件月露茶。",
+        "item": "tea"
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_field_song",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "田埂边的一句新词",
+    "story": "乡间歌队正在寻找一句适合新节拍的短词，邀请路过者试唱。你可以加入合唱放松心情，也可以记谱领取报酬。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_field_song_1",
+        "label": "加入短暂合唱",
+        "description": "心情 +14。",
+        "mood": 14
+      },
+      {
+        "id": "peachHaven_roaming_field_song_2",
+        "label": "记录新节拍",
+        "description": "棱镜币 +280。",
+        "cash": 280
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_waterwheel_token",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "水车筹码数错了",
+    "story": "移动灌溉账台把代理人的参观牌计成了用水筹码。支付材料费能立刻换牌，重新核对登记也能免去支出。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_waterwheel_token_1",
+        "label": "支付换牌材料费",
+        "description": "棱镜币 -190。",
+        "cash": -190
+      },
+      {
+        "id": "peachHaven_roaming_waterwheel_token_2",
+        "label": "核对登记",
+        "description": "心情 -4。",
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_bamboo_box",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "竹匣里的多一份饭",
+    "story": "送饭队发现今天多准备了一份竹匣饭，邀请代理人分享。你可以就地补充体力，也可以帮忙送给下一个轮值点。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_bamboo_box_1",
+        "label": "分享竹匣饭",
+        "description": "体力 +18；心情 +3。",
+        "stamina": 18,
+        "mood": 3
+      },
+      {
+        "id": "peachHaven_roaming_bamboo_box_2",
+        "label": "送往轮值点",
+        "description": "体力 -3；棱镜币 +360。",
+        "stamina": -3,
+        "cash": 360
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_potters_imprint",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "陶匠的临时试印",
+    "story": "流动陶架需要几张清晰的印样，陶匠邀请代理人试用新刻章。帮忙印好一叠有工钱，挑选纪念陶片也可以。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_potters_imprint_1",
+        "label": "印好整叠样张",
+        "description": "心情 -2；棱镜币 +370。",
+        "mood": -2,
+        "cash": 370
+      },
+      {
+        "id": "peachHaven_roaming_potters_imprint_2",
+        "label": "挑选纪念陶片",
+        "description": "心情 +11。",
+        "mood": 11
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_stray_ribbon",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "系错地方的礼带",
+    "story": "代理人的背包被误系上一条宴席收款礼带，送礼人已经走远。委托流动服务台代为核实要收费，自己找回记录则费精神。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_stray_ribbon_1",
+        "label": "委托服务台核实",
+        "description": "棱镜币 -230。",
+        "cash": -230
+      },
+      {
+        "id": "peachHaven_roaming_stray_ribbon_2",
+        "label": "核对礼带记录",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_brook_cleaning",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "溪边的一次小清理",
+    "story": "水道维护队沿溪捡拾漂来的枝叶，正好缺一位记录员。你可以记录回收量，也可以下手搬走堆积枝条领取更多补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_brook_cleaning_1",
+        "label": "记录回收量",
+        "description": "棱镜币 +220。",
+        "cash": 220
+      },
+      {
+        "id": "peachHaven_roaming_brook_cleaning_2",
+        "label": "搬走堆积枝条",
+        "description": "体力 -4；棱镜币 +440。",
+        "stamina": -4,
+        "cash": 440
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_bean_curd",
+    "mapId": "peachHaven",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "温豆花的试味勺",
+    "story": "移动食摊正在试调新一锅豆花，邀请代理人选出更合适的配方。试味能恢复状态，也可以把参与凭证换成打包点心。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_bean_curd_1",
+        "label": "尝一小碗豆花",
+        "description": "体力 +12；心情 +7。",
+        "stamina": 12,
+        "mood": 7
+      },
+      {
+        "id": "peachHaven_roaming_bean_curd_2",
+        "label": "换成打包点心",
+        "description": "获得 1 件能量小食。",
+        "item": "snack"
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_woven_shadow",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "会折叠的竹影",
+    "story": "织作队把竹篾做成轻巧的储物骨架，允许旅人支付材料差价试用。帮忙整理细篾也可领一份休憩补给。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_woven_shadow_1",
+        "label": "支付试用差价",
+        "description": "棱镜币 -890；获得 1 件折叠背包。",
+        "cash": -890,
+        "item": "bag"
+      },
+      {
+        "id": "peachHaven_roaming_woven_shadow_2",
+        "label": "整理细篾",
+        "description": "体力 -6；获得 1 件野营休憩包。",
+        "stamina": -6,
+        "item": "restkit"
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_two_seedbeds",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "两畦同开的花",
+    "story": "巡回育种台发现两份幼苗同时开花，邀请你资助下一轮培育。参与者能获双生培养皿，普通记录工作则支付现金。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_two_seedbeds_1",
+        "label": "资助下一轮培育",
+        "description": "棱镜币 -480；获得 1 件双生培养皿。",
+        "cash": -480,
+        "item": "twinDish"
+      },
+      {
+        "id": "peachHaven_roaming_two_seedbeds_2",
+        "label": "填写花期记录",
+        "description": "心情 -3；棱镜币 +570。",
+        "mood": -3,
+        "cash": 570
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_communal_boundary",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "共有水渠的界线",
+    "story": "水渠复核员向你发来一份地界补正单，需要为名下工程补足边界材料。支付复核费可快速解决，否则普通建筑可能退层修正。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_communal_boundary_1",
+        "label": "补足边界材料",
+        "description": "棱镜币 -760。",
+        "cash": -760
+      },
+      {
+        "id": "peachHaven_roaming_communal_boundary_2",
+        "label": "接受退层修正",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -3。",
+        "damageBuilding": true,
+        "mood": -3
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_resting_chit",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "歇脚亭的轮值凭证",
+    "story": "村道轮值队在流动账台结算今日协助，邀请代理人选择谢礼。核对完整名单能领免租卡，也可直接领本次补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_resting_chit_1",
+        "label": "核对完整名单",
+        "description": "心情 -5；获得 1 件免租卡。",
+        "mood": -5,
+        "item": "rent"
+      },
+      {
+        "id": "peachHaven_roaming_resting_chit_2",
+        "label": "领取本次补贴",
+        "description": "棱镜币 +510。",
+        "cash": 510
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_peach_blessing",
+    "mapId": "peachHaven",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "满篮桃子的祝愿",
+    "story": "果园把当天第一篮完熟桃分给经过的旅人。代理人可以分享桃子与祝愿，也可把它送到更远的接驳点领取补助。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_peach_blessing_1",
+        "label": "分享桃子与祝愿",
+        "description": "体力 +10；获得幸运 2 日。",
+        "stamina": 10,
+        "status": "luck:2"
+      },
+      {
+        "id": "peachHaven_roaming_peach_blessing_2",
+        "label": "送往接驳点",
+        "description": "体力 -4；棱镜币 +700。",
+        "stamina": -4,
+        "cash": 700
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_remembered_opening",
+    "mapId": "peachHaven",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "只记得方位的窄口",
+    "story": "一位行旅留下了没有标出地名的窄口图，研究终端发现纸中嵌着空间晶屑。你可以资助复原成传送石，也可以让档案馆收藏原图。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_remembered_opening_1",
+        "label": "复原空间晶屑",
+        "description": "棱镜币 -1650；心情 -5；获得 1 件传送石。",
+        "cash": -1650,
+        "mood": -5,
+        "item": "teleportStone"
+      },
+      {
+        "id": "peachHaven_roaming_remembered_opening_2",
+        "label": "交由档案馆收藏",
+        "description": "棱镜币 +1200；心情 +8。",
+        "cash": 1200,
+        "mood": 8
+      }
+    ]
+  },
+  {
+    "id": "peachHaven_roaming_harvest_seal",
+    "mapId": "peachHaven",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "丰年封存的星海签",
+    "story": "轮值仓打开一批丰年留存的封签，里面有一张可开奖的星海奖券。你可以协助清点领取奖券，也能选择数额确定的协勤款。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "peachHaven_roaming_harvest_seal_1",
+        "label": "清点后领取星海奖券",
+        "description": "体力 -6；获得 1 件星海奖券。",
+        "stamina": -6,
+        "item": "lottery"
+      },
+      {
+        "id": "peachHaven_roaming_harvest_seal_2",
+        "label": "领取确定协勤款",
+        "description": "棱镜币 +1250。",
+        "cash": 1250
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_waterfall_counter",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "瀑布计数器的空白行",
+    "story": "无人水文终端留下一行缺失读数，代理人的传感器刚好能补齐。提交短时数据有补助，完成连续记录能获得更多。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_waterfall_counter_1",
+        "label": "提交短时读数",
+        "description": "棱镜币 +230。",
+        "cash": 230
+      },
+      {
+        "id": "hushedValley_roaming_waterfall_counter_2",
+        "label": "完成连续记录",
+        "description": "体力 -4；棱镜币 +470。",
+        "stamina": -4,
+        "cash": 470
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_warm_cave_air",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "岩洞吐出的暖气",
+    "story": "一道岩缝里涌出较暖的空气，附近无人机标记这里可供短暂歇息。代理人可以暖身，或检查标记是否牢固领取维护费。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_warm_cave_air_1",
+        "label": "在洞口暖身",
+        "description": "体力 +11；心情 +8。",
+        "stamina": 11,
+        "mood": 8
+      },
+      {
+        "id": "hushedValley_roaming_warm_cave_air_2",
+        "label": "检查避难标记",
+        "description": "体力 -3；棱镜币 +370。",
+        "stamina": -3,
+        "cash": 370
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_wet_logbook",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "被水汽浸软的日志",
+    "story": "巡线设备交给代理人的日志已经被水汽浸软，必须重新录入才能关闭交接工单。购买扫描服务省心，自行辨认则费精神。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_wet_logbook_1",
+        "label": "购买扫描服务",
+        "description": "棱镜币 -240。",
+        "cash": -240
+      },
+      {
+        "id": "hushedValley_roaming_wet_logbook_2",
+        "label": "自行辨认日志",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_cairn_gap",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "石堆里缺的一块",
+    "story": "无人巡路图提示附近一座指向石堆少了一块，河谷里的风向因此容易让人误判。补齐石块有报酬，上传坐标也能领补助。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_cairn_gap_1",
+        "label": "补齐指向石块",
+        "description": "体力 -4；棱镜币 +440。",
+        "stamina": -4,
+        "cash": 440
+      },
+      {
+        "id": "hushedValley_roaming_cairn_gap_2",
+        "label": "上传缺口坐标",
+        "description": "棱镜币 +190。",
+        "cash": 190
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_reed_warmth",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "芦苇套里的保温餐",
+    "story": "废弃轮值点仍有按时工作的配送器，一份保温餐正等待过路代理人领取。你可以吃掉它，也可以带去下个自动回收点换补贴。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_reed_warmth_1",
+        "label": "领取保温餐",
+        "description": "体力 +19。",
+        "stamina": 19
+      },
+      {
+        "id": "hushedValley_roaming_reed_warmth_2",
+        "label": "转交回收点",
+        "description": "体力 -3；棱镜币 +410。",
+        "stamina": -3,
+        "cash": 410
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_false_howl",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "被回声拉长的警报",
+    "story": "代理人的定位提示在谷壁间拖出很长的回声，巡逻终端误判为求援信号。即时撤销要付检测费，详细说明则要反复录入。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_false_howl_1",
+        "label": "支付撤销检测费",
+        "description": "棱镜币 -300。",
+        "cash": -300
+      },
+      {
+        "id": "hushedValley_roaming_false_howl_2",
+        "label": "反复核对录音",
+        "description": "心情 -6。",
+        "mood": -6
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_cloudbreak",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "云隙中的谷底光",
+    "story": "云层短暂裂开，谷底的水面把光映到一块高岩上。你可以停下来享受这段安静，也可以为远程资料站拍摄光线路径。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_cloudbreak_1",
+        "label": "享受短暂晴光",
+        "description": "心情 +14；体力 +3。",
+        "mood": 14,
+        "stamina": 3
+      },
+      {
+        "id": "hushedValley_roaming_cloudbreak_2",
+        "label": "拍摄光线路径",
+        "description": "棱镜币 +310。",
+        "cash": 310
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_drift_antenna",
+    "mapId": "hushedValley",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "漂到岸边的天线",
+    "story": "一支流动采样器的天线漂到岸边，远程终端请求代理人回收。带回整件有奖励，只记下漂流终点也能得到报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_drift_antenna_1",
+        "label": "带回整支天线",
+        "description": "体力 -5；棱镜币 +530。",
+        "stamina": -5,
+        "cash": 530
+      },
+      {
+        "id": "hushedValley_roaming_drift_antenna_2",
+        "label": "记录漂流终点",
+        "description": "棱镜币 +220。",
+        "cash": 220
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_cliff_anchor",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "岩壁锚栓的备用套件",
+    "story": "无人检修柜正在轮换岩壁锚栓，允许代理人支付补货费领取标准修复套件。若只做数量盘点，则按工时发放补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_cliff_anchor_1",
+        "label": "领取修复套件",
+        "description": "棱镜币 -820；获得 1 件建筑修复包。",
+        "cash": -820,
+        "item": "repair"
+      },
+      {
+        "id": "hushedValley_roaming_cliff_anchor_2",
+        "label": "完成数量盘点",
+        "description": "心情 -4；棱镜币 +660。",
+        "mood": -4,
+        "cash": 660
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_paired_pool",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "一对同涨同落的水潭",
+    "story": "远程观测发现两处岩潭水位同步变化，便携样本盒开放了协作采集。提供培养耗材可获得双生培养皿，基础记录另有报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_paired_pool_1",
+        "label": "提供培养耗材",
+        "description": "棱镜币 -530；获得 1 件双生培养皿。",
+        "cash": -530,
+        "item": "twinDish"
+      },
+      {
+        "id": "hushedValley_roaming_paired_pool_2",
+        "label": "上传基础记录",
+        "description": "体力 -5；棱镜币 +640。",
+        "stamina": -5,
+        "cash": 640
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_foundation_echo",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "地基下面的空洞回声",
+    "story": "地质无人机根据你名下工程的回声数据发来警告：部分地基需要再补一层支撑。付费补齐材料可结束工单，否则会抽查一处可损坏的普通建筑。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_foundation_echo_1",
+        "label": "补齐支撑材料",
+        "description": "棱镜币 -980。",
+        "cash": -980
+      },
+      {
+        "id": "hushedValley_roaming_foundation_echo_2",
+        "label": "接受退层整改",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -4。",
+        "damageBuilding": true,
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_old_shelter_key",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "应急舱留下的空钥匙",
+    "story": "自动应急舱把一次错误的避难登记写到了代理人的终端上。你可以缴费清除记录，也可进入静养程序等待远程复核。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_old_shelter_key_1",
+        "label": "清除错误登记",
+        "description": "棱镜币 -660。",
+        "cash": -660
+      },
+      {
+        "id": "hushedValley_roaming_old_shelter_key_2",
+        "label": "等待静养复核",
+        "description": "进入疗养院，禁锢 3 次行动。",
+        "confinement": "sanatorium"
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_silent_supply",
+    "mapId": "hushedValley",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "没有脚印的补给投送",
+    "story": "新的补给舱落在无人经过的谷底平台，终端向附近代理人发出协助信号。完成点验可选一份天气防护，或现金作业补贴。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_silent_supply_1",
+        "label": "点验后领取防护",
+        "description": "体力 -4；获得 1 件三日星伞。",
+        "stamina": -4,
+        "item": "umbrella"
+      },
+      {
+        "id": "hushedValley_roaming_silent_supply_2",
+        "label": "领取作业补贴",
+        "description": "棱镜币 +760。",
+        "cash": 760
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_cave_seam",
+    "mapId": "hushedValley",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "岩洞里发亮的接缝",
+    "story": "便携探头发现岩洞接缝会让短波信号瞬间跳到谷口。远程研究站愿意把它封装为传送石，但需要你承担稳定材料。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_cave_seam_1",
+        "label": "承担稳定材料",
+        "description": "棱镜币 -1650；体力 -7；获得 1 件传送石。",
+        "cash": -1650,
+        "stamina": -7,
+        "item": "teleportStone"
+      },
+      {
+        "id": "hushedValley_roaming_cave_seam_2",
+        "label": "提交完整信号记录",
+        "description": "棱镜币 +1300。",
+        "cash": 1300
+      }
+    ]
+  },
+  {
+    "id": "hushedValley_roaming_signal_sky",
+    "mapId": "hushedValley",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "回声里的一张星图",
+    "story": "无人观测器把多年的回声数据绘成一张奇异星图，已可用于制作高面骰。你可以协助校准并收下骰具与祝愿，也可出售资料。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "hushedValley_roaming_signal_sky_1",
+        "label": "校准星图",
+        "description": "心情 -6；获得 1 件二十面电子骰；获得幸运 3 日。",
+        "mood": -6,
+        "item": "dice20",
+        "status": "luck:3"
+      },
+      {
+        "id": "hushedValley_roaming_signal_sky_2",
+        "label": "出售完整资料",
+        "description": "棱镜币 +1450。",
+        "cash": 1450
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_parcel_lift",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "货梯外的一只轻箱",
+    "story": "都会配送车把一只轻箱卸在错误的交接区，代理人恰好收到就近协助请求。送往正确入口有跑腿费，只回报位置也有奖励。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_parcel_lift_1",
+        "label": "送到正确入口",
+        "description": "体力 -3；棱镜币 +390。",
+        "stamina": -3,
+        "cash": 390
+      },
+      {
+        "id": "grandCity_roaming_parcel_lift_2",
+        "label": "回报交接位置",
+        "description": "棱镜币 +180。",
+        "cash": 180
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_fountain_score",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "喷泉新曲的试听席",
+    "story": "移动音控台正在给中央喷泉调试新曲，邀请代理人试听。你可以听完整段放松一下，也能用一份详细反馈换报酬。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "grandCity_roaming_fountain_score_1",
+        "label": "听完整段新曲",
+        "description": "心情 +12。",
+        "mood": 12
+      },
+      {
+        "id": "grandCity_roaming_fountain_score_2",
+        "label": "提交详细反馈",
+        "description": "心情 -2；棱镜币 +330。",
+        "mood": -2,
+        "cash": 330
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_elevator_bill",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "电梯把访客算成住户",
+    "story": "流动维修终端误把代理人的访客牌记成维护分摊账户。即时销账要手续费，出示完整行程可以撤销误记。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "grandCity_roaming_elevator_bill_1",
+        "label": "支付销账手续费",
+        "description": "棱镜币 -280。",
+        "cash": -280
+      },
+      {
+        "id": "grandCity_roaming_elevator_bill_2",
+        "label": "整理行程证明",
+        "description": "心情 -5。",
+        "mood": -5
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_rooftop_cuttings",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "屋顶花园的分株车",
+    "story": "街区园艺队用小车运送屋顶花园的多余分株，邀请路过者帮忙分拣。协助可收劳务费，也可以留下小盆栽改善心情。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "grandCity_roaming_rooftop_cuttings_1",
+        "label": "领取分拣劳务费",
+        "description": "体力 -2；棱镜币 +320。",
+        "stamina": -2,
+        "cash": 320
+      },
+      {
+        "id": "grandCity_roaming_rooftop_cuttings_2",
+        "label": "留下小盆栽",
+        "description": "心情 +13。",
+        "mood": 13
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_queue_proxy",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "排队号的自动代理",
+    "story": "流动办事终端丢失了一段排队记录，正在请代理人核对附近的号码。逐项核对有酬劳，也可简单登记后领取安抚茶饮。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_queue_proxy_1",
+        "label": "核对整段号码",
+        "description": "心情 -4；棱镜币 +460。",
+        "mood": -4,
+        "cash": 460
+      },
+      {
+        "id": "grandCity_roaming_queue_proxy_2",
+        "label": "登记后领取茶饮",
+        "description": "获得 1 件月露茶。",
+        "item": "tea"
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_paving_splash",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "养护车溅起的薄浆",
+    "story": "石材养护车转弯时溅起一点薄浆，代理人的设备外壳需要清洁。付费快洗可以迅速处理，自己擦拭则费体力。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "grandCity_roaming_paving_splash_1",
+        "label": "使用街边快洗",
+        "description": "棱镜币 -240。",
+        "cash": -240
+      },
+      {
+        "id": "grandCity_roaming_paving_splash_2",
+        "label": "自行擦拭",
+        "description": "体力 -3；心情 -2。",
+        "stamina": -3,
+        "mood": -2
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_office_tasting",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "午间餐车的试吃券",
+    "story": "流动餐车试卖适合办公间隙食用的套餐，代理人收到一张试吃券。就地用餐能恢复体力，也可换成便携补给。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "grandCity_roaming_office_tasting_1",
+        "label": "使用试吃券",
+        "description": "体力 +17；心情 +3。",
+        "stamina": 17,
+        "mood": 3
+      },
+      {
+        "id": "grandCity_roaming_office_tasting_2",
+        "label": "换成便携补给",
+        "description": "获得 1 件能量小食。",
+        "item": "snack"
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_address_translation",
+    "mapId": "grandCity",
+    "rarity": "common",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "两套楼号的对照表",
+    "story": "老街区和新规划使用了两套楼号，送件员请代理人帮忙翻译一段地址。简单指出入口可收小费，整理对照表报酬更多。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_address_translation_1",
+        "label": "指出正确入口",
+        "description": "棱镜币 +240。",
+        "cash": 240
+      },
+      {
+        "id": "grandCity_roaming_address_translation_2",
+        "label": "整理楼号对照表",
+        "description": "心情 -3；棱镜币 +500。",
+        "mood": -3,
+        "cash": 500
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_modular_showcase",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "流动预制构件展",
+    "story": "建筑企业把预制构件装上展示车，允许代理人补贴运输费领取修复包。也可以协助记录访客反馈，按份领取报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_modular_showcase_1",
+        "label": "补贴构件运输",
+        "description": "棱镜币 -790；获得 1 件建筑修复包。",
+        "cash": -790,
+        "item": "repair"
+      },
+      {
+        "id": "grandCity_roaming_modular_showcase_2",
+        "label": "记录访客反馈",
+        "description": "心情 -4；棱镜币 +620。",
+        "mood": -4,
+        "cash": 620
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_renovation_window",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "短暂开放的拆改窗口",
+    "story": "市政流动柜台开放一批标准拆改许可，手续齐全的代理人可以低价申领。若只协助整理申请顺序，也能领一笔工作补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_renovation_window_1",
+        "label": "申领拆迁许可",
+        "description": "棱镜币 -1250；获得 1 件拆迁许可。",
+        "cash": -1250,
+        "item": "demolish"
+      },
+      {
+        "id": "grandCity_roaming_renovation_window_2",
+        "label": "整理申请顺序",
+        "description": "心情 -5；棱镜币 +700。",
+        "mood": -5,
+        "cash": 700
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_duplicate_tax",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "重复编号的税务信封",
+    "story": "系统向你的代理人寄了两封同号通知。你可以花时间核销重复记录，取得一份审计函；也可直接付费请柜台结清误差。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_duplicate_tax_1",
+        "label": "核销并领取审计函",
+        "description": "心情 -8；获得 1 件税务审计函。",
+        "mood": -8,
+        "item": "tax"
+      },
+      {
+        "id": "grandCity_roaming_duplicate_tax_2",
+        "label": "委托柜台处理",
+        "description": "棱镜币 -350。",
+        "cash": -350
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_facade_inspection",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "立面巡检的红色小签",
+    "story": "移动巡检平台发现你的工程档案缺少一项立面加固记录。补齐检修费即可消签，否则一处非地标建筑可能按规定退层。",
+    "tone": "bad",
+    "choices": [
+      {
+        "id": "grandCity_roaming_facade_inspection_1",
+        "label": "补齐检修记录",
+        "description": "棱镜币 -920。",
+        "cash": -920
+      },
+      {
+        "id": "grandCity_roaming_facade_inspection_2",
+        "label": "接受退层处理",
+        "description": "随机一处可损坏的自有非地标建筑降低 1 层；无适用建筑则无损失；心情 -4。",
+        "damageBuilding": true,
+        "mood": -4
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_transit_rebate",
+    "mapId": "grandCity",
+    "rarity": "uncommon",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "环线接驳的体验返礼",
+    "story": "城市环线正在测试跨站换乘凭证，移动服务台邀请代理人完成反馈。体验者可以选择换乘券，也可以领固定交通补贴。",
+    "tone": "good",
+    "choices": [
+      {
+        "id": "grandCity_roaming_transit_rebate_1",
+        "label": "领取跨站换乘券",
+        "description": "获得 1 件星轨换乘券。",
+        "item": "teleport"
+      },
+      {
+        "id": "grandCity_roaming_transit_rebate_2",
+        "label": "领取固定交通补贴",
+        "description": "棱镜币 +690。",
+        "cash": 690
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_skyline_option",
+    "mapId": "grandCity",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "天际线项目的剩余认购权",
+    "story": "流动项目展结束前，一份可转让的认购权尚未签收。支付核验费可把它换成强制收购契约，放弃权利则领取审阅报酬。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_skyline_option_1",
+        "label": "核验剩余认购权",
+        "description": "棱镜币 -1950；心情 -6；获得 1 件强制收购契约。",
+        "cash": -1950,
+        "mood": -6,
+        "item": "acquire"
+      },
+      {
+        "id": "grandCity_roaming_skyline_option_2",
+        "label": "领取审阅报酬",
+        "description": "棱镜币 +1350。",
+        "cash": 1350
+      }
+    ]
+  },
+  {
+    "id": "grandCity_roaming_folded_commute",
+    "mapId": "grandCity",
+    "rarity": "rare",
+    "dlc": true,
+    "encounterOnly": true,
+    "title": "一次折叠的通勤",
+    "story": "城市研究车演示把两个街口临时叠在一起的装置，最后一枚稳定晶体开放申领。承担测试耗材可拿传送石，记录演示也有高额补贴。",
+    "tone": "choice",
+    "choices": [
+      {
+        "id": "grandCity_roaming_folded_commute_1",
+        "label": "承担测试耗材",
+        "description": "棱镜币 -1800；体力 -5；获得 1 件传送石。",
+        "cash": -1800,
+        "stamina": -5,
+        "item": "teleportStone"
+      },
+      {
+        "id": "grandCity_roaming_folded_commute_2",
+        "label": "记录完整演示",
+        "description": "棱镜币 +1250；心情 +7。",
+        "cash": 1250,
+        "mood": 7
+      }
+    ]
+  }
+]
