@@ -83,7 +83,7 @@ export default function InventoryPanel({ state, player, onAction, onSelectMapTar
     onAction({ type: 'useItem', itemUid: slot.uid });
   };
 
-  if (selected && selectedDef?.target === 'dice') return <DiceControlPicker weatherId={state.weatherId} disabled={!usable(selected.uid)} onCancel={() => setTargetItem(null)} onConfirm={diceValue => {
+  if (selected && selectedDef?.target === 'dice') return <DiceControlPicker weatherId={state.weatherId} weatherMode={state.config.weatherMode} disabled={!usable(selected.uid)} onCancel={() => setTargetItem(null)} onConfirm={diceValue => {
     if (canTargetItem(state, player.id, selected.uid, { diceValue }) && !disabled) onAction({ type: 'useItem', itemUid: selected.uid, diceValue });
     setTargetItem(null);
   }} />;

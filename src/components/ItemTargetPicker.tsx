@@ -3,6 +3,7 @@ import { canTargetItem, getAcquisitionPrice } from '../game/engine';
 import { ITEMS, WEATHERS } from '../game/data';
 import { HOSTILE_ITEM_MOOD_LOSS } from '../game/economy';
 import { MAPS } from '../game/maps';
+import { canSelectDisasterWeather } from '../game/weatherRules';
 import type { GameState, MapData, Player } from '../game/types';
 import ItemIcon from './ItemIcon';
 import { WeatherIcon } from '../visual/EnvironmentBadge';
@@ -43,12 +44,14 @@ export function PlayerTargetPicker({ state, player, itemUid, itemName, disabled,
 export function WeatherTargetPicker({ state, player, itemUid, itemName, disabled, onBack, onConfirm }: SharedTargetProps & { onConfirm: (weatherId: string) => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedValid = !!selectedId && !disabled && canTargetItem(state, player.id, itemUid, { weatherId: selectedId });
+  const disasterAllowed = canSelectDisasterWeather(state.config.weatherMode, state.day);
+  const disasterRule = state.config.weatherMode === 'hardship' ? '苦难天气从第 1 天起可指定灾难天气。' : '标准与挑战天气从第 22 天起可指定灾难天气。';
   return <div className="inventory-target-view weather-target-picker">
-    <div className="inventory-target-head"><div><small>指定明日天气</small><h3 tabIndex={-1}>使用 {itemName}</h3><p>可跨季节指定天气；灾难天气从第 22 天起开放。返回背包不会消耗道具。</p></div><button className="secondary-button" type="button" onClick={onBack}>返回背包</button></div>
+    <div className="inventory-target-head"><div><small>指定明日天气</small><h3 tabIndex={-1}>使用 {itemName}</h3><p>可跨季节指定天气；{disasterRule}返回背包不会消耗道具。</p></div><button className="secondary-button" type="button" onClick={onBack}>返回背包</button></div>
     <div className="weather-target-grid" role="group" aria-label="选择天气目标">{Object.values(WEATHERS).map(weather => {
       const eligible = !disabled && canTargetItem(state, player.id, itemUid, { weatherId: weather.id });
-      return <button key={weather.id} type="button" className={`weather-target-card ${selectedId === weather.id ? 'is-selected' : ''}`} aria-pressed={selectedId === weather.id} disabled={!eligible} title={!eligible && weather.family === 'disaster' && state.day < 22 ? '灾难天气从第 22 天起开放' : undefined} onClick={() => setSelectedId(weather.id)}>
-        <WeatherIcon weatherId={weather.id} size={24} /><strong>{weather.name}</strong>{weather.family === 'disaster' && state.day < 22 && <small>第 22 天开放</small>}
+      return <button key={weather.id} type="button" className={`weather-target-card ${selectedId === weather.id ? 'is-selected' : ''}`} aria-pressed={selectedId === weather.id} disabled={!eligible} title={!eligible && weather.family === 'disaster' && !disasterAllowed ? '灾难天气从第 22 天起开放' : undefined} onClick={() => setSelectedId(weather.id)}>
+        <WeatherIcon weatherId={weather.id} size={24} /><strong>{weather.name}</strong>{weather.family === 'disaster' && !disasterAllowed && <small>第 22 天开放</small>}
       </button>;
     })}</div>
     <div className="inventory-target-actions"><button className="secondary-button" type="button" onClick={onBack}>取消</button><button className="action-button" type="button" disabled={!selectedValid} onClick={() => { if (selectedValid) onConfirm(selectedId!); }}>确认使用 {itemName}</button></div>

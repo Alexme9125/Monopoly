@@ -1,13 +1,13 @@
 import { Cloud, CloudDrizzle, CloudFog, CloudHail, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, Flame, Snowflake, Sparkles, Sun, SunDim, ThermometerSun, Tornado, Waves, Wind, Zap, type LucideIcon } from 'lucide-react';
 import { WEATHERS } from '../game/data';
 import type { GameConfig } from '../game/types';
-import { getWeatherCopy } from './weatherCopy';
+import { getWeatherCopy, WEATHER_MODE_NAMES } from './weatherCopy';
 
 export function WeatherEffects({ weatherId, mode }: { weatherId: string; mode: GameConfig['weatherMode'] }) {
   const weather = WEATHERS[weatherId] ?? WEATHERS.clear;
   const { effects } = getWeatherCopy(weatherId, mode);
   return <div className={`weather-effects weather-tone-${weather.family}`} data-weather-mode={mode} aria-label={`当前天气效果：${weather.name}`}>
-    <div className="weather-effects-heading"><span className="weather-effects-name">{weather.name}</span><span className="weather-mode-label">{mode === 'standard' ? '标准天气' : '挑战天气'}</span></div>
+    <div className="weather-effects-heading"><span className="weather-effects-name">{weather.name}</span><span className="weather-mode-label">{WEATHER_MODE_NAMES[mode]}</span></div>
     <div className="weather-effect-terms" aria-label="天气规则">{effects.map((term, index) => <span key={`${index}:${term}`}>{term}</span>)}</div>
   </div>;
 }
