@@ -1,7 +1,8 @@
 import { useId, type CSSProperties } from 'react';
-import { Check, CloudLightning, Coins, Feather, Infinity as InfinityIcon, Leaf, Scale, Sun, Swords, TriangleAlert, Weight } from 'lucide-react';
+import { Check, CloudLightning, Coins, Feather, Infinity as InfinityIcon, Leaf, Scale, Sun, Swords, Tornado, TriangleAlert, Weight } from 'lucide-react';
 import type { AILevel, GameConfig, MapId, RentLevel, Shape } from '../game/types';
 import { BASE_STARTING_CASH, getStartingCash, RENT_LEVEL_NAMES, RENT_LEVELS } from '../game/economy';
+import { WEATHER_MODE_NOTES } from '../visual/weatherCopy';
 
 const shapes: { value: Shape; name: string }[] = [
   { value: 'diamond', name: '菱形' }, { value: 'circle', name: '圆形' },
@@ -57,13 +58,14 @@ export function JourneyLengthControl({ value, onChange, disabled = false }: { va
 
 export function WeatherRuleControl({ value, onChange, disabled = false }: { value: GameConfig['weatherMode']; onChange: (mode: GameConfig['weatherMode']) => void; disabled?: boolean }) {
   const id = useId();
-  return <div className="setup-control weather-rule-control" data-disabled={disabled}>
+  return <div className="setup-control weather-rule-control" data-mode={value} data-disabled={disabled}>
     <span id={id} className="setup-control-label">天气规则</span>
-    <div className="weather-rule-capsule" role="group" aria-labelledby={id}>
-      <button type="button" disabled={disabled} aria-pressed={value === 'standard'} onClick={() => onChange('standard')}><Sun size={16}/><span>标准</span></button>
-      <button type="button" disabled={disabled} aria-pressed={value === 'challenge'} onClick={() => onChange('challenge')}><CloudLightning size={16}/><span>挑战</span></button>
+    <div className="weather-rule-capsule" role="group" aria-labelledby={id} aria-describedby={`${id}-note`}>
+      <button type="button" data-mode="standard" disabled={disabled} aria-pressed={value === 'standard'} onClick={() => onChange('standard')}><Sun size={16} aria-hidden="true"/><span>标准</span></button>
+      <button type="button" data-mode="challenge" disabled={disabled} aria-pressed={value === 'challenge'} onClick={() => onChange('challenge')}><CloudLightning size={16} aria-hidden="true"/><span>挑战</span></button>
+      <button type="button" data-mode="hardship" disabled={disabled} aria-pressed={value === 'hardship'} onClick={() => onChange('hardship')}><Tornado size={16} aria-hidden="true"/><span>苦难</span></button>
     </div>
-    <p className="weather-rule-note">{value === 'challenge' ? '完全体天气体验' : '温和天气体验'}</p>
+    <p className="weather-rule-note" id={`${id}-note`}>{WEATHER_MODE_NOTES[value]}</p>
   </div>;
 }
 

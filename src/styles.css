@@ -875,6 +875,7 @@
 .landing .setup-details-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px 40px;padding:12px 0 24px;align-items:start}
 .landing .setup-profile-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:23px 24px;min-width:0;align-items:start}
 .landing .setup-profile-fields>.field:first-child{grid-column:1/-1;max-width:100%}
+.landing .setup-profile-fields>.setup-seed-field{grid-column:1/-1;width:100%;max-width:none}
 .landing .setup-rule-fields{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(115px,1fr);gap:19px 22px;min-width:0;align-items:start}
 .setup-rule-fields>.journey-control{grid-column:1/-1}
 .landing .setup-details-body>.property-trading-switch{grid-column:1/-1;margin:0;padding-top:6px}
@@ -924,11 +925,20 @@
 .journey-orbit>i{position:absolute;width:5px;height:5px;left:68%;top:3px;background:currentColor;clip-path:polygon(50% 0,63% 37%,100% 50%,63% 63%,50% 100%,37% 63%,0 50%,37% 37%);animation:endless-twinkle 3.4s ease-in-out infinite}
 .journey-orbit>i:nth-child(2){left:83%;top:38px;animation-delay:-1.2s;width:6px;height:6px}.journey-orbit>i:nth-child(3){left:96%;top:0;animation-delay:-2.4s;width:7px;height:7px}
 .endless-spark{display:block;width:5px;height:5px;border-radius:50%;background:#88a98d;box-shadow:0 0 7px #88a98d66;flex-shrink:0}
-.weather-rule-capsule{display:flex;padding:4px;border:1px solid #dce6d5;background:#e9f0e3;border-radius:30px;min-height:46px;gap:3px;width:100%;max-width:290px}
-.weather-rule-capsule>button{display:flex;align-items:center;justify-content:center;gap:7px;flex:1;min-width:0;border:1px solid transparent;background:transparent;border-radius:23px;padding:8px 10px;color:#879c83;font-size:12px;white-space:nowrap}
+.weather-rule-capsule{display:flex;padding:4px;border:1px solid #dce6d5;background:#e9f0e3;border-radius:30px;min-height:54px;gap:3px;width:100%;max-width:330px}
+.weather-rule-capsule>button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1;min-width:0;min-height:44px;border:1px solid transparent;background:transparent;border-radius:23px;padding:8px;color:#687d66;font-size:12px;font-weight:600;white-space:nowrap}
 .weather-rule-capsule>button[aria-pressed=true]{background:#fffff8;border-color:#ccd9c6;color:#3d6250;box-shadow:0 2px 6px #3b593510}
-.weather-rule-note{margin:7px 0 0;font-size:10px;line-height:1.6;color:#8a9d80}
+.weather-rule-capsule>button:focus-visible{outline:2px solid #354b59;outline-offset:1px}
+.weather-rule-capsule>button>svg{width:16px;height:16px;flex:none;stroke-width:1.8}
+.weather-rule-control[data-mode=hardship] .weather-rule-capsule{background:#e5edf1;border-color:#c6d3d5}
+.weather-rule-control[data-mode=hardship] .weather-rule-capsule>button{color:#5f7480}
+.weather-rule-capsule>button[data-mode=hardship][aria-pressed=true]{color:#fffff8;background:linear-gradient(180deg,#405a6a,#354b59);border-color:#263b49;box-shadow:inset 0 1px 0 #ffffff24,0 2px 5px #263b4920}
+.weather-rule-note{margin:7px 0 0;min-height:18px;font-size:11px;line-height:1.6;color:#718669;overflow-wrap:anywhere}
+.weather-rule-control[data-mode=hardship] .weather-rule-note{color:#465f6e}
+.weather-effects[data-weather-mode=hardship] .weather-mode-label{background:#354b59;border-color:#354b59;color:#fffff8;opacity:1}
 .setup-rule-fields>.rent-burden-control{grid-column:1/-1}
+.setup-rule-fields>.weather-rule-control{grid-column:1/-1}
+.landing .weather-rule-capsule{max-width:none}
 .rent-burden-control{--rent-ink:#3d6250;--rent-border:#ccd9c6}
 .rent-burden-control[data-level=relaxed]{--rent-ink:#5e7d54;--rent-border:#c4d5ba}
 .rent-burden-control[data-level=heavy]{--rent-ink:#8b663f;--rent-border:#d8c8b2}
@@ -953,7 +963,7 @@
 .lobby-rules .lobby-rule-controls{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;margin-top:18px}
 .lobby-rules .journey-control{margin:6px 0 3px}
 .lobby-rules .weather-rule-capsule{max-width:none}
-.lobby-rules .weather-rule-capsule>button{min-height:36px}
+.lobby-rules .weather-rule-capsule>button{min-height:44px}
 .lobby-member .lobby-name-editor{min-width:0;flex:1}
 .lobby-name-editor label{display:block;color:#7b907b;font-size:10px;margin-bottom:7px}
 .lobby-name-editor input{width:100%;min-height:42px;background:#fffffa}
@@ -969,8 +979,9 @@
 @keyframes endless-twinkle{0%,100%{opacity:.2;transform:scale(.65)}50%{opacity:.9;transform:scale(1.1)}}
 @media(max-width:1180px){.landing .setup-details-body{gap:24px}.landing .setup-profile-fields{grid-template-columns:1fr;gap:20px}.landing .setup-profile-fields>.field:first-child{grid-column:auto}.landing .setup-rule-fields{grid-template-columns:1fr;gap:21px}.setup-profile-fields .shape-options{max-width:330px}.setup-profile-fields .player-color-picker{max-width:330px;min-height:65px}.setup-profile-fields .color-swatch{height:65px}.setup-rule-fields>.journey-control{grid-column:auto}}
 @media(max-width:850px){.landing .setup-details-body{grid-template-columns:1fr;gap:24px}.landing .setup-profile-fields{grid-template-columns:1fr 1fr;gap:22px}.landing .setup-profile-fields>.field:first-child{grid-column:1/-1}.landing .setup-rule-fields{grid-template-columns:1.25fr 1fr;gap:21px 24px;border-top:1px solid #e0e7d8;padding-top:20px}.setup-rule-fields>.journey-control{grid-column:1/-1}.landing .setup-details-body>.property-trading-switch{padding-top:0}}
-@media(max-width:520px){.landing .setup-profile-fields{grid-template-columns:minmax(0,1fr);gap:22px}.landing .setup-profile-fields>.field:first-child{grid-column:auto}.landing .setup-rule-fields{grid-template-columns:minmax(0,1fr);gap:22px}.setup-rule-fields>.journey-control{grid-column:auto}.shape-options{gap:9px}.shape-options>button{min-height:76px;font-size:11px}.setup-profile-fields .player-color-picker{gap:9px;max-width:none}.setup-profile-fields .color-swatch{font-size:10px;height:66px}.shape-options,.weather-rule-capsule{max-width:none}.journey-stops>button{min-height:42px;font-size:11px}.journey-detail{font-size:10px;gap:4px 9px;min-height:30px}.journey-current strong{font-size:17px}.weather-rule-capsule>button{min-height:38px}.lobby-name-actions button,.lobby-member .lobby-rename-button{min-height:44px}.lobby-member .lobby-rename-button{width:38px}}
+@media(max-width:520px){.landing .setup-profile-fields{grid-template-columns:minmax(0,1fr);gap:22px}.landing .setup-profile-fields>.field:first-child{grid-column:auto}.landing .setup-rule-fields{grid-template-columns:minmax(0,1fr);gap:22px}.setup-rule-fields>.journey-control{grid-column:auto}.shape-options{gap:9px}.shape-options>button{min-height:76px;font-size:11px}.setup-profile-fields .player-color-picker{gap:9px;max-width:none}.setup-profile-fields .color-swatch{font-size:10px;height:66px}.shape-options,.weather-rule-capsule{max-width:none}.journey-stops>button{min-height:42px;font-size:11px}.journey-detail{font-size:10px;gap:4px 9px;min-height:30px}.journey-current strong{font-size:17px}.weather-rule-capsule>button{min-height:44px}.lobby-name-actions button,.lobby-member .lobby-rename-button{min-height:44px}.lobby-member .lobby-rename-button{width:38px}}
 @media(prefers-reduced-motion:reduce){.journey-fill,.journey-orbit>i{animation:none!important;transition:none}.journey-control.is-endless .journey-fill{background-position:50% 0}.journey-orbit>i{opacity:.65}}
+@media(min-width:851px){.landing .weather-rule-capsule{min-height:46px}.landing .weather-rule-capsule>button{min-height:36px;padding:8px 10px;line-height:1.5}}
 
 /* AI strength is independent of each named opponent's playing style. */
 .landing .setup-main{align-items:flex-start;gap:28px}

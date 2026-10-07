@@ -1,10 +1,24 @@
 import { WEATHERS } from './data';
 import type { GameState, MapId } from './types';
+import { canSelectDisasterWeather } from './weatherRules';
 
 const EXTREME_WEATHER = new Set(['blizzard', 'freezing', 'storm', 'scorch', 'sandstorm', 'haze', 'acid', 'glitch', 'paradox']);
 const MILD = new Set(['clear', 'soft', 'fireflies', 'breeze', 'drought']);
 const ROUGH = new Set(['chill', 'snow', 'drizzle', 'rain', 'thunder', 'gale', 'mist', 'fog']);
 const HARD = new Set(['blizzard', 'freezing', 'storm']);
+const DISASTERS = new Set(['acid', 'glitch', 'paradox']);
+const HARDSHIP_MULTIPLIERS: Record<MapId, { extreme: number; disaster: number }> = {
+  lake: { extreme: 6, disaster: 12 }, coast: { extreme: 6, disaster: 12 },
+  valley: { extreme: 6.5, disaster: 13 }, ashCanyon: { extreme: 7, disaster: 14 },
+  hushedValley: { extreme: 7, disaster: 14 }, sundered: { extreme: 8, disaster: 16 },
+  forest: { extreme: 5, disaster: 10 }, starSands: { extreme: 7, disaster: 4 },
+  peachHaven: { extreme: 6, disaster: 12 }, grandCity: { extreme: 6, disaster: 12 },
+};
+
+export function getHardshipWeightMultiplier(mapId: MapId, weatherId: string): number {
+  const factors = HARDSHIP_MULTIPLIERS[mapId];
+  return DISASTERS.has(weatherId) ? factors.disaster : EXTREME_WEATHER.has(weatherId) ? factors.extreme : 1;
+}
 
 function regionalMultiplier(mapId: MapId, weatherId: string): number {
   if (mapId === 'valley') return MILD.has(weatherId) ? 0.92 : ROUGH.has(weatherId) ? 1.15 : HARD.has(weatherId) ? 1.12 : 1;
@@ -72,13 +86,14 @@ export function weatherWeights(state: GameState): Record<string, number> {
   return Object.fromEntries(Object.values(WEATHERS).map(weather => {
     if (state.config.mapId === 'starSands') {
       let weight = STAR_SANDS[season][weather.id] ?? 0;
-      if (weather.family === 'disaster' && state.day < 22) weight = 0;
+      if (weather.family === 'disaster' && !canSelectDisasterWeather(state.config.weatherMode, state.day)) weight = 0;
       if (state.config.weatherMode === 'challenge' && EXTREME_WEATHER.has(weather.id)) weight *= 2;
+      if (state.config.weatherMode === 'hardship') weight *= getHardshipWeightMultiplier(state.config.mapId, weather.id);
       if (severeStreak && EXTREME_WEATHER.has(weather.id)) weight *= 0.25;
       return [weather.id, weight];
     }
     // Natural draws obey seasons and the disaster gate; a weather controller is handled separately by the engine.
-    if (!weather.seasons.includes(season) || weather.family === 'disaster' && state.day < 22) return [weather.id, 0];
+    if (!weather.seasons.includes(season) || weather.family === 'disaster' && !canSelectDisasterWeather(state.config.weatherMode, state.day)) return [weather.id, 0];
 
     let weight: number;
     if (season === 1 || season === 3) {
@@ -93,6 +108,7 @@ export function weatherWeights(state: GameState): Record<string, number> {
       if (season === 2 && weather.id === 'freezing') weight = 1.6;
     }
     if (state.config.weatherMode === 'challenge' && EXTREME_WEATHER.has(weather.id)) weight *= 2;
+    if (state.config.weatherMode === 'hardship') weight *= getHardshipWeightMultiplier(state.config.mapId, weather.id);
     if (severeStreak && EXTREME_WEATHER.has(weather.id)) weight *= 0.25;
     return [weather.id, weight * regionalMultiplier(state.config.mapId, weather.id)];
   }));

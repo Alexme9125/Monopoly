@@ -5,6 +5,7 @@ import { MAPS } from './maps';
 import { normalizePlayerColors } from './colors';
 import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
 import { weatherWeights } from './weather';
+import { canSelectDisasterWeather, getFogRentAvoidance, getGlitchBacktrackSteps, getGlitchPenalty, getWeatherDiceModifier, getWeatherDryingChance, getWeatherLandingDamage, getWeatherLightning, getWeatherMove, getWeatherPaperLoss, getWeatherRollDamage, getWeatherWetCount, weatherWetsAllItems } from './weatherRules';
 import { getShopOffer, SHOP_ITEM_RARITY } from './shop';
 import { getStepOptions } from './routing';
 import { getAvailableLandLevel, getBuildCost, getLandPurchaseDescription, getLandPurchasePrice, getMaxLandLevel, getMealRecovery, getPropertyAssetValue, isLandmark } from './propertyRules';
@@ -14,7 +15,6 @@ import type { CasinoResult, EventContinuation, EventDef, GameAction, GameConfig,
 
 const UTILITY_KINDS = new Set(['power', 'water', 'telecom']);
 const PROPERTY_KINDS = new Set(['land', 'power', 'water', 'telecom']);
-const WIND = new Set(['breeze', 'gale', 'sand', 'sandstorm']);
 const MAX_PROPERTY_PRICE = 1_000_000_000;
 
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -308,7 +308,7 @@ export function canTargetItem(state: GameState, playerId: string, itemUid: strin
   if (id === 'teleport') return node?.kind === 'station' && node.id !== player.position;
   if (id === 'teleportStone') return !!node && node.id !== player.position;
   if (id === 'weather') return !!target.weatherId && Object.hasOwn(WEATHERS, target.weatherId)
-    && (WEATHERS[target.weatherId].family !== 'disaster' || state.day >= 22);
+    && (WEATHERS[target.weatherId].family !== 'disaster' || canSelectDisasterWeather(state.config.weatherMode, state.day));
   if (id === 'demolish') return !!node && isProperty(node) && !isUtility(node) && !!property
     && property.ownerId !== player.id && property.level >= 1 && !isLandmark(state.config.mapId, node, property.level);
   if (id === 'repair') return !!node && isProperty(node) && !isUtility(node) && !!property
@@ -377,7 +377,7 @@ function startDay(state: GameState) {
   for (const player of state.players) {
     if (player.bankrupt) continue;
     player.statuses = player.statuses.map(s => ({ ...s, remaining: s.remaining - 1 })).filter(s => s.remaining > 0);
-    const drying = state.weatherId === 'drought' ? 1 : WIND.has(state.weatherId) ? 0.5 : 0.25;
+    const drying = getWeatherDryingChance(state.weatherId, state.config.weatherMode);
     for (const slot of player.inventory) if (slot.wet && next(state) < drying) slot.wet = false;
   }
   marketDay(state);
@@ -437,7 +437,7 @@ export function createGame(config: GameConfig): GameState {
   if (!Object.prototype.hasOwnProperty.call(MAPS, config.mapId)) throw new Error('Unknown map');
   if (config.players.length < 2 || config.players.length > 4) throw new Error('2–4 players required');
   if (![0, 4, 8, 16].includes(config.seasons)) throw new Error('Invalid season count');
-  if (!['standard', 'challenge'].includes(config.weatherMode)) throw new Error('Invalid weather mode');
+  if (!['standard', 'challenge', 'hardship'].includes(config.weatherMode)) throw new Error('Invalid weather mode');
   if (!Number.isSafeInteger(config.seed)) throw new Error('Invalid random seed');
   if (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean') throw new Error('Invalid property trading setting');
   if (config.rentLevel !== undefined && !RENT_LEVELS.includes(config.rentLevel)) throw new Error('Invalid rent level');
@@ -555,40 +555,52 @@ function checkHealth(state: GameState, player: Player, appendMovement = false) {
 
 function weatherMove(state: GameState, player: Player, path: number[]) {
   const id = state.weatherId;
+  const mode = state.config.weatherMode;
   const sheltered = status(player, 'umbrella');
-  if (id === 'snow') walk(state, player, 1, false, path);
-  if (id === 'blizzard' || id === 'glitch') walk(state, player, 2, false, path);
-  if (id === 'freezing') walk(state, player, 4, false, path);
-  if (id === 'gale') walk(state, player, 1, true, path);
-  if (id === 'sand') walk(state, player, 2, true, path);
-  if (id === 'sandstorm') walk(state, player, 4, true, path);
-  if (!sheltered && id === 'sandstorm') { player.stamina = clamp(player.stamina - 2); player.mood = clamp(player.mood - 2); }
-  if (!sheltered && (id === 'thunder' || id === 'storm') && next(state) < (id === 'thunder' ? 0.1 : 0.25)) {
-    player.stamina = clamp(player.stamina - 12); log(state, `${player.name} 遭遇雷击，体力 -12。`, 'bad');
+  const movement = getWeatherMove(id, mode);
+  if (movement) walk(state, player, movement.steps, movement.backward, path);
+  if (!sheltered) {
+    const damage = getWeatherRollDamage(id, mode, 0);
+    if (damage.stamina) player.stamina = clamp(player.stamina - damage.stamina);
+    if (damage.mood) player.mood = clamp(player.mood - damage.mood);
+  }
+  const lightning = getWeatherLightning(id, mode);
+  if (!sheltered && lightning && next(state) < lightning.chance) {
+    player.stamina = clamp(player.stamina - lightning.stamina);
+    player.mood = clamp(player.mood - lightning.mood);
+    log(state, `${player.name} 遭遇雷击，体力 -${lightning.stamina}${lightning.mood ? `、心情 -${lightning.mood}` : ''}。`, 'bad');
   }
   if (!sheltered && id === 'glitch') {
-    const effect = rand(state, 0, 2);
-    if (effect === 0) player.stamina = clamp(player.stamina - 6);
-    if (effect === 1) player.stamina = clamp(player.stamina - 12);
-    if (effect === 2) { player.stamina = clamp(player.stamina - 2); player.mood = clamp(player.mood - 2); }
-    log(state, `${player.name} 遭遇故障天气的${['冻伤', '雷击', '沙尘'][effect]}影响。`, 'bad');
+    const index = rand(state, 0, 2);
+    const penalty = getGlitchPenalty(mode, index);
+    player.stamina = clamp(player.stamina - penalty.stamina);
+    player.mood = clamp(player.mood - penalty.mood);
+    log(state, `${player.name} 遭遇故障天气的${['冻伤', '雷击', '沙尘'][index]}影响。`, 'bad');
   }
-  if (!sheltered && (id === 'gale' || id === 'sand' || id === 'sandstorm') && next(state) < (id === 'gale' ? 0.1 : id === 'sand' ? 0.15 : 0.25)) {
+  const paperLoss = getWeatherPaperLoss(id, mode);
+  if (!sheltered && paperLoss && next(state) < paperLoss.chance) {
     const paper = player.inventory.filter(slot => ITEMS[slot.itemId]?.paper);
     if (paper.length) {
       const slot = paper[rand(state, 0, paper.length - 1)];
       consumeItem(player, slot.uid); log(state, `${player.name} 的纸质道具被风吹走。`, 'bad');
     } else {
-      const lost = Math.min(player.cash, rand(state, 30, 150));
+      const lost = Math.min(Math.max(0, player.cash), rand(state, paperLoss.cashMin, paperLoss.cashMax));
       charge(state, player, lost); log(state, `${player.name} 被风吹走 ${lost} PM。`, 'bad');
     }
   }
-  if (!sheltered && (id === 'rain' || id === 'storm' || id === 'drizzle')) {
-    const wettable = player.inventory.filter(slot => state.config.weatherMode === 'challenge' || ITEMS[slot.itemId]?.susceptible);
-    if (id === 'storm') for (const slot of wettable) slot.wet = true;
-    else if (wettable.length) wettable[rand(state, 0, wettable.length - 1)].wet = true;
+  const wetCount = getWeatherWetCount(id, mode);
+  if (!sheltered && wetCount) {
+    const wettable = player.inventory.filter(slot => weatherWetsAllItems(mode) || ITEMS[slot.itemId]?.susceptible);
+    if (wetCount === Infinity) for (const slot of wettable) slot.wet = true;
+    else if (mode === 'hardship') {
+      // A card stack occupies one slot. Sample only dry slots, without replacement.
+      const dry = wettable.filter(slot => !slot.wet);
+      for (let count = 0; count < wetCount && dry.length; count++) {
+        const index = rand(state, 0, dry.length - 1);
+        dry.splice(index, 1)[0].wet = true;
+      }
+    } else if (wettable.length) wettable[rand(state, 0, wettable.length - 1)].wet = true;
   }
-  if (!sheltered && id === 'haze') player.mood = clamp(player.mood - 6);
 }
 
 function weatherLand(state: GameState, player: Player, node: MapNode) {
@@ -599,13 +611,9 @@ function weatherLand(state: GameState, player: Player, node: MapNode) {
   const beforeStamina = player.stamina;
   const beforeMood = player.mood;
   const id = state.weatherId;
-  if (id === 'chill') player.stamina = clamp(player.stamina - 4);
-  if (id === 'snow') player.stamina = clamp(player.stamina - 1);
-  if (id === 'blizzard') player.stamina = clamp(player.stamina - 6);
-  if (id === 'warm') { player.mood = clamp(player.mood - 1); player.stamina = clamp(player.stamina - 1); }
-  if (id === 'hot') { player.mood = clamp(player.mood - 2); player.stamina = clamp(player.stamina - 1); }
-  if (id === 'heat') { player.mood = clamp(player.mood - 2); player.stamina = clamp(player.stamina - 2); }
-  if (id === 'acid') player.stamina = clamp(player.stamina - 4);
+  const damage = getWeatherLandingDamage(id, state.config.weatherMode);
+  player.stamina = clamp(player.stamina - damage.stamina);
+  player.mood = clamp(player.mood - damage.mood);
   if (player.stamina < beforeStamina) addLandingEffect(state, effect('stamina', `${WEATHERS[id]?.name ?? id} · 体力 −${beforeStamina - player.stamina}`, 'bad'));
   if (player.mood < beforeMood) addLandingEffect(state, effect('mood', `${WEATHERS[id]?.name ?? id} · 心情 −${beforeMood - player.mood}`, 'bad'));
 }
@@ -788,7 +796,7 @@ function settleNodeTile(state: GameState, node: MapNode, skipStation: boolean, g
       if (!recipient) return;
       const rent = getRent(state, node.id);
       if (rent > 0) {
-        if (state.weatherId === 'fog' && next(state) < 0.5) { log(state, `${player.name} 趁浓雾避开 ${node.name} 的租金。`, 'good'); addLandingEffect(state, effect('cash', `浓雾免租 · 省下${rent} PM`, 'good')); rentNotice(state, player, recipient, node, 0, rent, '浓雾掩护'); }
+        if (state.weatherId === 'fog' && next(state) < getFogRentAvoidance(state.config.weatherMode)) { log(state, `${player.name} 趁浓雾避开 ${node.name} 的租金。`, 'good'); addLandingEffect(state, effect('cash', `浓雾免租 · 省下${rent} PM`, 'good')); rentNotice(state, player, recipient, node, 0, rent, '浓雾掩护'); }
         else {
           const card = player.inventory.find(slot => slot.itemId === 'rent' && !slot.wet);
           if (card) {
@@ -860,7 +868,7 @@ function glitchBacktrackMove(state: GameState, separate = false) {
   const player = current(state);
   const path = separate ? [player.position] : state.movement?.path ?? [player.position];
   const boundary = path.length - 1;
-  walk(state, player, 4, true, path);
+  walk(state, player, getGlitchBacktrackSteps(state.config.weatherMode), true, path);
   const weatherPath = path.slice(boundary);
   const segment = { kind: 'weather' as const, path: weatherPath, label: `错位 · 后退 ${Math.max(0, weatherPath.length - 1)} 格` };
   if (separate || !state.movement) state.movement = { id: ++state.sequence, playerId: player.id, path, roll: 0, modifier: 0,
@@ -899,7 +907,7 @@ function doRoll(state: GameState) {
   const count = state.twinRoll ? 2 : 1;
   const rolls = controlled ? [state.controlledRoll!] : Array.from({ length: count }, () => rand(state, 1, face));
   const roll = rolls.reduce((sum, value) => sum + value, 0);
-  let modifier = state.weatherId === 'hot' ? -1 : state.weatherId === 'heat' ? -2 : state.weatherId === 'scorch' ? -4 : 0;
+  const modifier = getWeatherDiceModifier(state.weatherId, state.config.weatherMode);
   const steps = Math.max(0, roll + modifier);
   const path = walk(state, player, steps);
   const normalPath = [...path];
@@ -909,8 +917,8 @@ function doRoll(state: GameState) {
   player.mood = clamp(player.mood - 1);
   weatherActionMood(state, player);
   if (state.weatherId === 'scorch' && !status(player, 'umbrella')) {
-    const harm = state.config.weatherMode === 'challenge' ? steps * 3 : Math.min(18, steps * 3);
-    player.stamina = clamp(player.stamina - harm); player.mood = clamp(player.mood - harm);
+    const harm = getWeatherRollDamage(state.weatherId, state.config.weatherMode, steps);
+    player.stamina = clamp(player.stamina - harm.stamina); player.mood = clamp(player.mood - harm.mood);
   }
   weatherMove(state, player, path);
   const segments: Movement['segments'] = [{ kind: 'normal', path: normalPath }];
@@ -1429,21 +1437,30 @@ function bestControlledRoll(state: GameState): number | null {
   const player = current(state);
   // Sand retreat and glitch revisit earlier route edges; without a full public
   // path tree, keep the controller rather than score the wrong landing tile.
-  if (['sand', 'sandstorm', 'glitch'].includes(state.weatherId)) return null;
+  if (['sand', 'sandstorm', 'glitch'].includes(state.weatherId)
+    || state.config.weatherMode === 'hardship' && state.weatherId === 'gale') return null;
   const map = MAPS[state.config.mapId];
-  const weatherModifier = state.weatherId === 'hot' ? -1 : state.weatherId === 'heat' ? -2 : state.weatherId === 'scorch' ? -4 : 0;
+  const weatherModifier = getWeatherDiceModifier(state.weatherId, state.config.weatherMode);
+  const exposedDamage = getWeatherLandingDamage(state.weatherId, state.config.weatherMode);
+  const harmCost = (stamina: number, mood: number) => Math.min(stamina, player.stamina) * (player.stamina < 40 ? 65 : 28)
+    + Math.min(mood, player.mood) * (player.mood < 40 ? 65 : 28)
+    + (stamina >= player.stamina || mood >= player.mood ? 5000 : 0);
   const scoreLanding = (position: number) => {
     const node = map.nodes[position];
     const property = state.properties[position];
     if (!node) return -3000;
-    if (node.kind === 'coin') return 150;
-    if (node.kind === 'hospital' || node.kind === 'prison') return -800;
+    const building = !!property?.level || node.kind === 'land' && getAvailableLandLevel(state, position) > 0
+      || isUtility(node) || ['shop', 'station', 'casino', 'exchange', 'hospital', 'prison', 'sanatorium', 'parking'].includes(node.kind);
+    const weatherCost = state.config.weatherMode === 'hardship' && !building && !status(player, 'umbrella')
+      ? harmCost(exposedDamage.stamina, exposedDamage.mood) : 0;
+    if (node.kind === 'coin') return 150 - weatherCost;
+    if (node.kind === 'hospital' || node.kind === 'prison') return -800 - weatherCost;
     if (isProperty(node)) {
-      if (property?.ownerId === player.id) return property.level < getMaxLandLevel(state.config.mapId) && !isUtility(node) ? 200 : 0;
-      if (property) return -getRent(state, position) * (player.cash < 10_000 ? 1.5 : 1);
-      if (player.cash >= getLandPurchasePrice(state, node.id) + 5000) return Math.min(3200, getLandPurchasePrice(state, node.id) * 0.22);
+      if (property?.ownerId === player.id) return (property.level < getMaxLandLevel(state.config.mapId) && !isUtility(node) ? 200 : 0) - weatherCost;
+      if (property) return -getRent(state, position) * (player.cash < 10_000 ? 1.5 : 1) - weatherCost;
+      if (player.cash >= getLandPurchasePrice(state, node.id) + 5000) return Math.min(3200, getLandPurchasePrice(state, node.id) * 0.22) - weatherCost;
     }
-    return 0;
+    return -weatherCost;
   };
   // Public topology only: propagate each legal junction branch with equal probability.
   // Never sample future RNG or resolve hidden encounters while planning a controlled die.
@@ -1470,8 +1487,8 @@ function bestControlledRoll(state: GameState): number | null {
       if (nextFronts.size === 0) break;
       fronts = nextFronts;
     }
-    const slide = state.weatherId === 'snow' ? 1 : state.weatherId === 'blizzard' || state.weatherId === 'glitch' ? 2
-      : state.weatherId === 'freezing' ? 4 : 0;
+    const move = getWeatherMove(state.weatherId, state.config.weatherMode);
+    const slide = move && !move.backward ? move.steps : 0;
     for (let index = 0; index < slide; index++) {
       const nextFronts = new Map<string, typeof initial>();
       for (const front of fronts.values()) {
@@ -1499,11 +1516,9 @@ function bestControlledRoll(state: GameState): number | null {
     const value = index + 1;
     const steps = Math.max(0, value + weatherModifier);
     const journey = Math.floor(((player.travelProgress ?? 0) + steps) / getJourneyRewardSteps(state.config.mapId)) * JOURNEY_REWARD_CASH;
-    const scorchHarm = state.weatherId === 'scorch' && !player.statuses.some(status => status.id === 'umbrella' && status.remaining > 0)
-      ? state.config.weatherMode === 'challenge' ? steps * 3 : Math.min(18, steps * 3) : 0;
-    const healthCost = Math.min(scorchHarm, player.stamina) * (player.stamina < 40 ? 65 : 28)
-      + Math.min(scorchHarm, player.mood) * (player.mood < 40 ? 65 : 28)
-      + (scorchHarm >= player.stamina || scorchHarm >= player.mood ? 5000 : 0);
+    const damage = status(player, 'umbrella') ? { stamina: 0, mood: 0 }
+      : getWeatherRollDamage(state.weatherId, state.config.weatherMode, steps);
+    const healthCost = harmCost(damage.stamina, damage.mood);
     return { value, score: expected(steps) + journey - healthCost - (2 + Math.floor((value - 1) * 3 / 6)) * 28 };
   });
   const best = prospects.reduce((winner, option) => option.score > winner.score ? option : winner);
@@ -1713,11 +1728,19 @@ function aiStationChoice(state: GameState, player: Player, available: Prompt['ch
 }
 
 function aiSafeDice(state: GameState, player: Player, face: number, count: number): boolean {
-  if (state.weatherId !== 'scorch' || player.statuses.some(status => status.id === 'umbrella' && status.remaining > 0)) return true;
-  const longestRollSteps = Math.max(0, face * count - 4);
-  const harm = state.config.weatherMode === 'challenge' ? longestRollSteps * 3 : Math.min(18, longestRollSteps * 3);
+  if (player.statuses.some(status => status.id === 'umbrella' && status.remaining > 0)) return true;
+  if (state.config.weatherMode !== 'hardship' && state.weatherId !== 'scorch') return true;
+  const longestRollSteps = Math.max(0, face * count + getWeatherDiceModifier(state.weatherId, state.config.weatherMode));
+  const roll = getWeatherRollDamage(state.weatherId, state.config.weatherMode, longestRollSteps);
+  const landing = state.config.weatherMode === 'hardship' ? getWeatherLandingDamage(state.weatherId, state.config.weatherMode)
+    : { stamina: 0, mood: 0 };
+  const lightning = state.config.weatherMode === 'hardship' ? getWeatherLightning(state.weatherId, state.config.weatherMode) : null;
+  const glitch = state.config.weatherMode === 'hardship' && state.weatherId === 'glitch'
+    ? { stamina: 16, mood: 10 } : { stamina: 0, mood: 0 };
+  const stamina = roll.stamina + landing.stamina + (lightning?.stamina ?? 0) + glitch.stamina;
+  const mood = roll.mood + landing.mood + (lightning?.mood ?? 0) + glitch.mood;
   const buffer = player.personality === 'cautious' ? 14 : player.personality === 'aggressive' ? 4 : 8;
-  return player.stamina > harm + 4 + buffer && player.mood > harm + 1 + buffer;
+  return player.stamina > stamina + 4 + buffer && player.mood > mood + 1 + buffer;
 }
 
 export function runAI(state: GameState): GameState {

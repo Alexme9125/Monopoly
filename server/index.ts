@@ -11,7 +11,7 @@ import { assignPlayerColor } from '../src/game/colors';
 import { MAPS } from '../src/game/maps';
 import type { AILevel, GameAction, GameState, MapId, Personality, PlayerConfig, RentLevel, Shape } from '../src/game/types';
 
-type RoomConfig = { mapId: MapId; seasons: number; weatherMode: 'standard' | 'challenge'; seed: number; propertyTrading?: boolean; rentLevel: RentLevel };
+type RoomConfig = { mapId: MapId; seasons: number; weatherMode: GameState['config']['weatherMode']; seed: number; propertyTrading?: boolean; rentLevel: RentLevel };
 type Member = { seatId: string; clientId: string | null; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; ready: boolean; connected: boolean; host: boolean };
 type Room = { code: string; members: Member[]; config: RoomConfig; started: boolean; state: GameState | null; sockets: Map<string, WebSocket>; timer: ReturnType<typeof setTimeout> | null; movementUntil: number; lastMovementId: number | null; touched: number };
 type Session = { clientId: string | null; roomCode: string | null; seatId: string | null; received: number[] };
@@ -44,7 +44,7 @@ function profile(value: unknown, ai: boolean): PlayerConfig | null {
 }
 function config(value: unknown): RoomConfig | null {
   if (!record(value) || typeof value.mapId !== 'string' || !Object.hasOwn(MAPS, value.mapId) || ![0, 4, 8, 16].includes(value.seasons as number)
-    || !['standard', 'challenge'].includes(value.weatherMode as string) || !Number.isSafeInteger(value.seed)
+    || !['standard', 'challenge', 'hardship'].includes(value.weatherMode as string) || !Number.isSafeInteger(value.seed)
     || (value.seed as number) < 0 || (value.seed as number) > 0xffff_ffff
     || (value.propertyTrading !== undefined && typeof value.propertyTrading !== 'boolean')
     || (value.rentLevel !== undefined && !rentLevels.includes(value.rentLevel as RentLevel))) return null;

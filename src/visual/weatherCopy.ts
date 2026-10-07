@@ -1,4 +1,18 @@
 import type { GameConfig } from '../game/types';
+import { getFogRentAvoidance, getGlitchBacktrackSteps, getGlitchPenalty, getWeatherDiceModifier, getWeatherDryingChance, getWeatherLandingDamage, getWeatherLightning, getWeatherMove, getWeatherPaperLoss, getWeatherRollDamage, getWeatherWetCount } from '../game/weatherRules';
+
+type WeatherMode = GameConfig['weatherMode'];
+export const WEATHER_MODE_NAMES: Record<WeatherMode, string> = {
+  standard: '标准天气', challenge: '挑战天气', hardship: '苦难天气',
+};
+export const WEATHER_MODE_NOTES: Record<WeatherMode, string> = {
+  standard: '温和天气体验', challenge: '完全体天气体验', hardship: '直面大自然的怒火',
+};
+export const WEATHER_MODE_DETAILS: Record<WeatherMode, string> = {
+  standard: '标准天气更温和：降低极端天气的出现概率；普通雨天只影响怕水道具，骄阳单次额外伤害每项最多 18 点。灾难天气从第 22 天起开放。',
+  challenge: '挑战天气保留完整效果：极端天气仍保持低概率并遵循季节；雨天可影响所有类型道具，骄阳额外伤害不设上限。灾难天气从第 22 天起开放。',
+  hardship: '苦难天气直面大自然的怒火：极端天气与灾难更常出现，天气额外伤害更重；自然季节限制仍生效。灾难天气从第 1 天起开放。',
+};
 
 export interface WeatherCopy {
   intro: string;
@@ -8,8 +22,55 @@ export interface WeatherCopy {
 
 const hiddenEncounters = '能见度降低，地图上临时刷新的不期而遇位置会被隐藏，抵达后仍会触发。';
 const windDrying = '每日开始时，每件受潮道具的风干概率由 25% 提高到 50%。';
-const shelter = '处于三日星伞的防护下时，可免除天气造成的体力与心情损失、道具受潮及纸质物品吹失；骰点修正、天气位移和能见度限制仍然生效。';
+const shelter = '处于三日星伞的防护下时，可免除天气造成的体力与心情损失、道具受潮及纸质物品吹失；骰点修正、天气位移、能见度和设施限制仍然生效。';
 const windLoss = (chance: number) => `每次掷骰有 ${chance}% 概率被吹走一件随机纸质道具（含卡券）；没有纸质道具时，改为损失 30～150 棱镜币，最多扣至余额为零。`;
+const lossText = (stamina: number, mood: number) => [stamina ? `体力损失 ${stamina} 点` : '', mood ? `心情损失 ${mood} 点` : ''].filter(Boolean).join('、');
+const hardshipWindLoss = (id: string) => {
+  const rule = getWeatherPaperLoss(id, 'hardship')!;
+  return `每次掷骰有 ${Math.round(rule.chance * 100)}% 概率吹失一件随机纸质道具（含卡券）；没有纸质道具时，改为损失 ${rule.cashMin}～${rule.cashMax} 棱镜币，最多扣至余额为零。`;
+};
+const hardshipMove = (id: string) => {
+  const rule = getWeatherMove(id, 'hardship')!;
+  return `正常行进结束后，${rule.backward ? '向后吹回' : '向前滑行'} ${rule.steps} 格，然后结算落点。`;
+};
+const hardshipLanding = (id: string) => {
+  const damage = getWeatherLandingDamage(id, 'hardship');
+  return `停在没有建筑的地块上时，${lossText(damage.stamina, damage.mood)}。`;
+};
+const hardshipRoll = (id: string) => {
+  const damage = getWeatherRollDamage(id, 'hardship', 0);
+  return `每次掷骰时，${lossText(damage.stamina, damage.mood)}；主动休息或因禁锢跳过行动时不触发。`;
+};
+const hardshipDrying = (id: string) => `每日开始时，每件受潮道具的风干概率由 25% 提高到 ${Math.round(getWeatherDryingChance(id, 'hardship') * 100)}%。`;
+
+const hardshipEffects: Record<string, string[]> = {
+  clear: ['晴朗天气没有额外影响，可以安心规划今天的行程。'],
+  soft: ['每次掷骰或主动休息时，随机恢复 1～8 点心情；因禁锢跳过行动时不触发。'],
+  fireflies: ['每次掷骰或主动休息时，随机恢复 1～12 点心情；因禁锢跳过行动时不触发。'],
+  chill: [hardshipLanding('chill')],
+  snow: [hardshipMove('snow'), hardshipLanding('snow')],
+  blizzard: [hardshipMove('blizzard'), hardshipLanding('blizzard')],
+  freezing: [hardshipMove('freezing'), hardshipRoll('freezing')],
+  drizzle: [`每次掷骰从所有尚未受潮的道具槽中随机选 ${getWeatherWetCount('drizzle', 'hardship')} 格受潮，不足则全部受潮；卡券一叠占一格。受潮期间无法使用。`, hardshipRoll('drizzle')],
+  rain: [hiddenEncounters, `每次掷骰从所有尚未受潮的道具槽中随机选 ${getWeatherWetCount('rain', 'hardship')} 格受潮，不足则全部受潮；卡券一叠占一格。受潮期间无法使用。`, hardshipRoll('rain')],
+  thunder: [hardshipRoll('thunder'), (() => { const rule = getWeatherLightning('thunder', 'hardship')!; return `每次掷骰另有 ${Math.round(rule.chance * 100)}% 概率遭遇雷击，${lossText(rule.stamina, rule.mood)}。`; })()],
+  storm: [hiddenEncounters, '每次掷骰时，背包内所有道具都会受潮，受潮期间无法使用。', hardshipRoll('storm'), (() => { const rule = getWeatherLightning('storm', 'hardship')!; return `每次掷骰另有 ${Math.round(rule.chance * 100)}% 概率遭遇雷击，${lossText(rule.stamina, rule.mood)}。`; })()],
+  warm: [hardshipLanding('warm')],
+  hot: [`骰子的最终点数减少 ${-getWeatherDiceModifier('hot', 'hardship')} 点，最低为 0 点。`, hardshipLanding('hot')],
+  heat: [`骰子的最终点数减少 ${-getWeatherDiceModifier('heat', 'hardship')} 点，最低为 0 点。`, hardshipLanding('heat')],
+  scorch: [`骰子的最终点数减少 ${-getWeatherDiceModifier('scorch', 'hardship')} 点，最低为 0 点；按修正后的正常行进格数，每走 1 格体力损失 3 点、心情损失 6 点，两项均不设上限；天气额外位移不计。`],
+  breeze: [hardshipDrying('breeze')],
+  drought: ['每日开始时，所有受潮道具都会晾干。', hardshipRoll('drought'), hardshipLanding('drought')],
+  gale: [hardshipMove('gale'), hardshipRoll('gale'), hardshipWindLoss('gale'), hardshipDrying('gale')],
+  sand: [hardshipMove('sand'), hiddenEncounters, hardshipRoll('sand'), hardshipWindLoss('sand'), hardshipDrying('sand')],
+  sandstorm: [hardshipMove('sandstorm'), hiddenEncounters, hardshipRoll('sandstorm'), hardshipWindLoss('sandstorm'), hardshipDrying('sandstorm')],
+  mist: [hiddenEncounters, `骰子的最终点数减少 ${-getWeatherDiceModifier('mist', 'hardship')} 点，最低为 0 点。`, hardshipRoll('mist')],
+  fog: [hiddenEncounters, `需要支付租金时，有 ${Math.round(getFogRentAvoidance('hardship') * 100)}% 概率避开本次收费。`, hardshipRoll('fog')],
+  haze: [hiddenEncounters, hardshipRoll('haze')],
+  acid: ['当天不能建造、升级或修复房屋，但仍可购买地块。', hardshipLanding('acid')],
+  glitch: [`正常行进结束后，先向前滑行 ${getWeatherMove('glitch', 'hardship')!.steps} 格并结算落点；处理完该处的选择后，再向后退 ${getGlitchBacktrackSteps('hardship')} 格并结算第二个落点。`, (() => { const names = ['冻伤', '雷击', '沙尘']; return `每次掷骰只等概率随机附加一种负面效果：${names.map((name, index) => { const damage = getGlitchPenalty('hardship', index); return `${name}（${lossText(damage.stamina, damage.mood)}）`; }).join('、')}，不会同时叠加。`; })()],
+  paradox: ['当天全部免收租金，也不会触发不期而遇。不能使用道具或设施，不能购买地块、建造或升级房屋。', hardshipRoll('paradox'), '经过起点的奖励、正常行进奖励和硬币路面的拾取收益仍然有效；主动休息不追加天气损耗。'],
+};
 
 // Copy follows the weather draft, with the user's approved balance changes.
 // Explicit triggers match settlement: most penalties apply to rolling, not resting.
@@ -142,6 +203,12 @@ const copy: Record<string, WeatherCopy> = {
 
 export function getWeatherCopy(weatherId: string, mode: GameConfig['weatherMode']): WeatherCopy {
   const base = copy[weatherId] ?? copy.clear;
+  if (mode === 'hardship') return {
+    ...base,
+    intro: base.intro.replace('第 22 天起才可能出现的低概率灾难天气。', '苦难天气下从第 1 天起就可能出现的灾难天气。'),
+    effects: [...(hardshipEffects[weatherId] ?? hardshipEffects.clear)],
+    protection: base.protection ?? (['freezing', 'drought', 'mist', 'fog', 'paradox'].includes(weatherId) ? shelter : undefined),
+  };
   const standard = mode === 'standard';
   if (weatherId === 'drizzle' || weatherId === 'rain') {
     return { ...base, effects: [

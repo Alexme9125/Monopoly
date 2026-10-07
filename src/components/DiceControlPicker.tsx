@@ -1,16 +1,17 @@
 import { DiceGlyph } from '../visual/TurnPresentation';
 import { useState } from 'react';
+import type { GameConfig } from '../game/types';
+import { getWeatherDiceModifier } from '../game/weatherRules';
 
-const weatherModifier = (weatherId: string) => weatherId === 'hot' ? -1 : weatherId === 'heat' ? -2 : weatherId === 'scorch' ? -4 : 0;
-
-export default function DiceControlPicker({ weatherId, disabled = false, onConfirm, onCancel }: {
+export default function DiceControlPicker({ weatherId, weatherMode, disabled = false, onConfirm, onCancel }: {
   weatherId: string;
+  weatherMode: GameConfig['weatherMode'];
   disabled?: boolean;
   onConfirm: (value: number) => void;
   onCancel: () => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
-  const modifier = weatherModifier(weatherId);
+  const modifier = getWeatherDiceModifier(weatherId, weatherMode);
   const steps = selected === null ? null : Math.max(0, selected + modifier);
 
   return <div className="dice-control-picker">

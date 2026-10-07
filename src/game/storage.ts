@@ -93,7 +93,7 @@ export function parseSave(raw: string): GameState {
     || !Array.isArray(config.players) || config.players.length < 2 || config.players.length > 4
     || !config.players.every(validPlayerConfig) || !Number.isSafeInteger(config.seed)
     || ![0, 4, 8, 16].includes(Number(config.seasons))
-    || !['standard', 'challenge'].includes(String(config.weatherMode))
+    || !['standard', 'challenge', 'hardship'].includes(String(config.weatherMode))
     || (config.propertyTrading !== undefined && typeof config.propertyTrading !== 'boolean')
     || (config.rentLevel !== undefined && !RENT_LEVELS.includes(config.rentLevel as typeof RENT_LEVELS[number]))) {
     throw new Error('存档中的游戏设置无效。');
