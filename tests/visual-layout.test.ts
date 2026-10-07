@@ -263,10 +263,11 @@ describe('new event choice execution', () => {
         player.cash = 100_000;
         player.stamina = 50;
         player.mood = 50;
+        player.position = MAPS.lake.nodes.find(node => node.kind === 'event')!.id;
         state.phase = 'decision';
         state.pending = { kind: 'event', title: event.title, body: event.story,
           choices: event.choices.map(option => ({ id: option.id, label: option.label, description: option.description })),
-          data: { eventId: event.id } };
+          data: { eventId: event.id, eventSource: 'tile' } };
         const beforeItem = effect.item ? inventoryCount(state, effect.item) : 0;
         if (effect.item) {
           expect(ITEMS[effect.item], choice.id).toBeDefined();

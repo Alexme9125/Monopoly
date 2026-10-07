@@ -49,10 +49,12 @@ class Client {
 
 const host = { name: '甲', color: '#D55B48', shape: 'circle' as const, ai: false, personality: 'balanced' as const };
 const guest = { name: '乙', color: '#277DA8', shape: 'diamond' as const, ai: false, personality: 'cautious' as const };
-function openingSeed(eventId: string): number {
+function openingSeed(eventId: string, choiceId: string): number {
   for (let seed = 1; seed <= 20000; seed++) {
     const config: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed, players: [host, guest] };
-    if (act(createGame(config), { type: 'roll' }).pending?.data?.eventId === eventId) return seed;
+    const landed = act(createGame(config), { type: 'roll' });
+    if (landed.pending?.data?.eventId === eventId
+      && act(landed, { type: 'choose', choiceId }).phase === 'end') return seed;
   }
   throw new Error(`No opening seed for ${eventId}`);
 }
@@ -69,7 +71,7 @@ it('broadcasts earned twin rolls and teleport landings, while rejecting the othe
         const owner = await Client.connect(server.port); clients.push(owner);
         const visitor = await Client.connect(server.port); clients.push(visitor);
         let since = owner.messages.length;
-        owner.send({ type: 'create', profile: host, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: openingSeed(eventId) } });
+        owner.send({ type: 'create', profile: host, config: { mapId: 'lake', seasons: 4, weatherMode: 'standard', seed: openingSeed(eventId, choiceId) } });
         const created = await owner.wait(message => message.type === 'room' && message.room?.members.length === 1, since);
         since = visitor.messages.length;
         visitor.send({ type: 'join', code: created.room.code, profile: guest });

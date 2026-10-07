@@ -166,9 +166,23 @@ export function TurnMoment({moment,state}:{moment:TurnMomentState|null;state:Gam
   return null;
 }
 
-export function FeedbackMoment({feedback}:{feedback:GameState['feedback']}) {
-  const [visible,setVisible]=useState(false);
-  useEffect(()=>{if(!feedback)return;setVisible(true);const timer=setTimeout(()=>setVisible(false),1900);return()=>clearTimeout(timer);},[feedback?.id]);
-  if(!feedback||!visible)return null;
+export function FeedbackMoment({feedback,blocked=false,suppressed=false}:{feedback:GameState['feedback'];blocked?:boolean;suppressed?:boolean}) {
+  const [visibleId,setVisibleId]=useState<number|null>(null);
+  const observedId=useRef<number|null>(null);
+  const remaining=useRef(1900);
+  useEffect(()=>{
+    if(!feedback)return;
+    if(observedId.current===feedback.id){if(suppressed)setVisibleId(null);return;}
+    observedId.current=feedback.id;
+    remaining.current=1900;
+    setVisibleId(suppressed?null:feedback.id);
+  },[feedback?.id,suppressed]);
+  useEffect(()=>{
+    if(!feedback||visibleId!==feedback.id||blocked||suppressed)return;
+    const started=performance.now();
+    const timer=setTimeout(()=>{remaining.current=0;setVisibleId(null);},remaining.current);
+    return()=>{remaining.current=Math.max(0,remaining.current-(performance.now()-started));clearTimeout(timer);};
+  },[feedback?.id,visibleId,blocked,suppressed]);
+  if(!feedback||visibleId!==feedback.id||blocked||suppressed)return null;
   return <div key={feedback.id} className="turn-moment feedback-moment" role="status"><EffectChips effects={feedback.effects}/></div>;
 }

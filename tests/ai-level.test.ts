@@ -24,8 +24,9 @@ function ai(level: 'gentle' | 'fierce' = 'gentle'): GameState {
 function eventState(eventId: string, level: 'gentle' | 'fierce' = 'gentle'): GameState {
   const state = ai(level);
   const event = EVENTS.find(entry => entry.id === eventId)!;
+  state.players[1].position = MAPS.lake.nodes.find(node => node.kind === 'event')!.id;
   state.phase = 'decision';
-  state.pending = { kind: 'event', title: event.title, body: event.story, data: { eventId },
+  state.pending = { kind: 'event', title: event.title, body: event.story, data: { eventId, eventSource: 'tile' },
     choices: event.choices.map(choice => ({ id: choice.id, label: choice.label, description: choice.description })) };
   return state;
 }

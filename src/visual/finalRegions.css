@@ -1,0 +1,46 @@
+/* Ten places, one clear overview; region colors never replace player ownership. */
+.landing .intro h1{margin-bottom:19px}
+.landing .map-options{gap:6px}
+.landing .map-option{min-height:94px}
+.landing .world-preview{height:590px}
+.landing[data-map="hushedValley"]{
+ --final-bg:#edf2ef;--final-halo:#d4e1dc;--final-paper:#f8fbf6;--final-ink:#304d4a;
+ --final-accent:#527b78;--final-muted:#687e74;--final-line:#ceddd4;--final-soft:#dfe9e1;
+ --final-selected:#f6fcf7;--final-border:#95b9ac;--final-glint:#a5c6b9;
+}
+.landing[data-map="grandCity"]{
+ --final-bg:#eff2f4;--final-halo:#d7e1e7;--final-paper:#fbfcfa;--final-ink:#354b5c;
+ --final-accent:#55697b;--final-muted:#6b7e8a;--final-line:#d1dce0;--final-soft:#e1e7e9;
+ --final-selected:#f9fcfd;--final-border:#9badbc;--final-glint:#b4c5cf;
+}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]){
+ color:var(--final-ink);--ink:var(--final-ink);--muted:var(--final-muted);--line:var(--final-line);
+ background:radial-gradient(ellipse at 79% 26%,var(--final-halo),transparent 58%),var(--final-bg);
+}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) :is(.landing-topbar,.setup-details,.setup-footer,.setup-rule-fields){border-color:var(--final-line)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .setup-panel{background:var(--final-paper);border-color:var(--final-line);box-shadow:0 12px 35px #43665d08}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) :is(.section-kicker,.setup-caption,.field>span,.setup-heading>p,.setup-footer>span,.setup-details>summary,.brand small,.top-links button,.map-option-main small,.preview-label>span,.preview-label small){color:var(--final-muted)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .brand-gem{color:var(--final-accent);text-shadow:6px -3px 0 var(--final-glint)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .map-option:hover{background:var(--final-soft)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .map-option.selected{border-color:var(--final-border);background:var(--final-selected);box-shadow:0 3px 11px #3859620b}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) :is(.selected .map-number,.preview-label strong){color:var(--final-accent)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .map-number{color:var(--final-muted)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) :is(.map-node-count,.segmented){background:var(--final-soft);color:var(--final-muted)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .segmented button{color:var(--final-muted)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .segmented button.active{background:var(--final-selected);color:var(--final-accent)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) :is(input:not([type=range]):not([type=checkbox]),select){background:var(--final-selected);border-color:var(--final-line)}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .launch-button{background:var(--final-accent);color:#fbfefb;box-shadow:0 6px 17px #3e556416}
+.landing:is([data-map="hushedValley"],[data-map="grandCity"]) .launch-button:hover{filter:brightness(1.1)}
+.game-shell[data-map="hushedValley"]{background:radial-gradient(ellipse at 50% 45%,#d6e3db,#edf2e9 72%,#f1f5ec)}
+.game-shell[data-map="grandCity"]{background:radial-gradient(ellipse at 50% 45%,#dce4e6,#edf2ef 72%,#f4f6f1)}
+.game-shell[data-map="hushedValley"] .floor-key-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.game-main .map-controls:has(.floor-key-card){z-index:5}
+.final-scenic-caption{font-family:"Songti SC","STSong",serif;font-size:13px;letter-spacing:2px;fill:#69847b}
+.final-city-caption{font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-size:12px;letter-spacing:2px;fill:#738b93}
+.parcel-prefab .level-count{fill:#506674}
+.parcel-prefab .level-storeys rect{fill:#8299a7}
+.parcel-prefab .level-landmark-star{fill:#dae4e9;stroke:#708895}
+.parcel-prefab .level-landmark-number{fill:#4d6475}
+@media(max-width:1100px){.landing .map-option{min-height:99px}}
+@media(max-width:850px){.landing .world-preview{height:390px}.landing .intro h1{margin-bottom:20px}}
+@media(max-width:520px){.landing .map-option{min-height:112px}.landing .world-preview{height:267px}}

@@ -54,11 +54,11 @@ describe('pure deterministic engine', () => {
     expect(act(a, { type: 'stockTrade', stockId: a.stocks[0].id, quantity: 1 })).toBe(a);
     expect(a.encounters.length).toBeGreaterThanOrEqual(5);
     expect(a.encounters.length).toBeLessThanOrEqual(8);
-    expect(a.encounters.every(id => MAPS.lake.nodes[id].kind === 'empty')).toBe(true);
+    expect(a.encounters.every(id => !['start', 'event'].includes(MAPS.lake.nodes[id].kind))).toBe(true);
     for (const mapId of ['coast', 'valley'] as const) {
       const onMap = createGame({ ...config, mapId });
       expect(onMap.encounters.length, mapId).toBeGreaterThanOrEqual(5);
-      expect(onMap.encounters.every(id => MAPS[mapId].nodes[id].kind === 'empty'), mapId).toBe(true);
+      expect(onMap.encounters.every(id => !['start', 'event'].includes(MAPS[mapId].nodes[id].kind)), mapId).toBe(true);
     }
   });
 
@@ -388,8 +388,9 @@ describe('pure deterministic engine', () => {
 
     const prisonEvent = EVENTS.find(entry => entry.choices.some(choice => choice.confinement === 'prison'))!;
     const prisonChoice = prisonEvent.choices.find(choice => choice.confinement === 'prison')!;
-    const detained = game(); detained.players[0].position = 1; detained.players[0].previousPosition = 0;
-    detained.players[0].routeNextPosition = 2; detained.phase = 'decision';
+    const eventNode = MAPS.lake.nodes.find(entry => entry.kind === 'event')!;
+    const detained = game(); detained.players[0].position = eventNode.id; detained.players[0].previousPosition = eventNode.neighbors[0];
+    detained.players[0].routeNextPosition = null; detained.phase = 'decision';
     detained.pending = { kind: 'event', title: prisonEvent.title, body: prisonEvent.story,
       data: { eventId: prisonEvent.id }, choices: [{ id: prisonChoice.id, label: prisonChoice.label }] };
     const confined = act(detained, { type: 'choose', choiceId: prisonChoice.id });
@@ -844,6 +845,7 @@ describe('pure deterministic engine', () => {
     const inspection = EVENTS.find(e => e.id === 'inspection')!;
     const state = game();
     state.properties[land.id] = { ownerId: 'p1', level: 4, mortgaged: false };
+    state.players[0].position = MAPS.lake.nodes.find(node => node.kind === 'event')!.id;
     state.phase = 'decision';
     state.pending = { kind: 'event', title: inspection.title, body: inspection.story,
       choices: inspection.choices.map(choice => ({ id: choice.id, label: choice.label })), data: { eventId: inspection.id } };

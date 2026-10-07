@@ -1,7 +1,8 @@
-import type { GameConfig, RentLevel } from './types';
+import type { GameConfig, MapId, RentLevel } from './types';
 
 export const BASE_STARTING_CASH = 100_000;
 export function getStartingCash(config: Pick<GameConfig, 'mapId' | 'rentLevel'>): number {
+  if (config.mapId === 'grandCity') return 150_000;
   return config.mapId === 'forest' && config.rentLevel === 'heavy' ? BASE_STARTING_CASH * 2 : BASE_STARTING_CASH;
 }
 
@@ -15,8 +16,11 @@ const PROPERTY_RENT_BY_LEVEL = {
   heavy: [0.8, 1.8, 3.5, 6.5, 12],
 } as const satisfies Record<RentLevel, readonly number[]>;
 
-export function getPropertyRentMultipliers(level: RentLevel = 'standard'): readonly number[] {
-  return PROPERTY_RENT_BY_LEVEL[level];
+export function getPropertyRentMultipliers(level: RentLevel = 'standard', mapId?: MapId): readonly number[] {
+  const ordinary = PROPERTY_RENT_BY_LEVEL[level];
+  return mapId === 'hushedValley'
+    ? [...ordinary, level === 'relaxed' ? 5.4 : level === 'heavy' ? 18 : 9]
+    : ordinary;
 }
 export const UTILITY_RENT_BASE = 150;
 export const UTILITY_RENT_CAP = 37_500;

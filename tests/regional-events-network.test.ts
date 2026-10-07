@@ -5,6 +5,7 @@ import { expect, it } from 'vitest';
 import { createRoomServer } from '../server/index';
 import { act, createGame } from '../src/game/engine';
 import { findEligibleEvent } from '../src/game/eventPool';
+import { MAPS } from '../src/game/maps';
 import type { GameConfig } from '../src/game/types';
 
 type Wire = { type: string; room?: any; message?: string };
@@ -54,9 +55,20 @@ class Client {
 const hostProfile = { name: '星河', color: '#D55B48', shape: 'circle', ai: false, personality: 'balanced' };
 const guestProfile = { name: '云岚', color: '#277DA8', shape: 'diamond', ai: false, personality: 'cautious' };
 
+function openingEventSeed(mapId: GameConfig['mapId'], eventId: string, choiceId: string): number {
+  for (let seed = 1; seed < 20_000; seed++) {
+    const preview: GameConfig = { mapId, mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
+      players: [hostProfile, guestProfile] as GameConfig['players'] };
+    const landed = act(createGame(preview), { type: 'roll' });
+    if (landed.pending?.data?.eventId === eventId
+      && ['event', 'empty'].includes(MAPS[mapId].nodes[landed.players[0].position].kind)
+      && act(landed, { type: 'choose', choiceId }).phase === 'end') return seed;
+  }
+  throw new Error(`Could not find a settled opening event: ${eventId}`);
+}
+
 it('shares a lake DLC encounter, restricts selection, and retains the result until endTurn', async () => {
-  // This opening roll selects the lake DLC encounter after the facility redistribution.
-  const seed = 78;
+  const seed = openingEventSeed('lake', 'lake_ferry_queue', 'lake_ferry_queue_help');
   const preview: GameConfig = { mapId: 'lake', mode: 'pvp', seasons: 4, weatherMode: 'standard', seed,
     players: [hostProfile, guestProfile] as GameConfig['players'] };
   expect(act(createGame(preview), { type: 'roll' }).pending?.data?.eventId).toBe('lake_ferry_queue');
@@ -126,10 +138,11 @@ it('shares a lake DLC encounter, restricts selection, and retains the result unt
 it('synchronizes both new-map DLC encounters and keeps their choices private to the active player', async () => {
   const server = await createRoomServer({ port: 0, host: '127.0.0.1' });
   try {
-    for (const { mapId, seed, eventId, choiceId } of [
-      { mapId: 'forest', seed: 43, eventId: 'forest_root_marker', choiceId: 'forest_root_marker_pay' },
-      { mapId: 'starSands', seed: 20, eventId: 'sands_night_awning', choiceId: 'sands_night_awning_snack' },
+    for (const { mapId, eventId, choiceId } of [
+      { mapId: 'forest', eventId: 'forest_root_marker', choiceId: 'forest_root_marker_pay' },
+      { mapId: 'starSands', eventId: 'sands_night_awning', choiceId: 'sands_night_awning_snack' },
     ] as const) {
+      const seed = openingEventSeed(mapId, eventId, choiceId);
       const clients: Client[] = [];
       try {
         const host = await Client.connect(server.port); clients.push(host);

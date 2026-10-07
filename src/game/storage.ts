@@ -1,4 +1,4 @@
-import type { AILevel, GameState, MapId, PlayerConfig, Shape } from './types';
+import type { AILevel, GameState, MapData, MapId, PlayerConfig, Shape } from './types';
 import { MAPS } from './maps';
 import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_STEPS, WEATHERS, getJourneyRewardSteps } from './data';
 import { findEligibleEvent, getEventPool } from './eventPool';
@@ -7,6 +7,7 @@ import { validShopData } from './shop';
 import { getRent } from './engine';
 import { migrateMapLayout } from './layoutMigration';
 import { RENT_LEVELS } from './economy';
+import { getLandPurchaseDescription, getLandPurchasePrice, getMaxLandLevel } from './propertyRules';
 
 const KEY = 'prism-days-save-v1';
 const SHAPES: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
@@ -15,6 +16,38 @@ const STOCK_IDS = new Set(INITIAL_STOCKS.map(stock => stock.id));
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function encounterTile(kind: string) { return kind !== 'start' && kind !== 'event'; }
+
+function validEventPrompt(state: GameState, map: MapData): boolean {
+  const prompt = state.pending;
+  if (!prompt || prompt.kind !== 'event' || !record(prompt.data) || typeof prompt.data.eventId !== 'string') return false;
+  const player = state.players[state.currentPlayerIndex];
+  const node = player && map.nodes[player.position];
+  if (!node) return false;
+  const source = prompt.data.eventSource;
+  const continuation = prompt.data.continuation;
+  const recordEntry = state.turnEncounters?.find(entry => entry.id === prompt.data?.turnEncounterId);
+  const matchingRecord = !!recordEntry && recordEntry.playerId === player.id && recordEntry.day === state.day
+    && recordEntry.nodeId === node.id && recordEntry.eventId === prompt.data.eventId
+    && recordEntry.selectedChoiceId === undefined;
+  if (source === undefined) {
+    // Old saves only drew events from fixed event tiles or marked empty tiles.
+    return continuation === undefined && ['event', 'empty'].includes(node.kind)
+      && !!findEligibleEvent(map.id, prompt.data.eventId, 'tile');
+  }
+  if (source === 'tile') return node.kind === 'event' && continuation === undefined && matchingRecord
+    && !!findEligibleEvent(map.id, prompt.data.eventId, 'tile');
+  if (source !== 'encounter' || !encounterTile(node.kind) || !record(continuation)
+    || Object.keys(continuation).sort().join(',') !== 'glitchBacktrack,nodeId,skipStation'
+    || continuation.nodeId !== player.position || typeof continuation.skipStation !== 'boolean'
+    || typeof continuation.glitchBacktrack !== 'boolean'
+    || continuation.skipStation && node.kind !== 'station'
+    || continuation.glitchBacktrack && state.weatherId !== 'glitch'
+    || state.encounters.includes(player.position)) return false;
+  return !!findEligibleEvent(map.id, prompt.data.eventId, 'encounter')
+    && matchingRecord;
 }
 
 function validPlayerConfig(value: unknown): value is PlayerConfig {
@@ -69,7 +102,7 @@ export function parseSave(raw: string): GameState {
   if (config.mode === 'pvp' && config.players.some((p: PlayerConfig) => p.ai)) throw new Error('PVP 存档不能包含电脑玩家。');
   migrateMapLayout(state, config.mapId as MapId);
   const maxNode = MAPS[config.mapId as MapId].nodes.length;
-  const eligibleEventIds = new Set(getEventPool(config.mapId as MapId).map(event => event.id));
+  const eligibleEventIds = new Set(getEventPool(config.mapId as MapId, 'encounter').map(event => event.id));
   if (!Array.isArray(state.players) || state.players.length !== config.players.length
     || state.players.some((p: unknown) => !record(p) || typeof p.id !== 'string' || !validPlayerConfig(p)
       || !Number.isFinite(p.cash) || !Number.isFinite(p.stamina) || !Number.isFinite(p.mood)
@@ -122,8 +155,10 @@ export function parseSave(raw: string): GameState {
       || item.playerId !== currentPlayerId || !playerIds.has(String(item.playerId))
       || !Number.isSafeInteger(item.day) || item.day !== state.day
       || !Number.isSafeInteger(item.nodeId) || Number(item.nodeId) < 0 || Number(item.nodeId) >= maxNode
-      || !['event', 'empty'].includes(MAPS[config.mapId as MapId].nodes[Number(item.nodeId)].kind)
+      || MAPS[config.mapId as MapId].nodes[Number(item.nodeId)].kind === 'start'
       || typeof item.eventId !== 'string' || !eligibleEventIds.has(item.eventId)
+      || !findEligibleEvent(config.mapId as MapId, item.eventId,
+        MAPS[config.mapId as MapId].nodes[Number(item.nodeId)].kind === 'event' ? 'tile' : 'encounter')
       || typeof item.title !== 'string' || !item.title.trim() || item.title.length > 200
       || typeof item.story !== 'string' || !item.story.trim() || item.story.length > 2000
       || !['good', 'bad', 'choice'].includes(String(item.tone))
@@ -146,8 +181,19 @@ export function parseSave(raw: string): GameState {
     return !Number.isSafeInteger(nodeId) || nodeId < 0 || nodeId >= maxNode
       || !['land', 'power', 'water', 'telecom'].includes(MAPS[config.mapId as MapId].nodes[nodeId].kind) || !record(value)
       || !playerIds.has(String(value.ownerId)) || !Number.isSafeInteger(value.level)
-      || Number(value.level) < 0 || Number(value.level) > 4 || typeof value.mortgaged !== 'boolean';
+      || Number(value.level) < 0
+      || Number(value.level) > (MAPS[config.mapId as MapId].nodes[nodeId].kind === 'land' ? getMaxLandLevel(config.mapId as MapId) : 0)
+      || typeof value.mortgaged !== 'boolean';
   })) throw new Error('存档中的产权数据无效。');
+  if (state.availablePropertyLevels !== undefined && (!record(state.availablePropertyLevels)
+    || config.mapId !== 'grandCity' && Object.keys(state.availablePropertyLevels).length > 0
+    || Object.entries(state.availablePropertyLevels).some(([key, value]) => {
+      const nodeId = Number(key);
+      return !Number.isSafeInteger(nodeId) || String(nodeId) !== key || nodeId < 0 || nodeId >= maxNode
+        || MAPS[config.mapId as MapId].nodes[nodeId].kind !== 'land'
+        || Object.hasOwn(state.properties as Record<string, unknown>, key)
+        || !Number.isSafeInteger(value) || Number(value) < 0 || Number(value) > getMaxLandLevel(config.mapId as MapId);
+    }))) throw new Error('存档中的银行待售楼层无效。');
   const listings = state.propertyListings;
   if (listings !== undefined && (!Array.isArray(listings) || listings.length > maxNode || config.propertyTrading === false && listings.length > 0
     || listings.some((entry: unknown) => {
@@ -180,7 +226,9 @@ export function parseSave(raw: string): GameState {
     || new Set(state.stocks.map((stock: { id: string }) => stock.id)).size !== INITIAL_STOCKS.length
     || !Array.isArray(state.logs) || state.logs.some((log: unknown) => !record(log) || !Number.isSafeInteger(log.id)
       || !Number.isSafeInteger(log.day) || typeof log.text !== 'string' || !['info', 'good', 'bad'].includes(String(log.tone)))
-    || !Array.isArray(state.encounters) || !state.encounters.every((id: unknown) => Number.isSafeInteger(id) && Number(id) >= 0 && Number(id) < maxNode)
+    || !Array.isArray(state.encounters) || state.encounters.length > 8
+    || !state.encounters.every((id: unknown) => Number.isSafeInteger(id) && Number(id) >= 0 && Number(id) < maxNode)
+    || new Set(state.encounters).size !== state.encounters.length
     || typeof state.weatherId !== 'string' || !Object.hasOwn(WEATHERS, state.weatherId)
     || (state.weatherHistory !== undefined && (!Array.isArray(state.weatherHistory) || state.weatherHistory.length > 10
       || state.weatherHistory.some((id: unknown) => typeof id !== 'string' || !Object.hasOwn(WEATHERS, id))))
@@ -191,8 +239,7 @@ export function parseSave(raw: string): GameState {
         || (choice.description !== undefined && typeof choice.description !== 'string')
         || (choice.disabled !== undefined && typeof choice.disabled !== 'boolean'))
       || (state.pending.casinoResult !== undefined && (state.pending.kind !== 'casino' || !validCasinoResult(state.pending.casinoResult, state.sequence)))
-      || (state.pending.kind === 'event' && (!record(state.pending.data)
-        || typeof state.pending.data.eventId !== 'string' || !eligibleEventIds.has(state.pending.data.eventId)))
+      || (state.pending.kind === 'event' && !validEventPrompt(state as unknown as GameState, MAPS[config.mapId as MapId]))
       || (state.pending.kind === 'shop' && !validShopData(state.pending.data))))
     || (config.propertyTrading === false && record(state.pending) && state.pending.kind === 'trade')
     || (state.seasonReport !== null && (!record(state.seasonReport) || !Array.isArray(state.seasonReport.rankings)
@@ -236,6 +283,15 @@ export function parseSave(raw: string): GameState {
       ...(entry.ai ? { aiLevel: entry.aiLevel ?? 'gentle' } : {}), color: players[index].color })) };
   const publicEncounters = [...(saved.turnEncounters ?? [])];
   let pending = saved.pending;
+  if (pending?.kind === 'land') {
+    const player = players[saved.currentPlayerIndex];
+    const node = map.nodes[player.position];
+    if (node.kind !== 'land' && !['power', 'water', 'telecom'].includes(node.kind)
+      || pending.data?.nodeId !== node.id || saved.properties[node.id]) throw new Error('存档中的购地选择无效。');
+    const price = getLandPurchasePrice({ ...saved, players }, node.id);
+    pending = { ...pending, title: node.name, body: getLandPurchaseDescription({ ...saved, players }, node.id),
+      choices: [{ id: 'buy', label: `购买 · ${price} PM`, disabled: player.cash < price }, { id: 'leave', label: '离开' }] };
+  }
   if (pending?.kind === 'station') {
     const player = players[saved.currentPlayerIndex];
     const origin = map.nodes[player.position];
@@ -280,10 +336,12 @@ export function parseSave(raw: string): GameState {
     pending = { ...pending, data: { ...pending.data, shopPurchases: {} } };
   }
   if (pending?.kind === 'event') {
-    const event = findEligibleEvent(saved.config.mapId, String(pending?.data?.eventId ?? ''));
+    const source = pending.data?.eventSource === 'tile' || pending.data?.eventSource === 'encounter'
+      ? pending.data.eventSource : 'tile';
+    const event = findEligibleEvent(saved.config.mapId, String(pending?.data?.eventId ?? ''), source);
     const player = players[saved.currentPlayerIndex];
     const node = map.nodes[player.position];
-    if (event && ['event', 'empty'].includes(node.kind)
+    if (event && node.kind !== 'start'
       && !publicEncounters.some(entry => entry.id === pending?.data?.turnEncounterId && !entry.selectedChoiceId)) {
       let id = `legacy-event-${saved.sequence}-${publicEncounters.length + 1}`;
       while (publicEncounters.some(entry => entry.id === id)) id += '-1';
@@ -294,7 +352,7 @@ export function parseSave(raw: string): GameState {
   }
   const activeAiTurn = saved.aiTurn && players[saved.currentPlayerIndex].ai && saved.phase !== 'gameover'
     && saved.aiTurn.playerId === players[saved.currentPlayerIndex].id && saved.aiTurn.day === saved.day ? saved.aiTurn : undefined;
-  return { ...saved, mapLayoutVersion: 2, config: normalizedConfig, players, propertyListings: saved.propertyListings ?? [], notices: saved.notices ?? [], turnEncounters: publicEncounters, pending,
+  return { ...saved, mapLayoutVersion: 2, config: normalizedConfig, players, availablePropertyLevels: saved.availablePropertyLevels ?? {}, propertyListings: saved.propertyListings ?? [], notices: saved.notices ?? [], turnEncounters: publicEncounters, pending,
     aiTurn: activeAiTurn,
     controlledRoll: saved.controlledRoll ?? null, twinRoll: saved.twinRoll ?? false, movement: null, feedback: null };
 }

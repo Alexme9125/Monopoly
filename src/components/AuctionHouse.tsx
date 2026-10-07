@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { getRent } from '../game/engine';
 import { MAPS } from '../game/maps';
+import { getMaxLandLevel } from '../game/propertyRules';
 import { PropertyLevelIcon, propertyLevelName } from '../visual/PropertyLevel';
 import type { GameAction, GameState, Player } from '../game/types';
 
@@ -67,7 +68,7 @@ export default function AuctionHouse({ state, player, canTrade, onAction, onClos
     return <>
       <span className="auction-node-tag">#{String(id).padStart(2, '0')}</span>
       <div className="auction-card-main"><strong>{node.name}</strong><small>{node.district || map.name}</small></div>
-      <div className="auction-level">{node.kind === 'land' ? <><PropertyLevelIcon level={property.level} size={26} /><span>{propertyLevelName(property.level)}</span></> : <span>固定设施 · 无楼层</span>}</div>
+      <div className="auction-level">{node.kind === 'land' ? <><PropertyLevelIcon level={property.level} maxLevel={getMaxLandLevel(state.config.mapId)} size={26} /><span>{propertyLevelName(property.level, getMaxLandLevel(state.config.mapId))}</span></> : <span>固定设施 · 无楼层</span>}</div>
     </>;
   };
 

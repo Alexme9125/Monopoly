@@ -1,14 +1,16 @@
 import { INITIAL_STOCKS, ITEMS, JOURNEY_REWARD_CASH, JOURNEY_REWARD_STEPS, WEATHERS, getJourneyRewardSteps } from './data';
 import { findEligibleEvent, getEventWeights } from './eventPool';
+import type { EventSource } from './eventPool';
 import { MAPS } from './maps';
 import { normalizePlayerColors } from './colors';
 import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
 import { weatherWeights } from './weather';
 import { getShopOffer, SHOP_ITEM_RARITY } from './shop';
 import { getStepOptions } from './routing';
+import { getAvailableLandLevel, getBuildCost, getLandPurchaseDescription, getLandPurchasePrice, getMaxLandLevel, getMealRecovery, getPropertyAssetValue, isLandmark } from './propertyRules';
 import { getPropertyRentMultipliers, getStartingCash, HOSTILE_ITEM_MOOD_LOSS, RENT_LEVELS, RENT_MOOD_LOSS, ROADSIDE_CASH_MAX, ROADSIDE_CASH_MIN, UTILITY_RENT_BASE, UTILITY_RENT_CAP } from './economy';
 export { weatherWeights } from './weather';
-import type { CasinoResult, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, PropertyListing, Stock, TurnEncounter } from './types';
+import type { CasinoResult, EventContinuation, EventDef, GameAction, GameConfig, GameEffect, GameNotice, GameState, InventorySlot, MapNode, Movement, Player, Prompt, Property, PropertyListing, Stock, TurnEncounter } from './types';
 
 const UTILITY_KINDS = new Set(['power', 'water', 'telecom']);
 const PROPERTY_KINDS = new Set(['land', 'power', 'water', 'telecom']);
@@ -32,7 +34,10 @@ const notice = (state: GameState, entry: Omit<GameNotice, 'id' | 'day'>) => {
 };
 const effect = (kind: GameEffect['kind'], label: string, tone: GameEffect['tone'] = 'info'): GameEffect => ({ kind, label, tone });
 const addLandingEffect = (state: GameState, entry: GameEffect) => {
-  if (state.movement?.playerId === current(state).id) (state.movement.effects ??= []).push(entry);
+  const player = current(state);
+  if (state.movement?.playerId === player.id) (state.movement.effects ??= []).push(entry);
+  else if (state.feedback?.playerId === player.id && state.feedback.nodeId === player.position) state.feedback.effects.push(entry);
+  else state.feedback = { id: ++state.sequence, playerId: player.id, nodeId: player.position, effects: [entry] };
 };
 const setFeedback = (state: GameState, player: Player, ...effects: GameEffect[]) => {
   state.feedback = { id: ++state.sequence, playerId: player.id, nodeId: player.position, effects };
@@ -152,7 +157,11 @@ function declareBankruptcy(state: GameState, player: Player) {
   player.stockCostBasis = {};
   player.inventory = [];
   player.pawnedItems = [];
-  for (const [id, prop] of Object.entries(state.properties)) if (prop.ownerId === player.id) delete state.properties[Number(id)];
+  for (const [id, prop] of Object.entries(state.properties)) if (prop.ownerId === player.id) {
+    const node = nodeAt(state, Number(id));
+    if (state.config.mapId === 'grandCity' && node?.kind === 'land') (state.availablePropertyLevels ??= {})[Number(id)] = prop.level;
+    delete state.properties[Number(id)];
+  }
   state.propertyListings = (state.propertyListings ?? []).filter(listing => listing.sellerId !== player.id);
   log(state, `${player.name} 资不抵债，宣告破产。`, 'bad');
   const survivors = state.players.filter(p => !p.bankrupt);
@@ -202,8 +211,7 @@ function enforceDebt(state: GameState, resumePhase?: 'ready' | 'end') {
 function assetValue(state: GameState, id: number, prop: Property) {
   const node = nodeAt(state, id);
   if (!node) return 0;
-  const price = costOf(node);
-  return price + (isUtility(node) ? 0 : Math.ceil(price * 0.75) * prop.level);
+  return getPropertyAssetValue(node, prop.level);
 }
 
 export function getAcquisitionPrice(state: GameState, nodeId: number): number | null {
@@ -239,7 +247,7 @@ export function getRent(state: GameState, nodeId: number): number {
     const count = Object.entries(state.properties).filter(([id, p]) => p.ownerId === prop.ownerId && !p.mortgaged && !!nodeAt(state, Number(id)) && isUtility(nodeAt(state, Number(id))!)).length;
     return Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** Math.max(0, count - 1));
   }
-  return Math.ceil(costOf(node) * getPropertyRentMultipliers(state.config.rentLevel)[clamp(prop.level, 0, 4)]);
+  return Math.ceil(costOf(node) * getPropertyRentMultipliers(state.config.rentLevel, state.config.mapId)[prop.level]);
 }
 
 export function getTileRentPreview(state: GameState, nodeId: number, playerId?: string): {
@@ -247,8 +255,8 @@ export function getTileRentPreview(state: GameState, nodeId: number, playerId?: 
 } {
   const node = nodeAt(state, nodeId);
   if (!node || !isProperty(node)) return { price: 0, rent: 0, purchasable: false, prospective: false, reason: '此处不是可购地块' };
-  const price = costOf(node);
   const prop = propertyOf(state, nodeId);
+  const price = prop ? costOf(node) : getLandPurchasePrice(state, nodeId);
   if (prop) {
     const rent = getRent(state, nodeId);
     const owner = state.players.find(player => player.id === prop.ownerId);
@@ -266,7 +274,8 @@ export function getTileRentPreview(state: GameState, nodeId: number, playerId?: 
     const heldNode = nodeAt(state, Number(id));
     return holding.ownerId === viewer.id && !holding.mortgaged && !!heldNode && isUtility(heldNode);
   }).length : 0;
-  const rent = blocked || suspended ? 0 : isUtility(node) ? Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** ownedUtilities) : Math.ceil(price * getPropertyRentMultipliers(state.config.rentLevel)[0]);
+  const rent = blocked || suspended ? 0 : isUtility(node) ? Math.min(UTILITY_RENT_CAP, UTILITY_RENT_BASE * 3 ** ownedUtilities)
+    : Math.ceil(costOf(node) * getPropertyRentMultipliers(state.config.rentLevel, state.config.mapId)[getAvailableLandLevel(state, nodeId)]);
   const reason = blocked ? '奇异悖论期间不可购买或收租' : suspended ? '玩家禁锢期间无法收租' : viewer.cash < price ? '资金不足，暂不可购入' : undefined;
   return { price, rent, purchasable: !blocked && viewer.cash >= price, prospective: true, ...(reason ? { reason } : {}) };
 }
@@ -301,14 +310,14 @@ export function canTargetItem(state: GameState, playerId: string, itemUid: strin
   if (id === 'weather') return !!target.weatherId && Object.hasOwn(WEATHERS, target.weatherId)
     && (WEATHERS[target.weatherId].family !== 'disaster' || state.day >= 22);
   if (id === 'demolish') return !!node && isProperty(node) && !isUtility(node) && !!property
-    && property.ownerId !== player.id && property.level >= 1 && property.level < 4;
+    && property.ownerId !== player.id && property.level >= 1 && !isLandmark(state.config.mapId, node, property.level);
   if (id === 'repair') return !!node && isProperty(node) && !isUtility(node) && !!property
-    && property.ownerId === player.id && !property.mortgaged && property.level < 4 && state.weatherId !== 'acid';
+    && property.ownerId === player.id && !property.mortgaged && property.level < getMaxLandLevel(state.config.mapId) && state.weatherId !== 'acid';
   if (id === 'acquire') {
     const owner = state.players.find(entry => entry.id === property?.ownerId);
     const cost = node ? getAcquisitionPrice(state, node.id) : null;
     return !!node && isProperty(node) && !!property && !!owner && !owner.bankrupt && owner.id !== player.id
-      && !property.mortgaged && property.level < 4 && cost !== null && player.cash >= cost;
+      && !property.mortgaged && !isLandmark(state.config.mapId, node, property.level) && cost !== null && player.cash >= cost;
   }
   return true;
 }
@@ -352,7 +361,8 @@ function marketDay(state: GameState) {
 }
 
 function refreshEncounters(state: GameState) {
-  const nodes = MAPS[state.config.mapId].nodes.filter(n => n.kind === 'empty').map(n => n.id);
+  // Fixed events and the start already have their own landing rules. Every other tile can host a temporary encounter.
+  const nodes = MAPS[state.config.mapId].nodes.filter(n => n.kind !== 'start' && n.kind !== 'event').map(n => n.id);
   for (let i = nodes.length - 1; i > 0; i--) { const j = rand(state, 0, i); [nodes[i], nodes[j]] = [nodes[j], nodes[i]]; }
   state.encounters = nodes.slice(0, Math.min(nodes.length, rand(state, 5, 8)));
 }
@@ -441,7 +451,10 @@ export function createGame(config: GameConfig): GameState {
     inventory: [], pawnedItems: [], capacity: 10, holdings: {}, stockCostBasis: {}, confinement: null, statuses: [], bankrupt: false,
   }));
   const stocks: Stock[] = copy(INITIAL_STOCKS).map(s => ({ ...s, history: s.history?.length ? s.history : [s.price], change: s.change ?? 0 }));
-  const state: GameState = { version: 1, mapLayoutVersion: 2, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, rentLevel: config.rentLevel ?? 'standard', players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, propertyListings: [],
+  const availablePropertyLevels = Object.fromEntries(MAPS[config.mapId].nodes
+    .filter(node => node.kind === 'land' && node.prefabLevel !== undefined)
+    .map(node => [node.id, node.prefabLevel!])) as Record<number, number>;
+  const state: GameState = { version: 1, mapLayoutVersion: 2, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, rentLevel: config.rentLevel ?? 'standard', players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, availablePropertyLevels, propertyListings: [],
     encounters: [], turnEncounters: [], stocks, logs: [], notices: [], phase: 'ready', pending: null,
     movement: null, feedback: null, seasonReport: null, rng: seed, sequence: 0, winnerId: null, lastMarketEvent: null, selectedDie: 6, controlledRoll: null, twinRoll: false };
   for (const player of state.players) { addItem(state, player, 'snack', 2); addItem(state, player, 'rent', 1); addItem(state, player, 'dice8', 1); }
@@ -580,7 +593,8 @@ function weatherMove(state: GameState, player: Player, path: number[]) {
 
 function weatherLand(state: GameState, player: Player, node: MapNode) {
   if (status(player, 'umbrella')) return;
-  const building = !!state.properties[node.id]?.level || isUtility(node) || ['shop', 'station', 'casino', 'exchange', 'hospital', 'prison', 'sanatorium', 'parking'].includes(node.kind);
+  const building = !!state.properties[node.id]?.level || node.kind === 'land' && getAvailableLandLevel(state, node.id) > 0
+    || isUtility(node) || ['shop', 'station', 'casino', 'exchange', 'hospital', 'prison', 'sanatorium', 'parking'].includes(node.kind);
   if (building) return;
   const beforeStamina = player.stamina;
   const beforeMood = player.mood;
@@ -596,11 +610,13 @@ function weatherLand(state: GameState, player: Player, node: MapNode) {
   if (player.mood < beforeMood) addLandingEffect(state, effect('mood', `${WEATHERS[id]?.name ?? id} · 心情 −${beforeMood - player.mood}`, 'bad'));
 }
 
-function mealRecovery(node: MapNode, prop: Property | undefined) { return isUtility(node) ? 12 : [0, 12, 20, 30, 42][prop?.level ?? 0]; }
+function mealRecovery(state: GameState, node: MapNode, prop: Property | undefined) {
+  return isUtility(node) ? 12 : getMealRecovery(state.config.mapId, prop?.level ?? 0);
+}
 
-function selectEvent(state: GameState): EventDef | undefined {
+function selectEvent(state: GameState, source: EventSource): EventDef | undefined {
   const player = current(state);
-  const weighted = getEventWeights(state.config.mapId, status(player, 'luck') ? 'luck' : status(player, 'unluck') ? 'unluck' : undefined);
+  const weighted = getEventWeights(state.config.mapId, status(player, 'luck') ? 'luck' : status(player, 'unluck') ? 'unluck' : undefined, source);
   if (!weighted.length) return undefined;
   let ticket = next(state) * weighted.reduce((sum, item) => sum + item.weight, 0);
   for (const item of weighted) { ticket -= item.weight; if (ticket < 0) return item.event; }
@@ -634,7 +650,8 @@ function eventChoiceDisabled(state: GameState, event: EventDef, choiceId: string
 
 function damageableBuildings(state: GameState, player: Player): [string, Property][] {
   return Object.entries(state.properties).filter(([id, property]) => property.ownerId === player.id
-    && property.level > 0 && property.level < 4 && !!nodeAt(state, Number(id)) && !isUtility(nodeAt(state, Number(id))!));
+    && property.level > 0 && !!nodeAt(state, Number(id))
+    && !isUtility(nodeAt(state, Number(id))!) && !isLandmark(state.config.mapId, nodeAt(state, Number(id))!, property.level));
 }
 
 function eventChoiceScore(state: GameState, event: EventDef | undefined, choiceId: string): number {
@@ -679,9 +696,9 @@ function eventChoiceScore(state: GameState, event: EventDef | undefined, choiceI
     if (buildings.length) score -= buildings.reduce((sum, [id, property]) => {
       const node = nodeAt(state, Number(id))!;
       const price = costOf(node);
-      const multipliers = getPropertyRentMultipliers(state.config.rentLevel);
+      const multipliers = getPropertyRentMultipliers(state.config.rentLevel, state.config.mapId);
       const rentLoss = Math.ceil(price * (multipliers[property.level] - multipliers[property.level - 1]));
-      return sum + Math.ceil(price * 0.75) + rentLoss;
+      return sum + getBuildCost(node) + rentLoss;
     }, 0) / buildings.length;
   }
   return score;
@@ -726,17 +743,44 @@ function enterNode(state: GameState, skipStation = false, glitchBacktrack = fals
   if (!node || player.bankrupt) return;
   weatherLand(state, player, node);
   if (checkHealth(state, player, true)) return;
+  if (node.kind !== 'event' && state.encounters.includes(node.id) && state.weatherId !== 'paradox') {
+    state.encounters = state.encounters.filter(id => id !== node.id);
+    openEvent(state, node, 'encounter', { nodeId: node.id, skipStation, glitchBacktrack });
+    return;
+  }
+  settleNodeTile(state, node, skipStation, glitchBacktrack);
+}
+
+function openEvent(state: GameState, node: MapNode, source: EventSource, continuation?: EventContinuation, glitchBacktrack = false) {
+  const event = selectEvent(state, source);
+  if (!event) {
+    if (continuation) settleNodeTile(state, node, continuation.skipStation, continuation.glitchBacktrack);
+    return;
+  }
+  const player = current(state);
+  addLandingEffect(state, effect('event', event.title, event.tone === 'bad' ? 'bad' : event.tone === 'good' ? 'good' : 'info'));
+  const choices = event.choices.map(c => ({ id: c.id, label: c.label, description: c.description, disabled: eventChoiceDisabled(state, event, c.id) }));
+  if (choices.every(c => c.disabled)) choices.push({ id: 'skip_unavailable', label: '资源不足，离开', description: '', disabled: false });
+  const encounter = addTurnEncounter(state, event, player, node.id, choices);
+  makeChoice(state, simplePrompt('event', event.title, event.story, choices,
+    { eventId: event.id, eventSource: source, turnEncounterId: encounter.id,
+      ...(continuation ? { continuation } : {}), ...(!continuation && glitchBacktrack ? { glitchBacktrack: true } : {}) }));
+}
+
+function settleNodeTile(state: GameState, node: MapNode, skipStation: boolean, glitchBacktrack: boolean) {
+  const player = current(state);
   const data = glitchBacktrack ? { glitchBacktrack: true } : undefined;
   if (isProperty(node)) {
     const prop = state.properties[node.id];
     if (!prop && state.weatherId !== 'paradox') {
-      makeChoice(state, simplePrompt('land', node.name, `购买 ${node.name} 需要 ${costOf(node)} PM。`, [
-        { id: 'buy', label: `购买 · ${costOf(node)} PM`, disabled: player.cash < costOf(node) }, { id: 'leave', label: '离开' },
+      const purchasePrice = getLandPurchasePrice(state, node.id);
+      makeChoice(state, simplePrompt('land', node.name, getLandPurchaseDescription(state, node.id), [
+        { id: 'buy', label: `购买 · ${purchasePrice} PM`, disabled: player.cash < purchasePrice }, { id: 'leave', label: '离开' },
       ], { ...data, nodeId: node.id }));
-    } else if (prop?.ownerId === player.id && !isUtility(node) && !prop.mortgaged && prop.level < 4 && state.weatherId !== 'paradox' && state.weatherId !== 'acid') {
-      const cost = Math.ceil(costOf(node) * 0.75);
+    } else if (prop?.ownerId === player.id && !isUtility(node) && !prop.mortgaged && prop.level < getMaxLandLevel(state.config.mapId) && state.weatherId !== 'paradox' && state.weatherId !== 'acid') {
+      const cost = getBuildCost(node);
       const choices: Prompt['choices'] = [{ id: 'upgrade', label: `升级 · ${cost} PM`, disabled: player.cash < cost }];
-      if (prop.level > 0) choices.push({ id: 'meal', label: `用餐 · 100 PM（体力 +${[0, 12, 20, 30, 42][prop.level]}）`, disabled: player.cash < 100 });
+      if (prop.level > 0) choices.push({ id: 'meal', label: `用餐 · 100 PM（体力 +${mealRecovery(state, node, prop)}）`, disabled: player.cash < 100 });
       choices.push({ id: 'leave', label: '离开' });
       makeChoice(state, simplePrompt('upgrade', node.name, `升级至 ${prop.level + 1} 级，费用 ${cost} PM；也可用餐。`, choices, { ...data, nodeId: node.id }));
     } else if (prop && prop.ownerId !== player.id) {
@@ -758,23 +802,15 @@ function enterNode(state: GameState, skipStation = false, glitchBacktrack = fals
       } else rentNotice(state, player, recipient, node, 0, 0, getTileRentPreview(state, node.id).reason);
       if (player.bankrupt || checkHealth(state, player, true)) return;
     }
-    if (!state.pending && prop && mealRecovery(node, prop) > 0 && player.cash >= 100 && state.weatherId !== 'paradox') {
+    if (!state.pending && prop && mealRecovery(state, node, prop) > 0 && player.cash >= 100 && state.weatherId !== 'paradox') {
       makeChoice(state, simplePrompt('meal', node.name, '支付 100 PM 用餐并恢复体力。', [
-        { id: 'meal', label: `用餐 · 100 PM（体力 +${mealRecovery(node, prop)}）` }, { id: 'leave', label: '离开' },
+        { id: 'meal', label: `用餐 · 100 PM（体力 +${mealRecovery(state, node, prop)}）` }, { id: 'leave', label: '离开' },
       ], { ...data, nodeId: node.id }));
     }
   } else if (node.kind === 'coin') {
     const amount = rand(state, ROADSIDE_CASH_MIN, ROADSIDE_CASH_MAX); credit(player, amount); log(state, `${player.name} 捡到 ${amount} PM。`, 'good'); addLandingEffect(state, effect('cash', `拾得 +${amount} PM`, 'good'));
-  } else if ((node.kind === 'event' || state.encounters.includes(node.id)) && state.weatherId !== 'paradox') {
-    if (node.kind !== 'event') state.encounters = state.encounters.filter(id => id !== node.id);
-    const event = selectEvent(state);
-    if (event) {
-      addLandingEffect(state, effect('event', event.title, event.tone === 'bad' ? 'bad' : event.tone === 'good' ? 'good' : 'info'));
-      const choices = event.choices.map(c => ({ id: c.id, label: c.label, description: c.description, disabled: eventChoiceDisabled(state, event, c.id) }));
-      if (choices.every(c => c.disabled)) choices.push({ id: 'skip_unavailable', label: '资源不足，离开', description: '', disabled: false });
-      const encounter = addTurnEncounter(state, event, player, node.id, choices);
-      makeChoice(state, simplePrompt('event', event.title, event.story, choices, { ...data, eventId: event.id, turnEncounterId: encounter.id }));
-    }
+  } else if (node.kind === 'event' && state.weatherId !== 'paradox') {
+    openEvent(state, node, 'tile', undefined, glitchBacktrack);
   } else if (node.kind === 'station' && !skipStation && state.weatherId !== 'paradox') {
     const stations = MAPS[state.config.mapId].nodes.filter(n => n.kind === 'station' && n.id !== node.id);
     makeChoice(state, simplePrompt('station', node.name, '乘车前往另一站，票价 100 PM。', [
@@ -901,8 +937,59 @@ function weatherActionMood(state: GameState, player: Player) {
   if (state.weatherId === 'fireflies') player.mood = clamp(player.mood + rand(state, 1, 12));
 }
 
+function eventSourceForPrompt(prompt: Prompt): EventSource | null {
+  if (prompt.data?.eventSource === 'tile' || prompt.data?.eventSource === 'encounter') return prompt.data.eventSource;
+  if (prompt.data?.eventSource !== undefined) return null;
+  // Legacy fixed and empty-tile prompts both drew from the old tile catalogue.
+  return 'tile';
+}
+
+function validEventDecision(state: GameState, prompt: Prompt) {
+  const player = current(state);
+  const node = nodeAt(state, player.position);
+  if (!node || typeof prompt.data?.eventId !== 'string') return false;
+  const source = eventSourceForPrompt(prompt);
+  if (!source || !findEligibleEvent(state.config.mapId, prompt.data.eventId, source)) return false;
+  const continuation = prompt.data?.continuation;
+  if (prompt.data?.eventSource === undefined) return continuation === undefined && ['event', 'empty'].includes(node.kind);
+  if (source === 'tile') return node.kind === 'event' && continuation === undefined;
+  if (!continuation || typeof continuation !== 'object' || Array.isArray(continuation)) return false;
+  const data = continuation as Record<string, unknown>;
+  const encounter = (state.turnEncounters ?? []).find(entry => entry.id === prompt.data?.turnEncounterId);
+  return node.kind !== 'start' && node.kind !== 'event' && !state.encounters.includes(node.id)
+    && Object.keys(data).sort().join(',') === 'glitchBacktrack,nodeId,skipStation'
+    && data.nodeId === player.position && typeof data.skipStation === 'boolean'
+    && (!data.skipStation || node.kind === 'station') && typeof data.glitchBacktrack === 'boolean'
+    && (!data.glitchBacktrack || state.weatherId === 'glitch')
+    && encounter?.playerId === player.id && encounter.day === state.day && encounter.nodeId === node.id
+    && encounter.eventId === prompt.data.eventId && encounter.selectedChoiceId === undefined;
+}
+
+function completeEventDecision(state: GameState, prompt: Prompt) {
+  const player = current(state);
+  const continuation = prompt.data?.continuation as EventContinuation | undefined;
+  if (!continuation) {
+    if (!player.confinement && !player.bankrupt && !checkHealth(state, player, true)) finishDecision(state);
+    return;
+  }
+  state.pending = null;
+  state.phase = 'end';
+  if (player.bankrupt || player.confinement
+    || player.position !== continuation.nodeId || checkHealth(state, player, true)) return;
+  const node = nodeAt(state, continuation.nodeId);
+  if (node) {
+    // The event result has its own notice. Subsequent coin/rent effects need a fresh id
+    // so presentation can show them after the choice rather than merging into the event.
+    state.feedback = null;
+    settleNodeTile(state, node, continuation.skipStation, continuation.glitchBacktrack);
+  }
+}
+
 function applyEvent(state: GameState, eventId: string, choiceId: string) {
-  const event = findEligibleEvent(state.config.mapId, eventId);
+  const prompt = state.pending;
+  if (!prompt || prompt.kind !== 'event') return false;
+  const source = eventSourceForPrompt(prompt);
+  const event = source && findEligibleEvent(state.config.mapId, eventId, source);
   const option = event?.choices.find(c => c.id === choiceId);
   if (!event || !option || eventChoiceDisabled(state, event, choiceId)) return false;
   const player = current(state);
@@ -953,9 +1040,7 @@ function applyEvent(state: GameState, eventId: string, choiceId: string) {
   notice(state, { kind: 'event', title: event.title, body: result,
     tone: event.tone === 'choice' ? 'info' : event.tone, playerId: player.id, nodeId: encounterNodeId,
     ...(player.cash !== beforeCash ? { amount: player.cash - beforeCash } : {}) });
-  if (option.confinement) { if (!player.confinement) finishDecision(state); return true; }
-  finishDecision(state);
-  checkHealth(state, player);
+  completeEventDecision(state, prompt);
   return true;
 }
 
@@ -987,13 +1072,16 @@ function doChoice(state: GameState, choiceId?: string) {
     return true;
   }
   if (prompt.kind === 'event') {
-    const event = findEligibleEvent(state.config.mapId, String(prompt.data?.eventId ?? ''));
+    if (!validEventDecision(state, prompt)) return false;
+    const source = eventSourceForPrompt(prompt);
+    const event = source && findEligibleEvent(state.config.mapId, String(prompt.data?.eventId ?? ''), source);
     if (!event) return false;
     if ((choiceId === 'skip_unavailable' || choiceId === 'skip') && !event.choices.some(entry => entry.id === choiceId)) {
+      if (event.choices.some(entry => !eventChoiceDisabled(state, event, entry.id))) return false;
       const encounter = currentTurnEncounter(state, event, player, player.position);
       encounter.selectedChoiceId = choiceId;
       encounter.result = `${player.name}因资源不足离开，本次没有发生额外变化。`;
-      finishDecision(state);
+      completeEventDecision(state, prompt);
       return true;
     }
     return applyEvent(state, event.id, choiceId!);
@@ -1015,27 +1103,34 @@ function doChoice(state: GameState, choiceId?: string) {
       makeChoice(state, debtPrompt(state, 'end', prompt.data?.glitchBacktrack === true));
       return true;
     }
-    if (mealRecovery(rentNode, property) > 0 && player.cash >= 100 && state.weatherId !== 'paradox') {
+    if (mealRecovery(state, rentNode, property) > 0 && player.cash >= 100 && state.weatherId !== 'paradox') {
       makeChoice(state, simplePrompt('meal', rentNode.name, '支付 100 PM 用餐并恢复体力。', [
-        { id: 'meal', label: `用餐 · 100 PM（体力 +${mealRecovery(rentNode, property)}）` }, { id: 'leave', label: '离开' },
+        { id: 'meal', label: `用餐 · 100 PM（体力 +${mealRecovery(state, rentNode, property)}）` }, { id: 'leave', label: '离开' },
       ], { nodeId: rentNode.id, ...(prompt.data?.glitchBacktrack === true ? { glitchBacktrack: true } : {}) }));
     } else finishDecision(state);
     return true;
   }
   if (choiceId === 'leave') { finishDecision(state); return true; }
-  if (prompt.kind === 'land' && choiceId === 'buy' && node && !state.properties[nodeId] && state.weatherId !== 'paradox' && player.cash >= costOf(node)) {
-    charge(state, player, costOf(node)); state.properties[nodeId] = { ownerId: player.id, level: 0, mortgaged: false };
-    log(state, `${player.name} 购买 ${node.name}。`, 'good'); setFeedback(state, player, effect('building', `购入${node.name}`, 'good'), effect('cash', `−${costOf(node)} PM`, 'bad')); finishDecision(state); return true;
+  if (prompt.kind === 'land' && choiceId === 'buy' && node && isProperty(node) && player.position === node.id
+    && !state.properties[nodeId] && state.weatherId !== 'paradox'
+    && player.cash >= getLandPurchasePrice(state, nodeId)) {
+    const price = getLandPurchasePrice(state, nodeId);
+    const level = getAvailableLandLevel(state, nodeId);
+    charge(state, player, price);
+    state.properties[nodeId] = { ownerId: player.id, level, mortgaged: false };
+    delete state.availablePropertyLevels?.[nodeId];
+    log(state, `${player.name} 购买 ${node.name}${level ? `（已有${level}层建筑）` : ''}，支付 ${price} PM。`, 'good');
+    setFeedback(state, player, effect('building', `购入${node.name}${level ? ` · ${level}层` : ''}`, 'good'), effect('cash', `−${price} PM`, 'bad')); finishDecision(state); return true;
   }
   if (prompt.kind === 'upgrade' && choiceId === 'upgrade' && node && state.weatherId !== 'paradox' && state.weatherId !== 'acid') {
-    const prop = state.properties[nodeId]; const cost = Math.ceil(costOf(node) * 0.75);
-    if (!prop || prop.ownerId !== player.id || prop.mortgaged || prop.level >= 4 || player.cash < cost || isUtility(node)) return false;
+    const prop = state.properties[nodeId]; const cost = getBuildCost(node);
+    if (!prop || prop.ownerId !== player.id || prop.mortgaged || prop.level >= getMaxLandLevel(state.config.mapId) || player.cash < cost || isUtility(node)) return false;
     charge(state, player, cost); prop.level++; removeListing(state, node.id); log(state, `${player.name} 将 ${node.name} 升至 ${prop.level} 级。`, 'good');
     setFeedback(state, player, effect('building', `${node.name}升至${prop.level}级`, 'good'), effect('cash', `−${cost} PM`, 'bad')); finishDecision(state); return true;
   }
   if ((prompt.kind === 'meal' || prompt.kind === 'upgrade') && choiceId === 'meal' && node && player.cash >= 100 && state.weatherId !== 'paradox') {
-    const prop = state.properties[nodeId]; if (!prop || mealRecovery(node, prop) <= 0) return false;
-    const before = player.stamina; charge(state, player, 100); player.stamina = clamp(player.stamina + mealRecovery(node, prop));
+    const prop = state.properties[nodeId]; if (!prop || mealRecovery(state, node, prop) <= 0) return false;
+    const before = player.stamina; charge(state, player, 100); player.stamina = clamp(player.stamina + mealRecovery(state, node, prop));
     setFeedback(state, player, effect('cash', '用餐 −100 PM', 'bad'), effect('stamina', `体力 +${player.stamina - before}`, 'good')); finishDecision(state); return true;
   }
   if (prompt.kind === 'station' && choiceId?.startsWith('station:') && player.cash >= 100 && state.weatherId !== 'paradox') {
@@ -1045,7 +1140,9 @@ function doChoice(state: GameState, choiceId?: string) {
     charge(state, player, 100); const from = player.position; player.previousPosition = null; player.routeNextPosition = null; player.position = to.id;
     state.movement = { id: ++state.sequence, playerId: player.id, path: [from, to.id], roll: 0, modifier: 0, dice: false,
       segments: [{ kind: 'transfer', path: [from, to.id], label: `乘车抵达${to.name}` }], effects: [] };
-    log(state, `${player.name} 乘车抵达 ${to.name}。`); finishDecision(state, true); return true;
+    log(state, `${player.name} 乘车抵达 ${to.name}。`);
+    enterNode(state, true, prompt.data?.glitchBacktrack === true);
+    return true;
   }
   if (prompt.kind === 'shop' && choiceId?.startsWith('buy:') && state.weatherId !== 'paradox') {
     const itemId = choiceId.slice(4); const def = ITEMS[itemId];
@@ -1128,15 +1225,15 @@ function doUseItem(state: GameState, action: GameAction) {
   if (id === 'acquire') {
     const prop = node && state.properties[node.id]; const owner = prop && state.players.find(p => p.id === prop.ownerId);
     const price = node ? getAcquisitionPrice(state, node.id) : null;
-    if (!prop || !owner || owner.id === player.id || price === null || player.cash < price || prop.level >= 4) return false;
+    if (!prop || !owner || owner.id === player.id || price === null || player.cash < price || isLandmark(state.config.mapId, node!, prop.level)) return false;
     player.cash -= price; owner.cash += price; prop.ownerId = player.id; removeListing(state, node!.id);
   } else if (id === 'demolish') {
     const prop = node && state.properties[node.id];
-    if (!prop || prop.ownerId === player.id || prop.level < 1 || prop.level >= 4 || isUtility(node!)) return false;
+    if (!prop || prop.ownerId === player.id || prop.level < 1 || isLandmark(state.config.mapId, node!, prop.level) || isUtility(node!)) return false;
     prop.level--; removeListing(state, node!.id);
   } else if (id === 'repair') {
     const prop = node && state.properties[node.id];
-    if (!prop || prop.ownerId !== player.id || prop.mortgaged || prop.level >= 4 || isUtility(node!) || state.weatherId === 'acid') return false;
+    if (!prop || prop.ownerId !== player.id || prop.mortgaged || prop.level >= getMaxLandLevel(state.config.mapId) || isUtility(node!) || state.weatherId === 'acid') return false;
     prop.level++; removeListing(state, node!.id);
   } else if (id === 'bomb') {
     sendTo(state, target!, 'hospital'); target!.stamina = clamp(target!.stamina - 30);
@@ -1206,7 +1303,9 @@ function manageAsset(state: GameState, action: GameAction) {
     log(state, `${player.name} 抵押 ${node.name}。`); setFeedback(state, player, effect('building', `抵押${node.name}`, 'info'), effect('cash', `+${amount} PM`, 'good')); return true; }
   if (action.type === 'redeem' && prop.mortgaged) { const cost = Math.ceil(assetValue(state, node.id, prop) * 0.6); if (player.cash < cost) return false; player.cash -= cost; prop.mortgaged = false; removeListing(state, node.id);
     log(state, `${player.name} 赎回 ${node.name}。`); setFeedback(state, player, effect('building', `赎回${node.name}`, 'good'), effect('cash', `−${cost} PM`, 'bad')); return true; }
-  if (action.type === 'sellAsset' && prop.level < 4 && !prop.mortgaged) { const amount = Math.floor(assetValue(state, node.id, prop) * 0.7); credit(player, amount); delete state.properties[node.id]; removeListing(state, node.id);
+  if (action.type === 'sellAsset' && !isLandmark(state.config.mapId, node, prop.level) && !prop.mortgaged) { const amount = Math.floor(assetValue(state, node.id, prop) * 0.7); credit(player, amount);
+    if (state.config.mapId === 'grandCity' && node.kind === 'land') (state.availablePropertyLevels ??= {})[node.id] = prop.level;
+    delete state.properties[node.id]; removeListing(state, node.id);
     log(state, `${player.name} 将 ${node.name} 卖给银行。`); setFeedback(state, player, effect('building', `售出${node.name}`, 'info'), effect('cash', `+${amount} PM`, 'good')); return true; }
   return false;
 }
@@ -1340,9 +1439,9 @@ function bestControlledRoll(state: GameState): number | null {
     if (node.kind === 'coin') return 150;
     if (node.kind === 'hospital' || node.kind === 'prison') return -800;
     if (isProperty(node)) {
-      if (property?.ownerId === player.id) return property.level < 4 && !isUtility(node) ? 200 : 0;
+      if (property?.ownerId === player.id) return property.level < getMaxLandLevel(state.config.mapId) && !isUtility(node) ? 200 : 0;
       if (property) return -getRent(state, position) * (player.cash < 10_000 ? 1.5 : 1);
-      if (player.cash >= costOf(node) + 5000) return Math.min(3200, costOf(node) * 0.22);
+      if (player.cash >= getLandPurchasePrice(state, node.id) + 5000) return Math.min(3200, getLandPurchasePrice(state, node.id) * 0.22);
     }
     return 0;
   };
@@ -1515,9 +1614,9 @@ function aiShopChoice(state: GameState, player: Player, fierce: boolean, choices
   if (purchases >= (fierce ? 2 : 1)) return null;
   const enemies = state.players.filter(enemy => enemy.id !== player.id && !enemy.bankrupt);
   const enemyBuildings = Object.entries(state.properties).filter(([id, property]) => enemies.some(enemy => enemy.id === property.ownerId)
-    && nodeAt(state, Number(id))?.kind === 'land' && property.level > 0 && property.level < 4);
+    && nodeAt(state, Number(id))?.kind === 'land' && property.level > 0 && property.level < getMaxLandLevel(state.config.mapId));
   const ownedRepairable = Object.entries(state.properties).some(([id, property]) => property.ownerId === player.id
-    && nodeAt(state, Number(id))?.kind === 'land' && property.level < 4 && !property.mortgaged);
+    && nodeAt(state, Number(id))?.kind === 'land' && property.level < getMaxLandLevel(state.config.mapId) && !property.mortgaged);
   const valuableEnemy = enemies.some(enemy => Object.entries(state.properties).some(([, property]) => property.ownerId === enemy.id));
   const canAcquire = enemyBuildings.some(([id]) => player.cash - (getAcquisitionPrice(state, Number(id)) ?? Infinity) >= aiReserve(player, true));
   const wanted = fierce ? [
@@ -1598,8 +1697,8 @@ function aiStationChoice(state: GameState, player: Player, available: Prompt['ch
       for (const id of frontier) for (const neighbor of map.nodes[id].neighbors) if (!visited.has(neighbor)) {
         visited.add(neighbor); next.push(neighbor);
         const node = map.nodes[neighbor];
-        if (isProperty(node) && !state.properties[neighbor] && player.cash > costOf(node) + aiReserve(player, true)) value += costOf(node) * 0.22 / depth;
-        if (state.properties[neighbor]?.ownerId === player.id && state.properties[neighbor].level < 4) value += 350 / depth;
+        if (isProperty(node) && !state.properties[neighbor] && player.cash > getLandPurchasePrice(state, neighbor) + aiReserve(player, true)) value += getLandPurchasePrice(state, neighbor) * 0.22 / depth;
+        if (node.kind === 'land' && state.properties[neighbor]?.ownerId === player.id && state.properties[neighbor].level < getMaxLandLevel(state.config.mapId)) value += 350 / depth;
         if (node.kind === 'shop' && player.stamina < 65) value += 450 / depth;
       }
       frontier = next;
@@ -1664,7 +1763,7 @@ export function runAI(state: GameState): GameState {
       const reserve = aiReserve(player, fierce);
       const node = nodeAt(state, Number(prompt.data?.nodeId));
       const action = available.find(c => c.id === 'buy' || c.id === 'upgrade');
-      const cost = node ? action?.id === 'upgrade' ? Math.ceil(costOf(node) * 0.75) : costOf(node) : Infinity;
+      const cost = node ? action?.id === 'upgrade' ? getBuildCost(node) : getLandPurchasePrice(state, node.id) : Infinity;
       if (action && player.cash >= cost + reserve * (fierce ? 0.65 : 1)) choice = action.id;
       else if (prompt.kind === 'upgrade' && player.stamina < 45 && player.cash >= 100) choice = available.find(c => c.id === 'meal')?.id ?? choice;
     } else if (prompt.kind === 'event') {
@@ -1704,7 +1803,8 @@ export function runAI(state: GameState): GameState {
     const soldToday = (state.notices ?? []).some(entry => entry.kind === 'trade' && entry.recipientId === player.id && entry.day === state.day);
     if (player.cash < lowCash && !alreadyListed && !soldToday) {
       const candidates = Object.entries(state.properties).filter(([id, property]) => property.ownerId === player.id && !property.mortgaged
-        && property.level < 4 && !(state.propertyListings ?? []).some(listing => listing.nodeId === Number(id)))
+        && !isLandmark(state.config.mapId, nodeAt(state, Number(id))!, property.level)
+        && !(state.propertyListings ?? []).some(listing => listing.nodeId === Number(id)))
         .sort(([a, first], [b, second]) => assetValue(state, Number(a), first) - assetValue(state, Number(b), second));
       const [id, property] = candidates[0] ?? [];
       if (id && property) {
@@ -1740,7 +1840,7 @@ export function runAI(state: GameState): GameState {
     const repair = player.inventory.find(slot => slot.itemId === 'repair' && canUseItem(state, player.id, slot.uid));
     if (repair) {
       const target = Object.entries(state.properties).filter(([id, property]) => property.ownerId === player.id
-        && property.level < 4 && canTargetItem(state, player.id, repair.uid, { nodeId: Number(id) }))
+        && property.level < getMaxLandLevel(state.config.mapId) && canTargetItem(state, player.id, repair.uid, { nodeId: Number(id) }))
         .sort(([a], [b]) => costOf(nodeAt(state, Number(b))!) - costOf(nodeAt(state, Number(a))!))[0];
       if (target) return step({ type: 'useItem', itemUid: repair.uid, nodeId: Number(target[0]) });
     }
@@ -1757,9 +1857,9 @@ export function runAI(state: GameState): GameState {
     if (stone) {
       const reserve = aiReserve(player, fierce);
       const target = MAPS[state.config.mapId].nodes.filter(node => node.kind === 'land' && node.id !== player.position
-        && (!state.properties[node.id] && player.cash >= costOf(node) + reserve
-          || fierce && state.properties[node.id]?.ownerId === player.id && state.properties[node.id].level < 4))
-        .sort((a, b) => costOf(b) - costOf(a))[0];
+        && (!state.properties[node.id] && player.cash >= getLandPurchasePrice(state, node.id) + reserve
+          || fierce && state.properties[node.id]?.ownerId === player.id && state.properties[node.id].level < getMaxLandLevel(state.config.mapId)))
+        .sort((a, b) => getLandPurchasePrice(state, b.id) - getLandPurchasePrice(state, a.id))[0];
       if (target && canTargetItem(state, player.id, stone.uid, { nodeId: target.id })) {
         return step({ type: 'useItem', itemUid: stone.uid, nodeId: target.id });
       }

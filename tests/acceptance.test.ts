@@ -477,6 +477,7 @@ describe('weather and property acceptance', () => {
 
     const event = EVENTS.find(e => e.choices.some(c => c.damageBuilding))!;
     const damage = event.choices.find(c => c.damageBuilding)!;
+    state.players[0].position = MAPS.lake.nodes.find(tile => tile.kind === 'event')!.id;
     state.pending = { kind: 'event', title: event.title, body: event.story, choices: [{ id: damage.id, label: damage.label }], data: { eventId: event.id } };
     state.phase = 'decision';
     const after = act(state, { type: 'choose', choiceId: damage.id });
