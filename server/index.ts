@@ -9,11 +9,12 @@ import { act, createGame, runAI } from '../src/game/engine';
 import { getMovementTimeline } from '../src/game/presentation';
 import { assignPlayerColor } from '../src/game/colors';
 import { MAPS } from '../src/game/maps';
-import type { AILevel, GameAction, GameState, MapId, Personality, PlayerConfig, RentLevel, Shape } from '../src/game/types';
+import { getTestRoomByCode } from '../src/game/testRooms';
+import type { AILevel, GameAction, GameState, MapId, Personality, PlayerConfig, RentLevel, Shape, TestRoomKind } from '../src/game/types';
 
 type RoomConfig = { mapId: MapId; seasons: number; weatherMode: GameState['config']['weatherMode']; seed: number; propertyTrading?: boolean; rentLevel: RentLevel };
 type Member = { seatId: string; clientId: string | null; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; ready: boolean; connected: boolean; host: boolean };
-type Room = { code: string; members: Member[]; config: RoomConfig; started: boolean; state: GameState | null; sockets: Map<string, WebSocket>; timer: ReturnType<typeof setTimeout> | null; movementUntil: number; lastMovementId: number | null; touched: number };
+type Room = { key: string; code: string; testRoom?: TestRoomKind; members: Member[]; config: RoomConfig; started: boolean; state: GameState | null; sockets: Map<string, WebSocket>; timer: ReturnType<typeof setTimeout> | null; movementUntil: number; lastMovementId: number | null; touched: number };
 type Session = { clientId: string | null; roomCode: string | null; seatId: string | null; received: number[] };
 type Message = Record<string, unknown>;
 
@@ -33,6 +34,7 @@ function record(value: unknown): value is Message { return typeof value === 'obj
 function send(socket: WebSocket, value: unknown) { if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(value)); }
 function error(socket: WebSocket, message: string) { send(socket, { type: 'error', message }); }
 function code(): string { return Array.from({ length: 6 }, () => CODE_CHARS[randomInt(CODE_CHARS.length)]).join(''); }
+function roomKey(code: string, clientId: string): string { return getTestRoomByCode(code) ? `${code}:${clientId}` : code; }
 function validClientId(value: unknown): value is string { return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value); }
 function profile(value: unknown, ai: boolean): PlayerConfig | null {
   if (!record(value) || typeof value.name !== 'string' || !value.name.trim() || value.name.trim().length > 24
@@ -46,6 +48,7 @@ function config(value: unknown): RoomConfig | null {
   if (!record(value) || typeof value.mapId !== 'string' || !Object.hasOwn(MAPS, value.mapId) || ![0, 4, 8, 16].includes(value.seasons as number)
     || !['standard', 'challenge', 'hardship'].includes(value.weatherMode as string) || !Number.isSafeInteger(value.seed)
     || (value.seed as number) < 0 || (value.seed as number) > 0xffff_ffff
+    || value.testRoom !== undefined
     || (value.propertyTrading !== undefined && typeof value.propertyTrading !== 'boolean')
     || (value.rentLevel !== undefined && !rentLevels.includes(value.rentLevel as RentLevel))) return null;
   return { mapId: value.mapId as MapId, seasons: value.seasons as number, weatherMode: value.weatherMode as RoomConfig['weatherMode'], seed: value.seed as number,
@@ -113,7 +116,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
 
   function snapshot(room: Room, member: Member) {
     const index = room.members.findIndex(item => item.seatId === member.seatId);
-    return { code: room.code, members: room.members.map(publicMember), config: room.config, started: room.started, state: room.state,
+    return { code: room.code, ...(room.testRoom ? { testRoom: room.testRoom } : {}), members: room.members.map(publicMember), config: room.config, started: room.started, state: room.state,
       movementUntil: room.movementUntil,
       youSeatId: member.seatId, youPlayerId: room.started && index >= 0 ? room.state?.players[index]?.id ?? null : null, isHost: member.host };
   }
@@ -136,7 +139,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
       send(socket, { type: 'left' });
     }
     room.sockets.clear();
-    rooms.delete(room.code);
+    rooms.delete(room.key);
   }
 
   function transferHost(room: Room, intentional: boolean) {
@@ -191,7 +194,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
       previous.close(4001, 'Session replaced');
     }
     const session = sessions.get(socket)!;
-    session.roomCode = room.code;
+    session.roomCode = room.key;
     session.seatId = member.seatId;
     room.sockets.set(member.seatId, socket);
     member.connected = true;
@@ -211,7 +214,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
     member.connected = false;
     if (!room.started && intentional) room.members = room.members.filter(m => m.seatId !== member.seatId);
     if (member.host) transferHost(room, intentional);
-    if (rooms.has(room.code)) { broadcast(room); scheduleAI(room); }
+    if (rooms.has(room.key)) { broadcast(room); scheduleAI(room); }
   }
 
   function handle(socket: WebSocket, message: Message) {
@@ -233,15 +236,27 @@ export async function createRoomServer(options: { port?: number; host?: string; 
       let roomCode = code();
       while (rooms.has(roomCode)) roomCode = code();
       const member: Member = { ...p, color: assignPlayerColor(p.color), seatId: randomUUID(), clientId: session.clientId, ready: true, connected: true, host: true };
-      const room: Room = { code: roomCode, members: [member], config: c, started: false, state: null, sockets: new Map(), timer: null, movementUntil: 0, lastMovementId: null, touched: Date.now() };
-      rooms.set(roomCode, room);
+      const room: Room = { key: roomCode, code: roomCode, members: [member], config: c, started: false, state: null, sockets: new Map(), timer: null, movementUntil: 0, lastMovementId: null, touched: Date.now() };
+      rooms.set(room.key, room);
       claim(socket, room, member);
       return;
     }
     if (message.type === 'join' || message.type === 'reconnect') {
       if (session.roomCode) return error(socket, '请先离开当前房间。');
-      if (typeof message.code !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(message.code)) return error(socket, '房间码格式无效。');
-      const room = rooms.get(message.code);
+      if (typeof message.code !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(message.code) && !getTestRoomByCode(message.code)) return error(socket, '房间码格式无效。');
+      const testRoom = getTestRoomByCode(message.code);
+      const key = roomKey(message.code, session.clientId);
+      let room = rooms.get(key);
+      if (!room && testRoom && message.type === 'join') {
+        if (rooms.size >= MAX_ROOMS) return error(socket, '房间数量已达上限，请稍后重试。');
+        const p = profile(message.profile, false);
+        if (!p) return error(socket, '玩家资料无效。');
+        const member: Member = { ...p, color: assignPlayerColor(p.color), seatId: randomUUID(), clientId: session.clientId, ready: true, connected: true, host: true };
+        room = { key, code: testRoom.code, testRoom: testRoom.kind, members: [member], config: { mapId: 'lake', seasons: 0, weatherMode: 'challenge', rentLevel: 'standard', propertyTrading: true, seed: randomInt(0x100000000) }, started: false, state: null, sockets: new Map(), timer: null, movementUntil: 0, lastMovementId: null, touched: Date.now() };
+        rooms.set(key, room);
+        claim(socket, room, member);
+        return;
+      }
       if (!room) return error(socket, '房间不存在或已结束。');
       const existing = room.members.find(m => m.clientId === session.clientId);
       if (message.type === 'reconnect') {
@@ -249,7 +264,9 @@ export async function createRoomServer(options: { port?: number; host?: string; 
         claim(socket, room, existing);
         return;
       }
+      if (existing && room.testRoom) { claim(socket, room, existing); return; }
       if (existing) return error(socket, '你已在该房间，请使用重连。');
+      if (room.testRoom) return error(socket, '测试房仅供创建者使用。');
       if (room.started) return error(socket, '对局已开始，无法加入新玩家。');
       if (room.members.length >= 4) return error(socket, '房间已满。');
       const p = profile(message.profile, false);
@@ -293,6 +310,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
     }
     if (message.type === 'addBot') {
       if (!member.host || room.started) return error(socket, '只有房主可在开局前增加电脑玩家。');
+      if (room.testRoom) return error(socket, '测试房不能增加电脑玩家。');
       if (room.members.length >= 4) return error(socket, '房间已满。');
       const p = profile(message.profile, true);
       if (!p) return error(socket, '电脑玩家资料无效。');
@@ -303,6 +321,7 @@ export async function createRoomServer(options: { port?: number; host?: string; 
     }
     if (message.type === 'remove') {
       if (!member.host || room.started) return error(socket, '只有房主可在开局前移除席位。');
+      if (room.testRoom) return error(socket, '测试房只有一名玩家。');
       if (typeof message.seatId !== 'string' || message.seatId === member.seatId) return error(socket, '不能移除该席位。');
       const target = room.members.find(m => m.seatId === message.seatId);
       if (!target) return error(socket, '席位不存在。');
@@ -319,10 +338,10 @@ export async function createRoomServer(options: { port?: number; host?: string; 
     }
     if (message.type === 'start') {
       if (!member.host || room.started) return error(socket, '只有房主可开局。');
-      if (room.members.length < 2 || room.members.length > 4) return error(socket, '开局需要 2–4 个席位。');
+      if (room.testRoom ? room.members.length !== 1 || room.members[0].ai : room.members.length < 2 || room.members.length > 4) return error(socket, room.testRoom ? '测试房只能由一名真人开局。' : '开局需要 2–4 个席位。');
       if (room.members.some(m => !m.ai && (!m.ready || !m.connected))) return error(socket, '请等待所有真人玩家准备并保持在线。');
       try {
-        room.state = createGame({ ...room.config, mode: 'pvp', players: room.members.map(m => ({ name: m.name, color: m.color, shape: m.shape, ai: m.ai, personality: m.personality,
+        room.state = createGame({ ...room.config, ...(room.testRoom ? { testRoom: room.testRoom } : {}), mode: 'pvp', players: room.members.map(m => ({ name: m.name, color: m.color, shape: m.shape, ai: m.ai, personality: m.personality,
           ...(m.ai ? { aiLevel: m.aiLevel ?? 'gentle' } : {}) })) });
       } catch { return error(socket, '对局设置无法创建。'); }
       room.started = true;

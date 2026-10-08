@@ -7,6 +7,7 @@ import { drawSlotItem, SLOT_POOL_TOTAL, SLOTS_STAKE } from './casino';
 import { weatherWeights } from './weather';
 import { canSelectDisasterWeather, getFogRentAvoidance, getGlitchBacktrackSteps, getGlitchPenalty, getWeatherDiceModifier, getWeatherDryingChance, getWeatherLandingDamage, getWeatherLightning, getWeatherMove, getWeatherPaperLoss, getWeatherRollDamage, getWeatherWetCount, weatherWetsAllItems } from './weatherRules';
 import { getShopOffer, SHOP_ITEM_RARITY } from './shop';
+import { isTestRoomKind, TEST_ROOMS, TEST_ROOM_CAPACITY } from './testRooms';
 import { getStepOptions } from './routing';
 import { getAvailableLandLevel, getBuildCost, getLandPurchaseDescription, getLandPurchasePrice, getMaxLandLevel, getMealRecovery, getPropertyAssetValue, isLandmark } from './propertyRules';
 import { getPropertyRentMultipliers, getStartingCash, HOSTILE_ITEM_MOOD_LOSS, RENT_LEVELS, RENT_MOOD_LOSS, ROADSIDE_CASH_MAX, ROADSIDE_CASH_MIN, UTILITY_RENT_BASE, UTILITY_RENT_CAP } from './economy';
@@ -435,7 +436,10 @@ function endTurn(state: GameState) {
 
 export function createGame(config: GameConfig): GameState {
   if (!Object.prototype.hasOwnProperty.call(MAPS, config.mapId)) throw new Error('Unknown map');
-  if (config.players.length < 2 || config.players.length > 4) throw new Error('2–4 players required');
+  if (config.testRoom !== undefined && !isTestRoomKind(config.testRoom)) throw new Error('Invalid test room');
+  if (config.testRoom) {
+    if (config.players.length !== 1 || config.players[0].ai !== false) throw new Error('Test room requires exactly one human player');
+  } else if (config.players.length < 2 || config.players.length > 4) throw new Error('2–4 players required');
   if (![0, 4, 8, 16].includes(config.seasons)) throw new Error('Invalid season count');
   if (!['standard', 'challenge', 'hardship'].includes(config.weatherMode)) throw new Error('Invalid weather mode');
   if (!Number.isSafeInteger(config.seed)) throw new Error('Invalid random seed');
@@ -448,7 +452,7 @@ export function createGame(config: GameConfig): GameState {
   const normalizedPlayers = normalizePlayerColors(config.players.map(player => ({ ...player, ...(player.ai ? { aiLevel: player.aiLevel ?? 'gentle' } : {}) })));
   const players: Player[] = normalizedPlayers.map((p, index) => ({
     ...copy(p), id: `p${index + 1}`, cash: startingCash, stamina: 100, mood: 100, position: start, previousPosition: null, routeNextPosition: null, travelProgress: 0,
-    inventory: [], pawnedItems: [], capacity: 10, holdings: {}, stockCostBasis: {}, confinement: null, statuses: [], bankrupt: false,
+    inventory: [], pawnedItems: [], capacity: config.testRoom ? TEST_ROOM_CAPACITY : 10, holdings: {}, stockCostBasis: {}, confinement: null, statuses: [], bankrupt: false,
   }));
   const stocks: Stock[] = copy(INITIAL_STOCKS).map(s => ({ ...s, history: s.history?.length ? s.history : [s.price], change: s.change ?? 0 }));
   const availablePropertyLevels = Object.fromEntries(MAPS[config.mapId].nodes
@@ -457,7 +461,10 @@ export function createGame(config: GameConfig): GameState {
   const state: GameState = { version: 1, mapLayoutVersion: 2, config: { ...copy(config), propertyTrading: config.propertyTrading ?? true, rentLevel: config.rentLevel ?? 'standard', players: copy(normalizedPlayers) }, players, currentPlayerIndex: 0, day: 1, weatherId: 'clear', properties: {}, availablePropertyLevels, propertyListings: [],
     encounters: [], turnEncounters: [], stocks, logs: [], notices: [], phase: 'ready', pending: null,
     movement: null, feedback: null, seasonReport: null, rng: seed, sequence: 0, winnerId: null, lastMarketEvent: null, selectedDie: 6, controlledRoll: null, twinRoll: false };
-  for (const player of state.players) { addItem(state, player, 'snack', 2); addItem(state, player, 'rent', 1); addItem(state, player, 'dice8', 1); }
+  if (config.testRoom) {
+    const itemId = TEST_ROOMS[config.testRoom].itemId;
+    addItem(state, state.players[0], itemId, TEST_ROOM_CAPACITY);
+  } else for (const player of state.players) { addItem(state, player, 'snack', 2); addItem(state, player, 'rent', 1); addItem(state, player, 'dice8', 1); }
   state.weatherId = chooseWeather(state);
   state.weatherHistory = [state.weatherId];
   refreshEncounters(state);

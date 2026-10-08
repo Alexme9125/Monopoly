@@ -7,7 +7,7 @@
 ```ts
 type AILevel = 'gentle' | 'fierce';
 type RoomMember = {seatId:string; name:string; color:string; shape:Shape; ai:boolean; personality:Personality; aiLevel?:AILevel; ready:boolean; connected:boolean; host:boolean};
-type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;seasons:number;weatherMode:'standard'|'challenge';rentLevel:'relaxed'|'standard'|'heavy';seed:number;propertyTrading?:boolean}; started:boolean; state:GameState|null; movementUntil?:number; youSeatId:string; youPlayerId:string|null; isHost:boolean};
+type RoomSnapshot = {code:string; testRoom?:'weather'|'building'; members:RoomMember[]; config: {mapId:MapId;seasons:number;weatherMode:'standard'|'challenge'|'hardship';rentLevel:'relaxed'|'standard'|'heavy';seed:number;propertyTrading?:boolean}; started:boolean; state:GameState|null; movementUntil?:number; youSeatId:string; youPlayerId:string|null; isHost:boolean};
 // client -> server
 {type:'hello',clientId:string}
 {type:'create',profile:PlayerConfig,config:{mapId,seasons,weatherMode,seed,propertyTrading?,rentLevel?}}
@@ -18,7 +18,7 @@ type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;sea
 {type:'ready',ready:boolean}
 {type:'addBot',profile:PlayerConfig} // 仅房主、<4席位；profile.aiLevel 可选，缺失为 gentle
 {type:'remove',seatId:string} // 仅房主、不可删除自己
-{type:'start'} // 仅房主，2–4席位、人类均ready，房主自动ready
+{type:'start'} // 仅房主，普通房2–4席位，测试房恰好1位真人；人类均ready，房主自动ready
 {type:'action',action:GameAction}
 {type:'action',action:{type:'listProperty',nodeId:number,price:number}}
 {type:'action',action:{type:'cancelListing',listingId:string}}
@@ -32,6 +32,10 @@ type RoomSnapshot = {code:string; members:RoomMember[]; config: {mapId:MapId;sea
 ```
 
 服务端广播整份规则状态；产品只在自己的HUD展示资产，其他人按钮收起。clientId令牌不包含在广播。网络回合不依赖客户端的animationComplete；前后端共用 `getMovementTimeline`，服务端锁定到该演出时长加300毫秒。演出依次为掷骰、原始点数、天气骰点修正、正常逐格移动、天气追加移动及落点反馈；人类也不可在锁定期间提前发送后续动作。runAI每次一步。
+
+`join` 识别两个保留入口：`114514` 为天气测试房，`350234` 为建筑测试房。服务端为每个 `clientId + 固定入口码` 建立独立实例，公开快照仍显示固定码和 `testRoom`，不公开内部索引或身份令牌。重复进入或 `reconnect` 恢复本人已有实例；其他身份输入同一码得到自己的单人房。普通随机房间码规则不变，保留入口在普通字符集校验之前处理。
+
+测试房默认棱镜湖畔、挑战天气、标准租金、不限季数；房主可在准备页选择地图和规则。禁止添加 AI，开局只允许一名真人。服务端在构造游戏配置时注入测试类型，普通 `create`、`config` 或 `action` 不能改变该属性或初始资源。两种测试房分别给予容量 99 的背包与 99 件天气控制器／建筑修复包，重连不重复发放；主动离开清除个人实例。房间数量限制、空闲清理、断线保护、动作校验和演出锁继续适用，详情见 [TEST_ROOMS.md](TEST_ROOMS.md)。
 
 控骰器通过 `useItem` 的 `diceValue` 传入1～6的整数，由服务端检查道具、受潮、回合与骰具互斥；确认后通过 `controlledRoll` 同步，掷骰时写入 `movement.controlled`。租金提示 `pending.kind='rent'` 仅付款玩家可提交 `use_card` 或 `pay`，结算结果以结构化通知同步。当前回合偶遇存放在 `turnEncounters`，所有房间成员可见故事、选项和选定结果，回合结束后清空并保留历史通知。
 

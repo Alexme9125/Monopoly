@@ -1031,3 +1031,30 @@
 @media(max-width:1100px){.landing .setup-main{flex-direction:column;gap:20px}.landing .setup-main>.segmented{margin:0}.landing .opponent-picker{width:100%}}
 @media(max-width:650px){.opponent-picker .chip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.opponent-picker>.ai-level-control{display:block}.ai-level-heading{justify-content:space-between;gap:10px}.opponent-picker>.ai-level-control .ai-level-note{margin:9px 0 0}.ai-level-capsule>button{min-height:40px;min-width:79px}.opponent-picker .chip{column-gap:6px;padding:11px 8px}.opponent-picker .chip .ai-chip-main{flex-wrap:wrap;gap:3px 7px}.opponent-picker .chip .ai-chip-style{font-size:10px}.ai-level-note{font-size:10px}}
 @media(max-width:360px){.opponent-picker .chip-grid{grid-template-columns:minmax(0,1fr)}.opponent-picker .chip{min-height:62px;grid-template-columns:28px minmax(0,1fr);column-gap:10px;padding:10px 13px}.opponent-picker .chip .ai-chip-main strong{font-size:13px}}
+
+/* Personal test rooms keep the ordinary lobby rhythm, with a quiet purpose marker. */
+.modal-inventory{display:flex;flex-direction:column;overflow:hidden}
+.modal-inventory>.modal-header{flex:none;margin-bottom:14px}
+.modal-inventory>.modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:1px 5px 2px 0;scrollbar-width:thin}
+.modal-inventory .inventory-wallet{top:0}
+[data-test-room=weather]{--test-ink:#466575;--test-tint:#edf3f6;--test-border:#cedde2}
+[data-test-room=building]{--test-ink:#816544;--test-tint:#f5f0e7;--test-border:#e1d6c3}
+.online-picker.has-test-room{flex-wrap:wrap}
+.test-room-entry-hint{display:flex;align-items:center;gap:9px;flex-basis:100%;margin:0;padding:10px 13px;border:1px solid var(--test-border);border-radius:10px;background:var(--test-tint);color:var(--test-ink);font-size:11px;line-height:1.7;overflow-wrap:anywhere}
+.test-room-entry-hint>svg{width:19px;height:19px;flex:none;stroke-width:1.6}
+.test-room-entry-hint>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.test-room-entry-hint strong{font-size:12px;line-height:1.5}
+.test-room-entry-hint small{font-size:10px;line-height:1.7}
+.room-lobby[data-test-room]{background:radial-gradient(ellipse at 24% 40%,var(--test-tint),transparent 62%),#f4f6f0}
+.room-lobby[data-test-room] .lobby-intro h1{color:var(--test-ink);font-size:clamp(30px,3.4vw,43px);letter-spacing:1px;margin-bottom:15px}
+.room-lobby[data-test-room] .room-code strong{color:var(--test-ink)}
+.test-room-supplies{display:flex;align-items:flex-start;gap:14px;max-width:360px;margin:24px 0;padding:17px 18px;border:1px solid var(--test-border);border-radius:14px;background:#fffffac9;color:var(--test-ink)}
+.test-room-supplies>svg{flex:none;box-sizing:content-box;width:25px;height:25px;padding:10px;border-radius:12px;background:var(--test-tint);stroke-width:1.5}
+.test-room-supplies>div{min-width:0;display:flex;flex-direction:column;gap:7px}
+.test-room-supplies strong{font-size:13px;line-height:1.5;font-weight:600}
+.test-room-supplies p,.test-room-supplies small{margin:0;font-size:11px;line-height:1.8;color:var(--test-ink);overflow-wrap:anywhere}
+.game-location.is-test-room{flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.game-location>.test-room-badge{display:inline-flex;align-items:center;gap:4px;width:max-content;max-width:100%;padding:2px 6px;border:1px solid var(--test-border);border-radius:5px;background:var(--test-tint);color:var(--test-ink);font-size:9px;line-height:1.25;white-space:nowrap;letter-spacing:.3px}
+.test-room-badge>svg{width:11px;height:11px;stroke-width:1.8}
+@media(max-width:850px){.room-lobby[data-test-room] .lobby-layout{align-items:start}.test-room-supplies{max-width:none;margin:19px 0}.room-lobby[data-test-room] .room-code{margin:20px 0}.test-room-entry-hint{font-size:11px}}
+@media(max-width:520px){.game-location.is-test-room{gap:3px}.game-location>.test-room-badge{font-size:8px;padding:2px 4px;letter-spacing:0}.test-room-badge>svg{width:10px;height:10px}.test-room-supplies{gap:11px;padding:14px}.test-room-supplies>svg{width:23px;height:23px;padding:8px}.test-room-entry-hint{align-items:flex-start;padding:10px 12px}}
