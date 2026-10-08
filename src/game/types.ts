@@ -2,13 +2,14 @@ export type MapId = 'lake' | 'coast' | 'valley' | 'sundered' | 'forest' | 'starS
 export type EventRarity = 'common' | 'uncommon' | 'rare';
 export type Personality = 'cautious' | 'balanced' | 'aggressive';
 export type AILevel = 'gentle' | 'fierce';
+export type TestRoomKind = 'weather' | 'building';
 export type RentLevel = 'relaxed' | 'standard' | 'heavy';
 export type Shape = 'diamond' | 'circle' | 'hexagon' | 'triangle';
 export type TileKind = 'start' | 'land' | 'empty' | 'coin' | 'event' | 'hospital' | 'prison' | 'sanatorium' | 'parking' | 'power' | 'water' | 'telecom' | 'station' | 'shop' | 'casino' | 'exchange';
 export interface MapNode { id: number; x: number; y: number; name: string; kind: TileKind; price?: number; district?: string; prefabLevel?: number; neighbors: number[]; }
 export interface MapData { id: MapId; name: string; subtitle: string; description: string; width: number; height: number; nodes: MapNode[]; accent: string; }
 export interface PlayerConfig { name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; }
-export interface GameConfig { mapId: MapId; mode: 'pve' | 'pvp'; players: PlayerConfig[]; seasons: number; weatherMode: 'standard' | 'challenge' | 'hardship'; seed: number; propertyTrading?: boolean; rentLevel?: RentLevel; }
+export interface GameConfig { mapId: MapId; mode: 'pve' | 'pvp'; players: PlayerConfig[]; seasons: number; weatherMode: 'standard' | 'challenge' | 'hardship'; seed: number; propertyTrading?: boolean; rentLevel?: RentLevel; testRoom?: TestRoomKind; }
 export interface InventorySlot { uid: string; itemId: string; quantity: number; wet: boolean; }
 export interface Player extends PlayerConfig { id: string; cash: number; stamina: number; mood: number; position: number; previousPosition: number | null; routeNextPosition?: number | null; travelProgress: number; inventory: InventorySlot[]; pawnedItems: { slot: InventorySlot; principal: number }[]; capacity: number; holdings: Record<string, number>; stockCostBasis?: Record<string, number>; confinement: null | { kind: 'hospital' | 'prison' | 'sanatorium' | 'parking'; remaining: number; }; statuses: { id: string; remaining: number }[]; bankrupt: boolean; }
 export interface Property { ownerId: string; level: number; mortgaged: boolean; }

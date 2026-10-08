@@ -8,11 +8,16 @@ import { getRent } from './engine';
 import { migrateMapLayout } from './layoutMigration';
 import { RENT_LEVELS } from './economy';
 import { getLandPurchaseDescription, getLandPurchasePrice, getMaxLandLevel } from './propertyRules';
+import { isTestRoomKind, TEST_ROOM_CAPACITY } from './testRooms';
 
 const KEY = 'prism-days-save-v1';
 const SHAPES: Shape[] = ['diamond', 'circle', 'hexagon', 'triangle'];
 const AI_LEVELS: AILevel[] = ['gentle', 'fierce'];
 const STOCK_IDS = new Set(INITIAL_STOCKS.map(stock => stock.id));
+const NORMAL_SAVE_CAPACITY_LIMIT = 100;
+// A test room starts at 99 instead of 10 slots. Preserve the same 90-slot allowance
+// for ordinary +4 bag upgrades that existing saves already permit (10 through 100).
+const TEST_ROOM_SAVE_CAPACITY_LIMIT = TEST_ROOM_CAPACITY + (NORMAL_SAVE_CAPACITY_LIMIT - 10);
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -90,7 +95,9 @@ export function parseSave(raw: string): GameState {
   if (!record(state) || state.version !== 1 || !record(state.config)) throw new Error('存档版本或游戏设置无效。');
   const config = state.config;
   if (typeof config.mapId !== 'string' || !Object.hasOwn(MAPS, config.mapId) || !['pve', 'pvp'].includes(String(config.mode))
-    || !Array.isArray(config.players) || config.players.length < 2 || config.players.length > 4
+    || !Array.isArray(config.players)
+    || (config.testRoom === undefined ? config.players.length < 2 || config.players.length > 4
+      : !isTestRoomKind(config.testRoom) || config.players.length !== 1 || config.players[0]?.ai !== false)
     || !config.players.every(validPlayerConfig) || !Number.isSafeInteger(config.seed)
     || ![0, 4, 8, 16].includes(Number(config.seasons))
     || !['standard', 'challenge', 'hardship'].includes(String(config.weatherMode))
@@ -122,11 +129,17 @@ export function parseSave(raw: string): GameState {
         || Object.entries(p.stockCostBasis).some(([id, value]) => !STOCK_IDS.has(id) || !Number.isFinite(value)
           || Number(value) < 0 || Number(value) > Number.MAX_SAFE_INTEGER || !Number.isSafeInteger((p.holdings as Record<string, unknown>)[id])
           || Number((p.holdings as Record<string, unknown>)[id]) <= 0)))
-      || !Number.isSafeInteger(p.capacity) || Number(p.capacity) < 1 || Number(p.capacity) > 100
+      || !Number.isSafeInteger(p.capacity) || Number(p.capacity) < 1
+      || Number(p.capacity) > (config.testRoom === undefined ? NORMAL_SAVE_CAPACITY_LIMIT : TEST_ROOM_SAVE_CAPACITY_LIMIT)
       || !Array.isArray(p.statuses) || p.statuses.some((status: unknown) => !record(status) || typeof status.id !== 'string' || !Number.isSafeInteger(status.remaining))
       || (p.confinement !== null && (!record(p.confinement) || !['hospital', 'prison', 'sanatorium', 'parking'].includes(String(p.confinement.kind)) || !Number.isSafeInteger(p.confinement.remaining)))
       || typeof p.bankrupt !== 'boolean')) {
     throw new Error('存档中的玩家数据无效。');
+  }
+  if (config.testRoom !== undefined && state.players.some((player: { ai: boolean; inventory: { uid: string }[]; capacity: number }) =>
+    player.ai !== false || player.inventory.length > player.capacity
+    || new Set(player.inventory.map(slot => slot.uid)).size !== player.inventory.length)) {
+    throw new Error('测试房存档中的背包数据无效。');
   }
   if (config.players.some((entry: PlayerConfig, index: number) =>
     (entry.aiLevel ?? 'gentle') !== ((state.players as PlayerConfig[])[index].aiLevel ?? 'gentle'))) {

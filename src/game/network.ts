@@ -1,10 +1,12 @@
-import type { AILevel, GameAction, GameConfig, GameState, PlayerConfig, Shape, Personality } from './types';
+import type { AILevel, GameAction, GameConfig, GameState, PlayerConfig, Shape, Personality, TestRoomKind } from './types';
+import { getTestRoomByCode } from './testRooms';
 
 export type RoomConfig = Pick<GameConfig, 'mapId' | 'seasons' | 'weatherMode' | 'seed' | 'propertyTrading'> & Required<Pick<GameConfig, 'rentLevel'>>;
 
 export interface RoomMember { seatId: string; name: string; color: string; shape: Shape; ai: boolean; personality: Personality; aiLevel?: AILevel; ready: boolean; connected: boolean; host: boolean }
 export interface RoomSnapshot {
   code: string;
+  testRoom?: TestRoomKind;
   members: RoomMember[];
   config: RoomConfig;
   started: boolean;
@@ -111,7 +113,13 @@ export class RoomClient {
   }
   private sendRaw(message: Outbound) { if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(message)); }
   create(profile: Profile, config: RoomConfig) { this.roomCode = null; persist(ROOM_KEY, null); this.connect({ type: 'create', profile, config }); }
-  join(code: string, profile: Profile) { this.roomCode = null; persist(ROOM_KEY, null); this.pendingJoin = { code: code.trim().toUpperCase(), profile }; this.connect({ type: 'reconnect', code: this.pendingJoin.code }); }
+  join(code: string, profile: Profile) {
+    this.roomCode = null; persist(ROOM_KEY, null);
+    const normalized = code.trim().toUpperCase();
+    if (getTestRoomByCode(normalized)) { this.pendingJoin = null; this.connect({ type: 'join', code: normalized, profile }); return; }
+    this.pendingJoin = { code: normalized, profile };
+    this.connect({ type: 'reconnect', code: normalized });
+  }
   reconnect(code?: string) { const value = code || this.roomCode; if (value) { this.roomCode = value; this.connect({ type: 'reconnect', code: value }); } }
   profile(profile: Profile) { this.send({ type: 'profile', profile }); }
   config(config: RoomConfig) { this.send({ type: 'config', config }); }

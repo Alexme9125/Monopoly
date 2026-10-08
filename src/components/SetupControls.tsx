@@ -35,9 +35,10 @@ export function ShapePicker({ value, onChange, disabled = false }: { value: Shap
   </div>;
 }
 
-export function JourneyLengthControl({ value, onChange, disabled = false }: { value: number; onChange: (seasons: number) => void; disabled?: boolean }) {
+export function JourneyLengthControl({ value, onChange, disabled = false, soloTest = false }: { value: number; onChange: (seasons: number) => void; disabled?: boolean; soloTest?: boolean }) {
   const id = useId(), index = Math.max(0, journeys.findIndex(journey => journey.value === value));
-  const current = journeys[index], endless = value === 0;
+  const endless = value === 0;
+  const current = endless && soloTest ? { ...journeys[index], label: '持续测试', detail: '不限天数 · 每次结束回合进入下一天' } : journeys[index];
   return <div className={`setup-control journey-control ${endless ? 'is-endless' : ''}`} data-disabled={disabled}
     style={{ '--journey-progress': `${index / (journeys.length - 1) * 100}%` } as CSSProperties}>
     <div className="journey-heading"><label htmlFor={id} className="setup-control-label">旅程长度</label>
@@ -51,8 +52,8 @@ export function JourneyLengthControl({ value, onChange, disabled = false }: { va
         onChange={event => onChange(journeys[Number(event.target.value)].value)}/>
     </div>
     <div className="journey-stops" role="group" aria-label="旅程刻度">{journeys.map(journey => <button type="button" key={journey.value}
-      disabled={disabled} aria-pressed={journey.value === value} onClick={() => onChange(journey.value)}>{journey.label}</button>)}</div>
-    <p className="journey-detail" id={`${id}-detail`}>{endless ? <><span className="endless-spark" aria-hidden="true"/>不设年限 · {current.detail}</> : <>{current.detail}<span>到期比较总资产</span></>}</p>
+      disabled={disabled} aria-pressed={journey.value === value} onClick={() => onChange(journey.value)}>{soloTest && journey.value === 0 ? '持续测试' : journey.label}</button>)}</div>
+    <p className="journey-detail" id={`${id}-detail`}>{endless ? <><span className="endless-spark" aria-hidden="true"/>{soloTest ? current.detail : `不设年限 · ${current.detail}`}</> : <>{current.detail}<span>到期比较总资产</span></>}</p>
   </div>;
 }
 
